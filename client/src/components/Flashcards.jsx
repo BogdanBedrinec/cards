@@ -1,0 +1,1094 @@
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "./Flashcards.css";
+
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const REQ_TIMEOUT_MS = 12000;
+const DEFAULT_DECK = "Без теми";
+
+// localStorage keys for language settings
+const LS_UI = "fc_ui_lang"; // interface language
+const LS_L1 = "fc_native_lang"; // native language
+const LS_L2 = "fc_learning_lang"; // learning language
+
+function getToken() {
+  const t = localStorage.getItem("token");
+  if (!t || t === "undefined" || t === "null") return null;
+  return t;
+}
+
+function normalizeLang(code, fallback = "de") {
+  const allowed = new Set(["de", "en", "uk"]);
+  return allowed.has(code) ? code : fallback;
+}
+
+function withTimeout(signal, ms = REQ_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+
+  const onAbort = () => controller.abort();
+  if (signal) signal.addEventListener("abort", onAbort);
+
+  return {
+    signal: controller.signal,
+    cleanup: () => {
+      clearTimeout(timer);
+      if (signal) signal.removeEventListener("abort", onAbort);
+    },
+  };
+}
+
+function humanFetchError(err) {
+  if (!err) return "Unknown error";
+  if (err.name === "AbortError") return "Request timed out";
+  if (err instanceof TypeError) return "Network error (server not reachable)";
+  return "Unexpected error";
+}
+
+export default function Flashcards() {
+  const navigate = useNavigate();
+
+  const [cards, setCards] = useState([]);
+  const [message, setMessage] = useState("");
+
+  // view: review | library | add
+  const [view, setView] = useState("review");
+
+  // form (add)
+  const [word, setWord] = useState("");
+  const [translation, setTranslation] = useState("");
+  const [example, setExample] = useState("");
+
+  // decks
+  const [decks, setDecks] = useState([]);
+  const [deckFilter, setDeckFilter] = useState("ALL"); // ALL | deck
+  const [deckForNewCard, setDeckForNewCard] = useState(DEFAULT_DECK);
+  const [newDeckName, setNewDeckName] = useState("");
+
+  // mode + sorting (affects review list)
+  const [mode, setMode] = useState("due"); // due | all
+  const [sortBy, setSortBy] = useState("nextReview"); // nextReview | createdAt | word | accuracy
+  const [sortOrder, setSortOrder] = useState("asc"); // asc | desc
+
+  // stats
+  const [stats, setStats] = useState(null);
+
+  // import/export
+  const [importText, setImportText] = useState("");
+  const [importFormat, setImportFormat] = useState("json"); // json | csv
+  const [showImportExport, setShowImportExport] = useState(false);
+
+  // review state
+  const [reviewIndex, setReviewIndex] = useState(0);
+  const [showAnswer, setShowAnswer] = useState(false);
+
+  // ✅ FIX: stable progress for "due" sessions
+  const [sessionTotal, setSessionTotal] = useState(0); // how many cards were due at start
+  const [sessionDone, setSessionDone] = useState(0);   // how many answers user gave in this session
+
+  // theme
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem("flashcardsTheme");
+    return saved === "dark" ? "dark" : "light";
+  });
+
+  // language settings
+  const [interfaceLang, setInterfaceLang] = useState(() => localStorage.getItem(LS_UI) || "de");
+  const [nativeLang, setNativeLang] = useState(() => localStorage.getItem(LS_L1) || "uk");
+  const [learningLang, setLearningLang] = useState(() => localStorage.getItem(LS_L2) || "de");
+
+  const [isReviewing, setIsReviewing] = useState(false);
+
+  // loading / errors
+  const [isBootLoading, setIsBootLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isCardsLoading, setIsCardsLoading] = useState(false);
+  const [isStatsLoading, setIsStatsLoading] = useState(false);
+  const [isDecksLoading, setIsDecksLoading] = useState(false);
+
+  const abortRef = useRef(null);
+
+  // --- i18n dictionary (minimal) ---
+  const T = useMemo(
+    () => ({
+      de: {
+        review: "⚡ Wiederholen",
+        library: "📖 Bibliothek",
+        add: "➕ Hinzufügen",
+        refresh: "Aktualisieren",
+        deckFilter: "Thema",
+        mode: "Modus",
+        sort: "Sortierung",
+        order: "Reihenfolge",
+        due: "Jetzt wiederholen",
+        all: "Alle Karten",
+        showTranslation: "Übersetzung anzeigen",
+        know: "Weiß ich ✅",
+        dontKnow: "Weiß ich nicht ❌",
+        noCards: "Keine Karten zum Wiederholen 🎉",
+        addCard: "Karte hinzufügen",
+        addDeck: "Thema hinzufügen",
+        newDeck: "➕ Neues Thema (optional)",
+        exampleOpt: "📘 Beispiel (optional)",
+        wordPlaceholder: "Wort",
+        translationPlaceholder: "Übersetzung",
+        tipAfterAdd: "Tipp: Danach zu ⚡ Wiederholen wechseln.",
+        uiLang: "UI",
+        libraryHint:
+          "Bibliothek — Verwaltung (Themen/Filter) + Import/Export. Karten werden in ⚡ Wiederholen trainiert.",
+        loading: "Loading…",
+        retry: "Retry",
+        offlineHint: "Server not reachable. Did you start backend?",
+      },
+      en: {
+        review: "⚡ Review",
+        library: "📖 Library",
+        add: "➕ Add",
+        refresh: "Refresh",
+        deckFilter: "Topic",
+        mode: "Mode",
+        sort: "Sorting",
+        order: "Order",
+        due: "Review now",
+        all: "All cards",
+        showTranslation: "Show translation",
+        know: "I know ✅",
+        dontKnow: "I don’t know ❌",
+        noCards: "No cards to review 🎉",
+        addCard: "Add card",
+        addDeck: "Add topic",
+        newDeck: "➕ New topic (optional)",
+        exampleOpt: "📘 Example (optional)",
+        wordPlaceholder: "Word",
+        translationPlaceholder: "Translation",
+        tipAfterAdd: "Tip: Switch to ⚡ Review after adding.",
+        uiLang: "UI",
+        libraryHint: "Library — management + import/export. Cards are trained in ⚡ Review.",
+        loading: "Loading…",
+        retry: "Retry",
+        offlineHint: "Server not reachable. Did you start backend?",
+      },
+      uk: {
+        review: "⚡ Повторення",
+        library: "📖 Бібліотека",
+        add: "➕ Додати",
+        refresh: "Оновити",
+        deckFilter: "Тема",
+        mode: "Режим",
+        sort: "Сортування",
+        order: "Порядок",
+        due: "Повторити зараз",
+        all: "Всі картки",
+        showTranslation: "Показати переклад",
+        know: "Знаю ✅",
+        dontKnow: "Не знаю ❌",
+        noCards: "Немає карток для повторення 🎉",
+        addCard: "Додати картку",
+        addDeck: "Додати тему",
+        newDeck: "➕ Нова тема (опційно)",
+        exampleOpt: "📘 Приклад (необов'язково)",
+        wordPlaceholder: "Слово",
+        translationPlaceholder: "Переклад",
+        tipAfterAdd: "Порада: після додавання переходь у ⚡ Повторення.",
+        uiLang: "UI",
+        libraryHint:
+          "Бібліотека — керування (теми/фільтри) + імпорт/експорт. Картки тренуються в ⚡ Повторенні.",
+        loading: "Завантаження…",
+        retry: "Повторити",
+        offlineHint: "Сервер недоступний. Ти запустив бекенд?",
+      },
+    }),
+    []
+  );
+
+  const t = T[normalizeLang(interfaceLang, "de")] || T.de;
+
+  function langLabel(code) {
+    if (code === "de") return "DE";
+    if (code === "en") return "EN";
+    return "UK";
+  }
+
+  // --- Auth guard ---
+  useEffect(() => {
+    const token = getToken();
+    if (!token) navigate("/login", { replace: true });
+  }, [navigate]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [view]);
+
+  // ===== Load profile languages from server (one time) =====
+  useEffect(() => {
+    async function fetchProfileLangs() {
+      const token = getToken();
+      if (!token) return;
+
+      try {
+        const res = await fetch(`${API}/api/users/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.status === 401) {
+          localStorage.removeItem("token");
+          navigate("/login", { replace: true });
+          return;
+        }
+
+        if (!res.ok) return;
+
+        const user = await res.json().catch(() => null);
+        if (!user) return;
+
+        const ui = normalizeLang(user.interfaceLang, localStorage.getItem(LS_UI) || "de");
+        const l1 = normalizeLang(user.nativeLang, localStorage.getItem(LS_L1) || "uk");
+        const l2 = normalizeLang(user.learningLang, localStorage.getItem(LS_L2) || "de");
+
+        localStorage.setItem(LS_UI, ui);
+        localStorage.setItem(LS_L1, l1);
+        localStorage.setItem(LS_L2, l2);
+
+        setInterfaceLang(ui);
+        setNativeLang(l1);
+        setLearningLang(l2);
+      } catch (e) {
+        console.error("fetchProfileLangs error:", e);
+      }
+    }
+
+    fetchProfileLangs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // persist theme + sync to body
+  useEffect(() => {
+    localStorage.setItem("flashcardsTheme", theme);
+    document.body.dataset.theme = theme;
+    return () => {
+      delete document.body.dataset.theme;
+    };
+  }, [theme]);
+
+  // persist only UI language
+  useEffect(() => {
+    localStorage.setItem(LS_UI, interfaceLang);
+  }, [interfaceLang]);
+
+  // ===== unified helpers for 401 + error messages =====
+  function handle401() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    navigate("/login", { replace: true });
+  }
+
+  function setFriendlyError(prefix, err, serverMsg) {
+    const human = humanFetchError(err);
+    const hint = human.includes("Network error") ? ` — ${t.offlineHint}` : "";
+    setMessage(`${prefix}: ${serverMsg || human}${hint}`);
+  }
+
+  // ✅ Reset session progress when user changes queue parameters
+  useEffect(() => {
+    if (view !== "review") return;
+    setSessionDone(0);
+    setSessionTotal(0);
+    setReviewIndex(0);
+    setShowAnswer(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, deckFilter, mode, sortBy, sortOrder]);
+
+  // ===== data loading triggers =====
+  useEffect(() => {
+    (async () => {
+      setMessage("");
+      setIsRefreshing(true);
+      try {
+        if (view === "review") {
+          await refreshAll();
+        } else {
+          await Promise.all([fetchDecks(), fetchStats()]);
+        }
+      } finally {
+        setIsRefreshing(false);
+        setIsBootLoading(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, deckFilter, mode, sortBy, sortOrder]);
+
+  async function refreshAll() {
+    await Promise.all([fetchDecks(), fetchCards(), fetchStats()]);
+  }
+
+  async function fetchDecks() {
+    const token = getToken();
+    if (!token) return;
+
+    setIsDecksLoading(true);
+    try {
+      const { signal, cleanup } = withTimeout();
+      const res = await fetch(`${API}/api/cards/decks`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+        signal,
+      }).finally(cleanup);
+
+      if (res.status === 401) return handle401();
+
+      const data = await res.json().catch(() => []);
+      if (!res.ok) {
+        setFriendlyError("❌ Decks", null, data?.message || data?.error);
+        return;
+      }
+
+      const list = Array.isArray(data) ? data : [];
+      const withDefault = list.includes(DEFAULT_DECK) ? list : [DEFAULT_DECK, ...list];
+      setDecks(withDefault);
+
+      if (deckForNewCard && !withDefault.includes(deckForNewCard)) {
+        setDeckForNewCard(DEFAULT_DECK);
+      }
+    } catch (err) {
+      if (err?.name !== "AbortError") setFriendlyError("❌ Decks", err);
+    } finally {
+      setIsDecksLoading(false);
+    }
+  }
+
+  async function fetchStats() {
+    const token = getToken();
+    if (!token) return;
+
+    setIsStatsLoading(true);
+    try {
+      const { signal, cleanup } = withTimeout();
+      const res = await fetch(`${API}/api/cards/stats`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+        signal,
+      }).finally(cleanup);
+
+      if (res.status === 401) return handle401();
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setFriendlyError("❌ Stats", null, data?.message || data?.error);
+        return;
+      }
+
+      setStats(data);
+    } catch (err) {
+      if (err?.name !== "AbortError") setFriendlyError("❌ Stats", err);
+    } finally {
+      setIsStatsLoading(false);
+    }
+  }
+
+  async function fetchCards() {
+    const token = getToken();
+    if (!token) return;
+
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    setIsCardsLoading(true);
+    try {
+      const params = new URLSearchParams();
+      params.set("mode", mode);
+      params.set("sort", sortBy);
+      params.set("order", sortOrder);
+      if (deckFilter !== "ALL") params.set("deck", deckFilter);
+
+      const url = `${API}/api/cards?${params.toString()}`;
+
+      const { signal, cleanup } = withTimeout(controller.signal);
+      const res = await fetch(url, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+        signal,
+      }).finally(cleanup);
+
+      if (res.status === 401) return handle401();
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        setFriendlyError("❌ Cards", null, data?.message || data?.error);
+        return;
+      }
+
+      const list = Array.isArray(data) ? data : [];
+      setCards(list);
+      setMessage("");
+
+      // ✅ if due-mode and sessionTotal not initialized yet — set it once
+      if (view === "review" && mode === "due" && sessionTotal === 0 && sessionDone === 0) {
+        setSessionTotal(list.length);
+      }
+    } catch (err) {
+      if (err?.name !== "AbortError") setFriendlyError("❌ Cards", err);
+    } finally {
+      setIsCardsLoading(false);
+    }
+  }
+
+  // --- Create new deck locally (UI) ---
+  function handleCreateDeckLocal() {
+    const name = newDeckName.trim();
+    if (!name) return;
+
+    if (!decks.includes(name)) {
+      setDecks((prev) => [...prev, name].sort((a, b) => a.localeCompare(b)));
+    }
+    setDeckForNewCard(name);
+    setNewDeckName("");
+  }
+
+  async function handleAddCard(e) {
+    e.preventDefault();
+    setMessage("");
+
+    if (!word.trim() || !translation.trim()) {
+      setMessage("⚠️ Please fill at least word and translation");
+      return;
+    }
+
+    const token = getToken();
+    if (!token) return handle401();
+
+    try {
+      const payload = {
+        word: word.trim(),
+        translation: translation.trim(),
+        example: example.trim(),
+        deck: (deckForNewCard || DEFAULT_DECK).trim(),
+      };
+
+      const { signal, cleanup } = withTimeout();
+      const res = await fetch(`${API}/api/cards`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        signal,
+      }).finally(cleanup);
+
+      if (res.status === 401) return handle401();
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        setFriendlyError("❌ Add", null, data?.message || data?.error);
+        return;
+      }
+
+      setWord("");
+      setTranslation("");
+      setExample("");
+
+      setMessage("✅ Added!");
+      // reset session on new card
+      setSessionDone(0);
+      setSessionTotal(0);
+      await refreshAll();
+      setView("review");
+    } catch (err) {
+      setFriendlyError("❌ Add", err);
+    }
+  }
+
+  // --- Review (PUT) ---
+  async function sendReview(id, known) {
+    const token = getToken();
+    if (!token) {
+      handle401();
+      return false;
+    }
+
+    try {
+      const { signal, cleanup } = withTimeout();
+      const res = await fetch(`${API}/api/cards/${id}/review`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ known }),
+        signal,
+      }).finally(cleanup);
+
+      if (res.status === 401) {
+        handle401();
+        return false;
+      }
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        setFriendlyError("❌ Review", null, data?.message || data?.error);
+        return false;
+      }
+
+      return true;
+    } catch (err) {
+      setFriendlyError("❌ Review", err);
+      return false;
+    }
+  }
+
+  // ----- Review helpers -----
+  const reviewCards = useMemo(() => cards, [cards]);
+
+  useEffect(() => {
+    if (view === "review") {
+      setReviewIndex(0);
+      setShowAnswer(false);
+      setShowImportExport(false);
+    }
+  }, [view]);
+
+  useEffect(() => {
+    if (reviewIndex > Math.max(0, reviewCards.length - 1)) {
+      setReviewIndex(Math.max(0, reviewCards.length - 1));
+    }
+  }, [reviewCards.length, reviewIndex]);
+
+  const currentReviewCard =
+    reviewCards.length > 0 ? reviewCards[Math.min(reviewIndex, reviewCards.length - 1)] : null;
+
+  async function reviewAnswer(known) {
+    if (!currentReviewCard) return;
+    if (isReviewing) return;
+
+    setIsReviewing(true);
+    try {
+      if (!showAnswer) {
+        setShowAnswer(true);
+        await new Promise((r) => setTimeout(r, 250));
+      }
+
+      const ok = await sendReview(currentReviewCard._id, known);
+      if (!ok) return;
+
+      // ✅ FIX: due-mode прогрес + індекс
+      if (mode === "due") {
+        setSessionDone((d) => d + 1);
+        setShowAnswer(false);
+        setReviewIndex(0); // завжди на першу картку оновленої due-черги
+        await Promise.all([fetchCards(), fetchStats(), fetchDecks()]);
+        return;
+      }
+
+      // all-mode: як було
+      await refreshAll();
+      setShowAnswer(false);
+      setReviewIndex((i) => i + 1);
+    } finally {
+      setIsReviewing(false);
+    }
+  }
+
+  // ===== keyboard shortcuts (review UX) =====
+  useEffect(() => {
+    function onKeyDown(e) {
+      const tag = (e.target?.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select") return;
+
+      if (e.key === "Escape") {
+        if (showImportExport) setShowImportExport(false);
+        return;
+      }
+
+      if (view !== "review") return;
+
+      if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        if (!showAnswer) setShowAnswer(true);
+        return;
+      }
+
+      if (e.key === "1") {
+        e.preventDefault();
+        reviewAnswer(true);
+        return;
+      }
+      if (e.key === "2") {
+        e.preventDefault();
+        reviewAnswer(false);
+        return;
+      }
+
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        setReviewIndex((i) => Math.max(0, i - 1));
+        setShowAnswer(false);
+        return;
+      }
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        setReviewIndex((i) => Math.min(reviewCards.length - 1, i + 1));
+        setShowAnswer(false);
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [view, showAnswer, reviewCards.length, showImportExport, isReviewing]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // --- Export ---
+  async function handleExport(format) {
+    const token = getToken();
+    if (!token) return handle401();
+
+    try {
+      const { signal, cleanup } = withTimeout();
+      const res = await fetch(`${API}/api/cards/export?format=${format}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal,
+      }).finally(cleanup);
+
+      if (res.status === 401) return handle401();
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setFriendlyError("❌ Export", null, data?.message || data?.error);
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = format === "csv" ? "cards.csv" : "cards.json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setFriendlyError("❌ Export", err);
+    }
+  }
+
+  // --- Import ---
+  async function handleImport() {
+    const token = getToken();
+    if (!token) return handle401();
+
+    if (!importText.trim()) {
+      setMessage("⚠️ Paste data for import");
+      return;
+    }
+
+    try {
+      let dataPayload;
+      if (importFormat === "csv") dataPayload = importText;
+      else dataPayload = JSON.parse(importText);
+
+      const { signal, cleanup } = withTimeout();
+      const res = await fetch(`${API}/api/cards/import`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ format: importFormat, data: dataPayload }),
+        signal,
+      }).finally(cleanup);
+
+      if (res.status === 401) return handle401();
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setFriendlyError("❌ Import", null, data?.message || data?.error);
+        return;
+      }
+
+      setMessage(
+        `✅ ${data.message} | received=${data.received}, inserted=${data.inserted}, skipped=${data.skippedAsDuplicates}`
+      );
+      setImportText("");
+      setSessionDone(0);
+      setSessionTotal(0);
+      await refreshAll();
+    } catch (err) {
+      setFriendlyError("❌ Import", err, "Invalid JSON or import error");
+    }
+
+    setShowImportExport(false);
+  }
+
+  function formatNextReview(dateStr) {
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return null;
+
+    return new Intl.DateTimeFormat("uk-UA", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(d);
+  }
+
+  function minutesUntil(dateStr) {
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return null;
+
+    const diffMs = d.getTime() - Date.now();
+    return Math.ceil(diffMs / 60000);
+  }
+
+  // ===== UI lang change (PATCH to server) =====
+  async function handleUiLangChange(newLang) {
+    const lang = normalizeLang(newLang, "de");
+
+    setInterfaceLang(lang);
+    localStorage.setItem(LS_UI, lang);
+
+    const token = getToken();
+    if (!token) return;
+
+    await fetch(`${API}/api/users/me/ui-lang`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ interfaceLang: lang }),
+    }).catch(() => {});
+  }
+
+  function logout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    navigate("/login");
+  }
+
+  const anyLoading = isBootLoading || isRefreshing || isCardsLoading || isStatsLoading || isDecksLoading;
+
+  function retryNow() {
+    setMessage("");
+    setIsRefreshing(true);
+    Promise.resolve()
+      .then(() => (view === "review" ? refreshAll() : Promise.all([fetchDecks(), fetchStats()])))
+      .finally(() => setIsRefreshing(false));
+  }
+
+  // ✅ progress numbers
+  const progressTotal = mode === "due" ? (sessionTotal || cards.length) : cards.length;
+  const progressIndex = mode === "due"
+    ? Math.min(sessionDone + 1, progressTotal || 0)
+    : Math.min(reviewIndex + 1, cards.length);
+
+  return (
+    <div className="flashcards-container" data-theme={theme}>
+      <h1 className="title">📚 Flashcards</h1>
+
+      {(anyLoading || message) && (
+        <div className={`top-banner ${anyLoading ? "is-loading" : ""}`}>
+          <div className="top-banner-left">
+            {anyLoading && <span className="spinner" aria-hidden="true" />}
+            <span>
+              {anyLoading ? t.loading : ""}
+              {message ? message : ""}
+            </span>
+          </div>
+
+          <div className="top-banner-right">
+            <button type="button" className="banner-btn" onClick={retryNow} disabled={anyLoading}>
+              {t.retry}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {stats && (
+        <div className="stats">
+          <div><b>Total:</b> {stats.totalCards}</div>
+          <div><b>Due now:</b> {stats.dueNow}</div>
+          <div><b>Reviewed today:</b> {stats.reviewedToday}</div>
+          <div><b>Total reviews:</b> {stats.totalReviews}</div>
+          <div><b>Correct:</b> {stats.totalCorrect}</div>
+          <div><b>Accuracy:</b> {stats.accuracy}%</div>
+
+          <div><b>Learned:</b> {stats.learned ?? 0}</div>
+          <div><b>Remaining:</b> {stats.remaining ?? 0}</div>
+        </div>
+      )}
+
+      <div className="toolbar">
+        <div className="toolbar-row toolbar-row-top">
+          <button
+            className="icon-btn"
+            type="button"
+            onClick={() => setShowImportExport((v) => !v)}
+            title={showImportExport ? "Close import/export (Esc)" : "Import / Export"}
+            aria-label="Import / Export"
+          >
+            {showImportExport ? "✖" : "📦"}
+          </button>
+
+          <button
+            className="icon-btn"
+            type="button"
+            onClick={() => setTheme((t0) => (t0 === "dark" ? "light" : "dark"))}
+            title={theme === "dark" ? "Light theme" : "Dark theme"}
+            aria-label="Toggle theme"
+          >
+            {theme === "dark" ? "☀️" : "🌙"}
+          </button>
+
+          <div className="toolbar-tabs">
+            <button type="button" onClick={() => setView("review")} title="Review">
+              {t.review}
+            </button>
+            <button type="button" onClick={() => setView("library")} title="Library">
+              {t.library}
+            </button>
+            <button type="button" onClick={() => setView("add")} title="Add card">
+              {t.add}
+            </button>
+          </div>
+
+          <div className="toolbar-actions-right">
+            <button type="button" onClick={logout} title="Logout" aria-label="Logout">🚪</button>
+            <button type="button" onClick={retryNow} title={t.refresh} aria-label="Refresh">🔄</button>
+          </div>
+        </div>
+
+        <div className="toolbar-row toolbar-row-controls">
+          <div className="ctrl">
+            <div className="ctrl-label">{t.uiLang}</div>
+            <select value={interfaceLang} onChange={(e) => handleUiLangChange(e.target.value)}>
+              <option value="de">DE</option>
+              <option value="en">EN</option>
+              <option value="uk">UK</option>
+            </select>
+          </div>
+
+          {view === "review" && (
+            <>
+              <div className="ctrl">
+                <div className="ctrl-label">{t.deckFilter}</div>
+                <select value={deckFilter} onChange={(e) => setDeckFilter(e.target.value)}>
+                  <option value="ALL">ALL</option>
+                  {decks.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="ctrl">
+                <div className="ctrl-label">{t.mode}</div>
+                <select value={mode} onChange={(e) => setMode(e.target.value)}>
+                  <option value="due">{t.due}</option>
+                  <option value="all">{t.all}</option>
+                </select>
+              </div>
+
+              <div className="ctrl">
+                <div className="ctrl-label">{t.sort}</div>
+                <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                  <option value="nextReview">🕒 nextReview</option>
+                  <option value="createdAt">🆕 createdAt</option>
+                  <option value="word">🔤 word (A–Z)</option>
+                  <option value="accuracy">🎯 accuracy</option>
+                </select>
+              </div>
+
+              <div className="ctrl">
+                <div className="ctrl-label">{t.order}</div>
+                <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+                  <option value="asc">⬆️ asc</option>
+                  <option value="desc">⬇️ desc</option>
+                </select>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {showImportExport && (
+        <div className="panel" style={{ marginTop: 12, padding: 12 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
+            <button type="button" onClick={() => handleExport("json")}>⬇️ Export JSON</button>
+            <button type="button" onClick={() => handleExport("csv")}>⬇️ Export CSV</button>
+
+            <select value={importFormat} onChange={(e) => setImportFormat(e.target.value)}>
+              <option value="json">Import JSON</option>
+              <option value="csv">Import CSV</option>
+            </select>
+          </div>
+
+          <textarea
+            value={importText}
+            onChange={(e) => setImportText(e.target.value)}
+            placeholder={
+              importFormat === "csv"
+                ? "Paste CSV (headers: word,translation,example,deck,...)"
+                : "Paste JSON array or {cards:[...]}"
+            }
+            rows={6}
+            style={{ width: "100%", marginBottom: 8 }}
+          />
+
+          <button type="button" onClick={handleImport}>⬆️ Import</button>
+        </div>
+      )}
+
+      {view === "review" ? (
+        <div className="review-mode">
+          {isCardsLoading ? (
+            <div className="panel" style={{ marginTop: 12, padding: 12 }}>
+              <span className="spinner" aria-hidden="true" /> {t.loading}
+            </div>
+          ) : cards.length === 0 ? (
+            <p className="empty">{t.noCards}</p>
+          ) : (
+            <div className="review-card">
+              <div className="review-top">
+                <span className="review-chip">{currentReviewCard?.deck || DEFAULT_DECK}</span>
+
+                <span className="review-progress">
+                  {progressTotal > 0 ? `${progressIndex} / ${progressTotal}` : `0 / 0`}
+                </span>
+              </div>
+
+              <div className="review-main">
+                <div className="review-word">
+                  {langLabel(learningLang)}: {currentReviewCard?.word}
+                </div>
+
+                {showAnswer ? (
+                  <>
+                    <div className="review-translation">
+                      {langLabel(nativeLang)}: {currentReviewCard?.translation}
+                    </div>
+                    {currentReviewCard?.example ? (
+                      <div className="review-example">📘 {currentReviewCard.example}</div>
+                    ) : null}
+                  </>
+                ) : (
+                  <button
+                    className="review-reveal"
+                    type="button"
+                    onClick={() => setShowAnswer(true)}
+                    title="Space / Enter"
+                    aria-label="Show translation"
+                  >
+                    {t.showTranslation}
+                  </button>
+                )}
+              </div>
+
+              <div className="review-actions">
+                <button type="button" onClick={() => reviewAnswer(true)} disabled={isReviewing}>
+                  {t.know}
+                </button>
+                <button type="button" onClick={() => reviewAnswer(false)} disabled={isReviewing}>
+                  {t.dontKnow}
+                </button>
+              </div>
+
+              <div className="review-nav">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReviewIndex((i) => Math.max(0, i - 1));
+                    setShowAnswer(false);
+                  }}
+                  disabled={reviewIndex === 0}
+                  aria-label="Previous card"
+                >
+                  ◀
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReviewIndex((i) => Math.min(cards.length - 1, i + 1));
+                    setShowAnswer(false);
+                  }}
+                  disabled={reviewIndex >= cards.length - 1}
+                  aria-label="Next card"
+                >
+                  ▶
+                </button>
+              </div>
+
+              {currentReviewCard?.nextReview && new Date(currentReviewCard.nextReview) > new Date() && (
+                <div className="meta" style={{ textAlign: "center", marginTop: 10 }}>
+                  ⏳ Next: {formatNextReview(currentReviewCard.nextReview)}
+                  {minutesUntil(currentReviewCard.nextReview) !== null && (
+                    <> (~ {minutesUntil(currentReviewCard.nextReview)} min)</>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ) : view === "add" ? (
+        <>
+          <form className="add-card-form" onSubmit={handleAddCard}>
+            <input
+              type="text"
+              placeholder={`${langLabel(learningLang)}: ${t.wordPlaceholder}`}
+              value={word}
+              onChange={(e) => setWord(e.target.value)}
+              autoFocus
+            />
+            <input
+              type="text"
+              placeholder={`${langLabel(nativeLang)}: ${t.translationPlaceholder}`}
+              value={translation}
+              onChange={(e) => setTranslation(e.target.value)}
+            />
+            <input
+              type="text"
+              placeholder={t.exampleOpt}
+              value={example}
+              onChange={(e) => setExample(e.target.value)}
+            />
+
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <select value={deckForNewCard} onChange={(e) => setDeckForNewCard(e.target.value)}>
+                {decks.length === 0 ? (
+                  <option value={DEFAULT_DECK}>{DEFAULT_DECK}</option>
+                ) : (
+                  decks.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))
+                )}
+              </select>
+
+              <input
+                type="text"
+                placeholder={t.newDeck}
+                value={newDeckName}
+                onChange={(e) => setNewDeckName(e.target.value)}
+                style={{ minWidth: 200 }}
+              />
+              <button type="button" onClick={handleCreateDeckLocal}>
+                {t.addDeck}
+              </button>
+            </div>
+
+            <button type="submit">{t.addCard}</button>
+          </form>
+
+          <div className="panel" style={{ marginTop: 12, padding: 12 }}>
+            <b>{t.tipAfterAdd}</b>
+          </div>
+        </>
+      ) : (
+        <div className="panel" style={{ marginTop: 12, padding: 12 }}>
+          {t.libraryHint}
+        </div>
+      )}
+    </div>
+  );
+}

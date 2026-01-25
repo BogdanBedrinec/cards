@@ -1,0 +1,264 @@
+/* ===== Auth pages (Start / Login / Registration) ===== */
+
+:root{
+  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans";
+
+  --bg: #f6f7fb;
+  --panel: #ffffff;
+  --text: #0f172a;
+  --muted: rgba(15,23,42,.68);
+  --line: rgba(15,23,42,.12);
+
+  --accent: #7c3aed;
+  --accent2:#22c55e;
+
+  --r16: 16px;
+  --r14: 14px;
+  --shadow: 0 18px 55px rgba(2,6,23,.12);
+}
+
+body[data-theme="dark"]{
+  --bg: #0b1020;
+  --panel: #0f172a;
+  --text: #e5e7eb;
+  --muted: rgba(229,231,235,.70);
+  --line: rgba(255,255,255,.12);
+  --shadow: 0 22px 70px rgba(0,0,0,.45);
+}
+
+*{ box-sizing: border-box; }
+html, body{ height: 100%; }
+body{
+  margin: 0;
+  font-family: var(--font);
+  color: var(--text);
+  background:
+    radial-gradient(900px 520px at 20% 10%, rgba(124,58,237,.14), transparent 55%),
+    radial-gradient(700px 450px at 85% 35%, rgba(34,197,94,.10), transparent 60%),
+    var(--bg);
+  overflow-x: hidden;
+}
+
+.auth-wrap{
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.auth-card{
+  width: min(520px, 92vw);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 22px;
+}
+
+/* Header row */
+.auth-head{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.auth-title{
+  margin: 0;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: .2px;
+}
+
+.auth-head-right{
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.auth-badge{
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  white-space: nowrap;
+}
+
+.auth-sub{
+  margin: 0 0 16px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+/* Buttons (global for auth pages only) */
+.auth-wrap button{
+  appearance: none;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  border-radius: 14px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-weight: 800;
+  transition: transform .05s ease, background .15s ease, border-color .15s ease, opacity .15s ease;
+}
+.auth-wrap button:active{ transform: translateY(1px); }
+.auth-wrap button:disabled{ opacity: .6; cursor: not-allowed; }
+
+.auth-actions{
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.auth-primary{
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.auth-primary:hover{
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.auth-secondary{
+  background: transparent;
+}
+.auth-secondary:hover{
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* Form */
+.auth-form{
+  display: grid;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.auth-inputs{
+  display: grid;
+  gap: 10px;
+}
+
+.auth-grid{
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.auth-label{
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text);
+  opacity: .95;
+}
+
+input, select{
+  width: 100%;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  color: var(--text);
+  border-radius: 14px;
+  padding: 12px 14px;
+  outline: none;
+}
+body[data-theme="dark"] input,
+body[data-theme="dark"] select{
+  background: rgba(255,255,255,.04);
+}
+
+input:focus, select:focus{
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.auth-row{
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+  align-items: center;
+}
+
+/* TEXT link button (for bottom links only) */
+.auth-linkbtn{
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  height: auto !important;
+  cursor: pointer;
+  text-decoration: underline;
+  font: inherit;
+  color: color-mix(in srgb, var(--text) 80%, var(--accent));
+  font-weight: 800;
+}
+
+/* Back button (separate class, NOT link) */
+.auth-backbtn{
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
+  color: var(--text);
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.auth-backbtn:hover{
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+}
+
+.auth-message{
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, #ef4444 10%, var(--panel));
+}
+
+.auth-footnote{
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Theme icon button */
+.auth-themebtn{
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  font-weight: 900;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+}
+.auth-themebtn:hover{
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+}
+
+/* Start screen: slightly wider on desktop */
+.start-card{
+  width: min(640px, 92vw);
+  padding: clamp(18px, 2.2vw, 28px);
+  border-radius: 18px;
+}
+.start-title{
+  font-size: clamp(26px, 2.4vw, 34px);
+  line-height: 1.1;
+}
+.start-subtitle{
+  font-size: clamp(14px, 1.2vw, 16px);
+  max-width: 52ch;
+}
+
+@media (max-width: 420px){
+  .auth-card{ padding: 16px; border-radius: 16px; }
+  .auth-title{ font-size: 24px; }
+  .auth-badge{ display: none; } /* щоб не тиснуло в хедері */
+}
