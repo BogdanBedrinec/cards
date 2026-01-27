@@ -13,13 +13,13 @@ const app = express();
 
 // ---------- Basics ----------
 app.disable("x-powered-by");
-app.set("trust proxy", 1); // important for hosted environments
+app.set("trust proxy", 1);
 
 app.use(express.json({ limit: "1mb" }));
 
 // ---------- CORS (controlled by ENV) ----------
 // ENV example:
-// CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://your-app.vercel.app
+// CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://cards-xxxx.onrender.com
 const allowedOrigins = (process.env.CORS_ORIGINS || "")
   .split(",")
   .map((s) => s.trim())
@@ -27,7 +27,7 @@ const allowedOrigins = (process.env.CORS_ORIGINS || "")
 
 const corsOptions = {
   origin(origin, callback) {
-    // allow requests without origin (Postman/curl/mobile apps)
+    // allow requests without origin (Postman/curl)
     if (!origin) return callback(null, true);
 
     // if whitelist is empty => allow all (handy for first local run)
@@ -43,7 +43,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // preflight for all routes
+app.options("*", cors(corsOptions)); // ✅ important for preflight
 
 // ---------- Health check ----------
 app.get("/api/health", (req, res) => {
