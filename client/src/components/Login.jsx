@@ -4,24 +4,50 @@ import "./Login.css";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+// --- helpers ---
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 20000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
+
+async function fetchWithRetry(url, options = {}, timeoutMs = 20000) {
+  try {
+    return await fetchWithTimeout(url, options, timeoutMs);
+  } catch (e) {
+    // Render Free cold start часто дає "Failed to fetch" або таймаут на першому запиті
+    await sleep(1500);
+    return await fetchWithTimeout(url, options, timeoutMs);
+  }
+}
+
 export default function Login({ onBack, onGoRegister, theme, onToggleTheme }) {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ✅ safe handlers (щоб кнопки працювали навіть якщо пропси не прийшли)
+  // ✅ safe handlers
   const handleBack = () => {
     if (typeof onBack === "function") onBack();
-    else navigate("/"); // fallback
+    else navigate("/");
   };
 
   const handleToggleTheme = () => {
     if (typeof onToggleTheme === "function") onToggleTheme();
     else {
-      // fallback: перемикаємо тему прямо тут
       const current = document.body.dataset.theme === "dark" ? "dark" : "light";
       const next = current === "dark" ? "light" : "dark";
       localStorage.setItem("flashcardsTheme", next);
@@ -42,11 +68,21 @@ export default function Login({ onBack, onGoRegister, theme, onToggleTheme }) {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch(`${API}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      // 0) optional warm-up (швидкий)
+      // Якщо бек спить — цей запит може "розбудити" його без того, щоб юзер думав що "нічого не працює"
+      // Якщо /api/health у тебе є — супер. Якщо нема, просто закоментуй цей блок.
+      await fetchWithRetry(`${API}/api/health`, {}, 12000).catch(() => {});
+
+      // 1) login
+      const res = await fetchWithRetry(
+        `${API}/api/auth/login`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        },
+        20000
+      );
 
       const data = await res.json().catch(() => ({}));
 
@@ -55,24 +91,30 @@ export default function Login({ onBack, onGoRegister, theme, onToggleTheme }) {
         return;
       }
 
-localStorage.setItem("token", data.token);
-localStorage.setItem("userId", data.userId);
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("userId", data.userId);
 
-if (data.interfaceLang) localStorage.setItem("fc_ui_lang", data.interfaceLang);
-if (data.nativeLang) localStorage.setItem("fc_native_lang", data.nativeLang);
-if (data.learningLang) localStorage.setItem("fc_learning_lang", data.learningLang);
+      // ✅ sync language settings (one time, no duplicates)
+      if (data.interfaceLang) localStorage.setItem("fc_ui_lang", data.interfaceLang);
+      if (data.nativeLang) localStorage.setItem("fc_native_lang", data.nativeLang);
+      if (data.learningLang) localStorage.setItem("fc_learning_lang", data.learningLang);
 
-
-// ✅ sync language settings (important for demo too)
-if (data.interfaceLang) localStorage.setItem("fc_ui_lang", data.interfaceLang);
-if (data.nativeLang) localStorage.setItem("fc_native_lang", data.nativeLang);
-if (data.learningLang) localStorage.setItem("fc_learning_lang", data.learningLang);
-
-navigate("/flashcards");
-
+      navigate("/flashcards");
     } catch (err) {
       console.error("Login error:", err);
-      setMessage("Server is not responding");
+
+      const msg = String(err?.message || "");
+      const isTimeout =
+        err?.name === "AbortError" ||
+        msg.toLowerCase().includes("aborted") ||
+        msg.toLowerCase().includes("failed to fetch") ||
+        msg.toLowerCase().includes("network");
+
+      setMessage(
+        isTimeout
+          ? "Server is waking up (Render Free). Please try again in 10–20 seconds."
+          : "Server is not responding"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -127,6 +169,13 @@ navigate("/flashcards");
           <button className="auth-primary" type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Signing in..." : "Log in"}
           </button>
+
+          {/* маленька підказка саме під cold start */}
+          {isSubmitting && (
+            <div className="auth-message" style={{ opacity: 0.85 }}>
+              Waking server up… first request can take ~30–50s on Render Free.
+            </div>
+          )}
 
           <div className="auth-row">
             <span style={{ opacity: 0.8 }}>No account?</span>
