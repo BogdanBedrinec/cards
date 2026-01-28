@@ -154,6 +154,11 @@ const reviewHandler = async (req, res) => {
     // статистика
     card.reviewCount = (card.reviewCount || 0) + 1;
     if (known) card.correctCount = (card.correctCount || 0) + 1;
+    const LEARNED_THRESHOLD = 3;
+if ((card.correctCount || 0) >= LEARNED_THRESHOLD) {
+  card.known = true; // ✅ закріплюємо вивченість
+}
+
     card.lastReviewed = new Date();
 
     // ⏱ інтервали повторення (в хвилинах)
@@ -216,10 +221,11 @@ router.get("/stats", auth, async (req, res) => {
         dueNow += 1;
       }
 
-      // ✅ learned rule
-      if (cc >= LEARNED_THRESHOLD) {
-        learned += 1;
-      }
+// ✅ learned rule: manual known OR threshold
+if (c.known === true || cc >= LEARNED_THRESHOLD) {
+  learned += 1;
+}
+
     }
 
     const accuracy = totalReviews === 0 ? 0 : Math.round((totalCorrect / totalReviews) * 100);
