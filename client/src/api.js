@@ -1,42 +1,75 @@
-// const API_URL = "http://localhost:5000/api/cards";
+// client/src/api.js
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-// // --- Отримати картки ---
-// export async function getCards(userId) {
-//   const res = await fetch(`${API_URL}?userId=${userId}`);
-//   if (!res.ok) {
-//     throw new Error("Помилка при отриманні карток");
-//   }
-//   return res.json();
-// }
+// --- helpers ---
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
 
-// // --- Додати картку ---
-// export async function addCard(card) {
-//   const res = await fetch(API_URL, {
-//     method: "POST",
-//     headers: { "Content-Type": "application/json" },
-//     body: JSON.stringify(card),
-//   });
+async function fetchWithTimeout(url, options = {}, timeoutMs = 20000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
 
-//   if (!res.ok) throw new Error("Помилка при створенні картки");
-//   return res.json();
-// }
+  try {
+    const res = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return res;
+  } finally {
+    clearTimeout(id);
+  }
+}
 
-// // --- Оновити статистику ---
-// export async function reviewCard(id, correct) {
-//   const res = await fetch(`${API_URL}/${id}/review`, {
-//     method: "PUT",
-//     headers: { "Content-Type": "application/json" },
-//     body: JSON.stringify({ correct }),
-//   });
+// 1 retry if timeout / network error (good for Render cold start)
+async function fetchWithRetry(url, options = {}, timeoutMs = 20000) {
+  try {
+    return await fetchWithTimeout(url, options, timeoutMs);
+  } catch (e) {
+    // AbortError / network error => wait a bit and retry once
+    await sleep(1500);
+    return await fetchWithTimeout(url, options, timeoutMs);
+  }
+}
 
-//   if (!res.ok) throw new Error("Помилка при оновленні картки");
-//   return res.json();
-// }
+// --- API ---
+export async function healthCheck() {
+  const res = await fetchWithRetry(`${BASE_URL}/api/health`, {}, 12000);
+  if (!res.ok) throw new Error("Health check failed");
+  return res.json();
+}
 
-// // --- Видалити ---
-// export async function deleteCard(id) {
-//   const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+export async function login(email, password) {
+  const res = await fetchWithRetry(
+    `${BASE_URL}/api/auth/login`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    },
+    20000
+  );
 
-//   if (!res.ok) throw new Error("Помилка при видаленні картки");
-//   return res.json();
-// }
+  // якщо сервер відповів, але з помилкою
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data?.message || "Login failed");
+  }
+  return data; // очікую: { token, userId, ... }
+}
+
+export async function register(email, password) {
+  const res = await fetchWithRetry(
+    `${BASE_URL}/api/auth/register`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    },
+    20000
+  );
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.message || "Register failed");
+  return data;
+}

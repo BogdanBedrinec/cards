@@ -254,6 +254,7 @@ router.put("/:id", auth, async (req, res) => {
 // GET /api/cards/stats  (GLOBAL stats)
 // learned rule: correctCount>=3 AND accuracy>=70%
 // ============================================
+// ✅ Статистика по всіх картках користувача (надійно через Mongo)
 router.get("/stats", auth, async (req, res) => {
   try {
     const userId = req.userId;
@@ -262,45 +263,50 @@ router.get("/stats", auth, async (req, res) => {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
-    const allCards = await WordCard.find({ userId }).lean();
-
-    let totalReviews = 0;
-    let totalCorrect = 0;
-    let reviewedToday = 0;
-    let dueNow = 0;
-
     const LEARNED_THRESHOLD = 3;
-    const MIN_ACCURACY = 0.7;
 
-    let learned = 0;
+    // 1) totalCards
+    const totalCards = await WordCard.countDocuments({ userId });
 
-    for (const c of allCards) {
-      const rc = c.reviewCount || 0;
-      const cc = c.correctCount || 0;
+    // 2) dueNow
+    const dueNow = await WordCard.countDocuments({
+      userId,
+      $or: [{ nextReview: { $exists: false } }, { nextReview: null }, { nextReview: { $lte: now } }],
+    });
 
-      totalReviews += rc;
-      totalCorrect += cc;
+    // 3) reviewedToday
+    const reviewedToday = await WordCard.countDocuments({
+      userId,
+      lastReviewed: { $gte: startOfToday },
+    });
 
-      if (c.lastReviewed && new Date(c.lastReviewed) >= startOfToday) {
-        reviewedToday += 1;
-      }
+    // 4) totals + learned via aggregation
+    const agg = await WordCard.aggregate([
+      { $match: { userId } },
+      {
+        $group: {
+          _id: null,
+          totalReviews: { $sum: { $ifNull: ["$reviewCount", 0] } },
+          totalCorrect: { $sum: { $ifNull: ["$correctCount", 0] } },
+          learned: {
+            $sum: {
+              $cond: [{ $gte: [{ $ifNull: ["$correctCount", 0] }, LEARNED_THRESHOLD] }, 1, 0],
+            },
+          },
+        },
+      },
+    ]);
 
-      if (!c.nextReview || new Date(c.nextReview) <= now) {
-        dueNow += 1;
-      }
+    const totals = agg[0] || { totalReviews: 0, totalCorrect: 0, learned: 0 };
 
-      const acc = rc > 0 ? cc / rc : 0;
-      if (cc >= LEARNED_THRESHOLD && acc >= MIN_ACCURACY) learned += 1;
-
-      // Якщо хочеш ПРОСТІШЕ правило — заміни 2 строки вище на:
-      // if (cc >= LEARNED_THRESHOLD) learned += 1;
-    }
+    const totalReviews = totals.totalReviews || 0;
+    const totalCorrect = totals.totalCorrect || 0;
+    const learned = totals.learned || 0;
 
     const accuracy = totalReviews === 0 ? 0 : Math.round((totalCorrect / totalReviews) * 100);
-    const totalCards = allCards.length;
     const remaining = Math.max(0, totalCards - learned);
 
-    res.json({
+    return res.json({
       totalCards,
       dueNow,
       reviewedToday,
@@ -310,13 +316,14 @@ router.get("/stats", auth, async (req, res) => {
       learned,
       remaining,
       learnedThreshold: LEARNED_THRESHOLD,
-      learnedMinAccuracy: MIN_ACCURACY,
+      statsVersion: "render-debug-1",
     });
   } catch (err) {
     console.error("❌ stats error:", err);
-    res.status(500).json({ message: "Помилка при отриманні статистики" });
+    return res.status(500).json({ message: "Помилка при отриманні статистики" });
   }
 });
+
 
 // ============================================
 // EXPORT: GET /api/cards/export?format=json|csv
