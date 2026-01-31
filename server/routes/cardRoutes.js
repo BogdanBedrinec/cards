@@ -316,7 +316,6 @@ router.get("/stats", auth, async (req, res) => {
       learned,
       remaining,
       learnedThreshold: LEARNED_THRESHOLD,
-      statsVersion: "render-debug-1",
     });
   } catch (err) {
     console.error("❌ stats error:", err);
