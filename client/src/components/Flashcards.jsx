@@ -111,6 +111,10 @@ export default function Flashcards() {
   const [libraryLoading, setLibraryLoading] = useState(false);
   const [librarySearch, setLibrarySearch] = useState("");
 
+  // ✅ Library sorting (A)
+  const [librarySortBy, setLibrarySortBy] = useState("createdAt"); // createdAt | word | nextReview | accuracy | reviewCount
+  const [librarySortOrder, setLibrarySortOrder] = useState("desc"); // asc | desc
+
   // edit modal
   const [editOpen, setEditOpen] = useState(false);
   const [editCard, setEditCard] = useState(null);
@@ -506,18 +510,58 @@ export default function Flashcards() {
     }
   }
 
+  // ✅ Library: filter + sort in one place
   const filteredLibraryCards = useMemo(() => {
     const q = librarySearch.trim().toLowerCase();
-    if (!q) return libraryCards;
+    let list = Array.isArray(libraryCards) ? [...libraryCards] : [];
 
-    return libraryCards.filter((c) => {
-      const w = (c.word || "").toLowerCase();
-      const tr = (c.translation || "").toLowerCase();
-      const ex = (c.example || "").toLowerCase();
-      const dk = (c.deck || "").toLowerCase();
-      return w.includes(q) || tr.includes(q) || ex.includes(q) || dk.includes(q);
+    if (q) {
+      list = list.filter((c) => {
+        const w = (c.word || "").toLowerCase();
+        const tr = (c.translation || "").toLowerCase();
+        const ex = (c.example || "").toLowerCase();
+        const dk = (c.deck || "").toLowerCase();
+        return w.includes(q) || tr.includes(q) || ex.includes(q) || dk.includes(q);
+      });
+    }
+
+    const dir = librarySortOrder === "desc" ? -1 : 1;
+
+    const accuracy = (c) => {
+      const rc = c.reviewCount || 0;
+      const cc = c.correctCount || 0;
+      return rc ? cc / rc : 0;
+    };
+
+    list.sort((a, b) => {
+      const A = a || {};
+      const B = b || {};
+
+      if (librarySortBy === "word") {
+        return String(A.word || "").localeCompare(String(B.word || ""), undefined, { sensitivity: "base" }) * dir;
+      }
+
+      if (librarySortBy === "createdAt") {
+        return (new Date(A.createdAt || 0) - new Date(B.createdAt || 0)) * dir;
+      }
+
+      if (librarySortBy === "nextReview") {
+        return (new Date(A.nextReview || 0) - new Date(B.nextReview || 0)) * dir;
+      }
+
+      if (librarySortBy === "reviewCount") {
+        return ((A.reviewCount || 0) - (B.reviewCount || 0)) * dir;
+      }
+
+      if (librarySortBy === "accuracy") {
+        return (accuracy(A) - accuracy(B)) * dir;
+      }
+
+      return 0;
     });
-  }, [libraryCards, librarySearch]);
+
+    return list;
+  }, [libraryCards, librarySearch, librarySortBy, librarySortOrder]);
 
   async function handleDeleteCard(id) {
     const token = getToken();
@@ -1300,6 +1344,20 @@ export default function Flashcards() {
               placeholder={t.searchPlaceholder}
               style={{ flex: 1, minWidth: 220 }}
             />
+
+            {/* ✅ Library sort controls (A) */}
+            <select value={librarySortBy} onChange={(e) => setLibrarySortBy(e.target.value)}>
+              <option value="createdAt">🆕 createdAt</option>
+              <option value="word">🔤 word</option>
+              <option value="nextReview">🕒 nextReview</option>
+              <option value="reviewCount">🔁 reviewCount</option>
+              <option value="accuracy">🎯 accuracy</option>
+            </select>
+
+            <select value={librarySortOrder} onChange={(e) => setLibrarySortOrder(e.target.value)}>
+              <option value="asc">⬆️ asc</option>
+              <option value="desc">⬇️ desc</option>
+            </select>
 
             <button type="button" onClick={fetchLibraryCards} disabled={libraryLoading}>
               {libraryLoading ? t.loading : t.reload}
