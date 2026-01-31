@@ -82,9 +82,9 @@ export default function Flashcards() {
   const [reviewIndex, setReviewIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
 
-  // ✅ FIX: stable progress for "due" sessions
-  const [sessionTotal, setSessionTotal] = useState(0); // how many cards were due at start
-  const [sessionDone, setSessionDone] = useState(0);   // how many answers user gave in this session
+  // ✅ stable progress for "due" sessions
+  const [sessionTotal, setSessionTotal] = useState(0);
+  const [sessionDone, setSessionDone] = useState(0);
 
   // theme
   const [theme, setTheme] = useState(() => {
@@ -105,6 +105,19 @@ export default function Flashcards() {
   const [isCardsLoading, setIsCardsLoading] = useState(false);
   const [isStatsLoading, setIsStatsLoading] = useState(false);
   const [isDecksLoading, setIsDecksLoading] = useState(false);
+
+  // --- library state ---
+  const [libraryCards, setLibraryCards] = useState([]);
+  const [libraryLoading, setLibraryLoading] = useState(false);
+  const [librarySearch, setLibrarySearch] = useState("");
+
+  // edit modal
+  const [editOpen, setEditOpen] = useState(false);
+  const [editCard, setEditCard] = useState(null);
+  const [editWord, setEditWord] = useState("");
+  const [editTranslation, setEditTranslation] = useState("");
+  const [editExample, setEditExample] = useState("");
+  const [editDeck, setEditDeck] = useState(DEFAULT_DECK);
 
   const abortRef = useRef(null);
 
@@ -139,6 +152,14 @@ export default function Flashcards() {
         loading: "Loading…",
         retry: "Retry",
         offlineHint: "Server not reachable. Did you start backend?",
+        searchPlaceholder: "Search (word / translation / deck / example)…",
+        reload: "Reload",
+        noFound: "No cards found.",
+        edit: "Edit",
+        del: "Delete",
+        cancel: "Cancel",
+        save: "Save",
+        editTitle: "Edit card",
       },
       en: {
         review: "⚡ Review",
@@ -167,6 +188,14 @@ export default function Flashcards() {
         loading: "Loading…",
         retry: "Retry",
         offlineHint: "Server not reachable. Did you start backend?",
+        searchPlaceholder: "Search (word / translation / deck / example)…",
+        reload: "Reload",
+        noFound: "No cards found.",
+        edit: "Edit",
+        del: "Delete",
+        cancel: "Cancel",
+        save: "Save",
+        editTitle: "Edit card",
       },
       uk: {
         review: "⚡ Повторення",
@@ -196,6 +225,14 @@ export default function Flashcards() {
         loading: "Завантаження…",
         retry: "Повторити",
         offlineHint: "Сервер недоступний. Ти запустив бекенд?",
+        searchPlaceholder: "Пошук (слово / переклад / тема / приклад)…",
+        reload: "Оновити список",
+        noFound: "Нічого не знайдено.",
+        edit: "Редагувати",
+        del: "Видалити",
+        cancel: "Скасувати",
+        save: "Зберегти",
+        editTitle: "Редагування картки",
       },
     }),
     []
@@ -298,6 +335,10 @@ export default function Flashcards() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, deckFilter, mode, sortBy, sortOrder]);
 
+  async function refreshAll() {
+    await Promise.all([fetchDecks(), fetchCards(), fetchStats()]);
+  }
+
   // ===== data loading triggers =====
   useEffect(() => {
     (async () => {
@@ -306,6 +347,8 @@ export default function Flashcards() {
       try {
         if (view === "review") {
           await refreshAll();
+        } else if (view === "library") {
+          await Promise.all([fetchDecks(), fetchStats(), fetchLibraryCards()]);
         } else {
           await Promise.all([fetchDecks(), fetchStats()]);
         }
@@ -316,10 +359,6 @@ export default function Flashcards() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, deckFilter, mode, sortBy, sortOrder]);
-
-  async function refreshAll() {
-    await Promise.all([fetchDecks(), fetchCards(), fetchStats()]);
-  }
 
   async function fetchDecks() {
     const token = getToken();
@@ -434,6 +473,135 @@ export default function Flashcards() {
     }
   }
 
+  // ============== Library: fetch all cards (mode=all) ==============
+  async function fetchLibraryCards() {
+    const token = getToken();
+    if (!token) return;
+
+    setLibraryLoading(true);
+    try {
+      const params = new URLSearchParams();
+      params.set("mode", "all");
+      if (deckFilter !== "ALL") params.set("deck", deckFilter);
+
+      const { signal, cleanup } = withTimeout();
+      const res = await fetch(`${API}/api/cards?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal,
+      }).finally(cleanup);
+
+      if (res.status === 401) return handle401();
+
+      const data = await res.json().catch(() => []);
+      if (!res.ok) {
+        setFriendlyError("❌ Library", null, data?.message || data?.error);
+        return;
+      }
+
+      setLibraryCards(Array.isArray(data) ? data : []);
+    } catch (err) {
+      if (err?.name !== "AbortError") setFriendlyError("❌ Library", err);
+    } finally {
+      setLibraryLoading(false);
+    }
+  }
+
+  const filteredLibraryCards = useMemo(() => {
+    const q = librarySearch.trim().toLowerCase();
+    if (!q) return libraryCards;
+
+    return libraryCards.filter((c) => {
+      const w = (c.word || "").toLowerCase();
+      const tr = (c.translation || "").toLowerCase();
+      const ex = (c.example || "").toLowerCase();
+      const dk = (c.deck || "").toLowerCase();
+      return w.includes(q) || tr.includes(q) || ex.includes(q) || dk.includes(q);
+    });
+  }, [libraryCards, librarySearch]);
+
+  async function handleDeleteCard(id) {
+    const token = getToken();
+    if (!token) return handle401();
+
+    if (!window.confirm("Delete this card?")) return;
+
+    try {
+      const { signal, cleanup } = withTimeout();
+      const res = await fetch(`${API}/api/cards/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+        signal,
+      }).finally(cleanup);
+
+      if (res.status === 401) return handle401();
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setFriendlyError("❌ Delete", null, data?.message || data?.error);
+        return;
+      }
+
+      await Promise.all([fetchLibraryCards(), fetchStats(), fetchDecks()]);
+    } catch (err) {
+      setFriendlyError("❌ Delete", err);
+    }
+  }
+
+  function openEdit(c) {
+    setEditCard(c);
+    setEditWord(c.word || "");
+    setEditTranslation(c.translation || "");
+    setEditExample(c.example || "");
+    setEditDeck(c.deck || DEFAULT_DECK);
+    setEditOpen(true);
+  }
+
+  async function saveEdit() {
+    if (!editCard?._id) return;
+
+    const token = getToken();
+    if (!token) return handle401();
+
+    const payload = {
+      word: editWord.trim(),
+      translation: editTranslation.trim(),
+      example: editExample.trim(),
+      deck: (editDeck || DEFAULT_DECK).trim(),
+    };
+
+    if (!payload.word || !payload.translation) {
+      setMessage("⚠️ word + translation required");
+      return;
+    }
+
+    try {
+      const { signal, cleanup } = withTimeout();
+      const res = await fetch(`${API}/api/cards/${editCard._id}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        signal,
+      }).finally(cleanup);
+
+      if (res.status === 401) return handle401();
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setFriendlyError("❌ Update", null, data?.message || data?.error);
+        return;
+      }
+
+      setEditOpen(false);
+      setEditCard(null);
+      await Promise.all([fetchLibraryCards(), fetchStats(), fetchDecks()]);
+    } catch (err) {
+      setFriendlyError("❌ Update", err);
+    }
+  }
+
   // --- Create new deck locally (UI) ---
   function handleCreateDeckLocal() {
     const name = newDeckName.trim();
@@ -491,7 +659,6 @@ export default function Flashcards() {
       setExample("");
 
       setMessage("✅ Added!");
-      // reset session on new card
       setSessionDone(0);
       setSessionTotal(0);
       await refreshAll();
@@ -571,16 +738,16 @@ export default function Flashcards() {
       const ok = await sendReview(currentReviewCard._id, known);
       if (!ok) return;
 
-      // ✅ FIX: due-mode прогрес + індекс
+      // ✅ due-mode прогрес + індекс
       if (mode === "due") {
         setSessionDone((d) => d + 1);
         setShowAnswer(false);
-        setReviewIndex(0); // завжди на першу картку оновленої due-черги
+        setReviewIndex(0);
         await Promise.all([fetchCards(), fetchStats(), fetchDecks()]);
         return;
       }
 
-      // all-mode: як було
+      // all-mode
       await refreshAll();
       setShowAnswer(false);
       setReviewIndex((i) => i + 1);
@@ -597,6 +764,7 @@ export default function Flashcards() {
 
       if (e.key === "Escape") {
         if (showImportExport) setShowImportExport(false);
+        if (editOpen) setEditOpen(false);
         return;
       }
 
@@ -634,7 +802,8 @@ export default function Flashcards() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [view, showAnswer, reviewCards.length, showImportExport, isReviewing]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, showAnswer, reviewCards.length, showImportExport, isReviewing, editOpen]);
 
   // --- Export ---
   async function handleExport(format) {
@@ -710,6 +879,7 @@ export default function Flashcards() {
       setSessionDone(0);
       setSessionTotal(0);
       await refreshAll();
+      if (view === "library") await fetchLibraryCards();
     } catch (err) {
       setFriendlyError("❌ Import", err, "Invalid JSON or import error");
     }
@@ -764,21 +934,27 @@ export default function Flashcards() {
     navigate("/login");
   }
 
-  const anyLoading = isBootLoading || isRefreshing || isCardsLoading || isStatsLoading || isDecksLoading;
+  const anyLoading =
+    isBootLoading || isRefreshing || isCardsLoading || isStatsLoading || isDecksLoading;
 
   function retryNow() {
     setMessage("");
     setIsRefreshing(true);
     Promise.resolve()
-      .then(() => (view === "review" ? refreshAll() : Promise.all([fetchDecks(), fetchStats()])))
+      .then(() => {
+        if (view === "review") return refreshAll();
+        if (view === "library") return Promise.all([fetchDecks(), fetchStats(), fetchLibraryCards()]);
+        return Promise.all([fetchDecks(), fetchStats()]);
+      })
       .finally(() => setIsRefreshing(false));
   }
 
   // ✅ progress numbers
   const progressTotal = mode === "due" ? (sessionTotal || cards.length) : cards.length;
-  const progressIndex = mode === "due"
-    ? Math.min(sessionDone + 1, progressTotal || 0)
-    : Math.min(reviewIndex + 1, cards.length);
+  const progressIndex =
+    mode === "due"
+      ? Math.min(sessionDone + 1, progressTotal || 0)
+      : Math.min(reviewIndex + 1, cards.length);
 
   return (
     <div className="flashcards-container" data-theme={theme}>
@@ -804,15 +980,31 @@ export default function Flashcards() {
 
       {stats && (
         <div className="stats">
-          <div><b>Total:</b> {stats.totalCards}</div>
-          <div><b>Due now:</b> {stats.dueNow}</div>
-          <div><b>Reviewed today:</b> {stats.reviewedToday}</div>
-          <div><b>Total reviews:</b> {stats.totalReviews}</div>
-          <div><b>Correct:</b> {stats.totalCorrect}</div>
-          <div><b>Accuracy:</b> {stats.accuracy}%</div>
+          <div>
+            <b>Total:</b> {stats.totalCards}
+          </div>
+          <div>
+            <b>Due now:</b> {stats.dueNow}
+          </div>
+          <div>
+            <b>Reviewed today:</b> {stats.reviewedToday}
+          </div>
+          <div>
+            <b>Total reviews:</b> {stats.totalReviews}
+          </div>
+          <div>
+            <b>Correct:</b> {stats.totalCorrect}
+          </div>
+          <div>
+            <b>Accuracy:</b> {stats.accuracy}%
+          </div>
 
-          <div><b>Learned:</b> {stats.learned ?? 0}</div>
-          <div><b>Remaining:</b> {stats.remaining ?? 0}</div>
+          <div>
+            <b>Learned:</b> {stats.learned ?? 0}
+          </div>
+          <div>
+            <b>Remaining:</b> {stats.remaining ?? 0}
+          </div>
         </div>
       )}
 
@@ -851,8 +1043,12 @@ export default function Flashcards() {
           </div>
 
           <div className="toolbar-actions-right">
-            <button type="button" onClick={logout} title="Logout" aria-label="Logout">🚪</button>
-            <button type="button" onClick={retryNow} title={t.refresh} aria-label="Refresh">🔄</button>
+            <button type="button" onClick={logout} title="Logout" aria-label="Logout">
+              🚪
+            </button>
+            <button type="button" onClick={retryNow} title={t.refresh} aria-label="Refresh">
+              🔄
+            </button>
           </div>
         </div>
 
@@ -866,20 +1062,22 @@ export default function Flashcards() {
             </select>
           </div>
 
+          {(view === "review" || view === "library") && (
+            <div className="ctrl">
+              <div className="ctrl-label">{t.deckFilter}</div>
+              <select value={deckFilter} onChange={(e) => setDeckFilter(e.target.value)}>
+                <option value="ALL">ALL</option>
+                {decks.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {view === "review" && (
             <>
-              <div className="ctrl">
-                <div className="ctrl-label">{t.deckFilter}</div>
-                <select value={deckFilter} onChange={(e) => setDeckFilter(e.target.value)}>
-                  <option value="ALL">ALL</option>
-                  {decks.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               <div className="ctrl">
                 <div className="ctrl-label">{t.mode}</div>
                 <select value={mode} onChange={(e) => setMode(e.target.value)}>
@@ -913,8 +1111,12 @@ export default function Flashcards() {
       {showImportExport && (
         <div className="panel" style={{ marginTop: 12, padding: 12 }}>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
-            <button type="button" onClick={() => handleExport("json")}>⬇️ Export JSON</button>
-            <button type="button" onClick={() => handleExport("csv")}>⬇️ Export CSV</button>
+            <button type="button" onClick={() => handleExport("json")}>
+              ⬇️ Export JSON
+            </button>
+            <button type="button" onClick={() => handleExport("csv")}>
+              ⬇️ Export CSV
+            </button>
 
             <select value={importFormat} onChange={(e) => setImportFormat(e.target.value)}>
               <option value="json">Import JSON</option>
@@ -934,10 +1136,13 @@ export default function Flashcards() {
             style={{ width: "100%", marginBottom: 8 }}
           />
 
-          <button type="button" onClick={handleImport}>⬆️ Import</button>
+          <button type="button" onClick={handleImport}>
+            ⬆️ Import
+          </button>
         </div>
       )}
 
+      {/* ===== View content ===== */}
       {view === "review" ? (
         <div className="review-mode">
           {isCardsLoading ? (
@@ -1085,8 +1290,144 @@ export default function Flashcards() {
           </div>
         </>
       ) : (
+        // ===== Library view =====
         <div className="panel" style={{ marginTop: 12, padding: 12 }}>
-          {t.libraryHint}
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <input
+              type="text"
+              value={librarySearch}
+              onChange={(e) => setLibrarySearch(e.target.value)}
+              placeholder={t.searchPlaceholder}
+              style={{ flex: 1, minWidth: 220 }}
+            />
+
+            <button type="button" onClick={fetchLibraryCards} disabled={libraryLoading}>
+              {libraryLoading ? t.loading : t.reload}
+            </button>
+
+            <div style={{ opacity: 0.8 }}>
+              {filteredLibraryCards.length} / {libraryCards.length}
+            </div>
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            {libraryLoading ? (
+              <div>
+                <span className="spinner" aria-hidden="true" /> {t.loading}
+              </div>
+            ) : filteredLibraryCards.length === 0 ? (
+              <div style={{ opacity: 0.8, padding: 8 }}>{t.noFound}</div>
+            ) : (
+              <div style={{ display: "grid", gap: 10 }}>
+                {filteredLibraryCards.map((c) => (
+                  <div
+                    key={c._id}
+                    className="panel"
+                    style={{ padding: 12, display: "grid", gap: 6 }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                      <b>{c.deck || DEFAULT_DECK}</b>
+
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button type="button" onClick={() => openEdit(c)}>
+                          ✏️ {t.edit}
+                        </button>
+                        <button type="button" onClick={() => handleDeleteCard(c._id)}>
+                          🗑 {t.del}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <b>{langLabel(learningLang)}:</b> {c.word}
+                    </div>
+                    <div>
+                      <b>{langLabel(nativeLang)}:</b> {c.translation}
+                    </div>
+                    {c.example ? <div style={{ opacity: 0.9 }}>📘 {c.example}</div> : null}
+
+                    <div style={{ display: "flex", gap: 12, flexWrap: "wrap", opacity: 0.75 }}>
+                      <span>reviews: {c.reviewCount || 0}</span>
+                      <span>correct: {c.correctCount || 0}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Edit modal */}
+          {editOpen && (
+            <div
+              role="dialog"
+              aria-modal="true"
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(0,0,0,0.45)",
+                display: "grid",
+                placeItems: "center",
+                padding: 16,
+                zIndex: 50,
+              }}
+              onMouseDown={() => setEditOpen(false)}
+            >
+              <div
+                className="panel"
+                style={{ width: "min(720px, 100%)", padding: 14 }}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                  <b>{t.editTitle}</b>
+                  <button type="button" onClick={() => setEditOpen(false)}>
+                    ✖
+                  </button>
+                </div>
+
+                <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+                  <input
+                    type="text"
+                    value={editWord}
+                    onChange={(e) => setEditWord(e.target.value)}
+                    placeholder={`${langLabel(learningLang)}: word`}
+                  />
+                  <input
+                    type="text"
+                    value={editTranslation}
+                    onChange={(e) => setEditTranslation(e.target.value)}
+                    placeholder={`${langLabel(nativeLang)}: translation`}
+                  />
+                  <input
+                    type="text"
+                    value={editExample}
+                    onChange={(e) => setEditExample(e.target.value)}
+                    placeholder="Example (optional)"
+                  />
+
+                  <select value={editDeck} onChange={(e) => setEditDeck(e.target.value)}>
+                    {decks.length === 0 ? (
+                      <option value={DEFAULT_DECK}>{DEFAULT_DECK}</option>
+                    ) : (
+                      decks.map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))
+                    )}
+                  </select>
+
+                  <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                    <button type="button" onClick={() => setEditOpen(false)}>
+                      {t.cancel}
+                    </button>
+                    <button type="button" onClick={saveEdit}>
+                      {t.save}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
