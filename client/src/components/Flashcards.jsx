@@ -383,26 +383,26 @@ export default function Flashcards() {
     await Promise.all([fetchDecks(), fetchCards(), fetchStats()]);
   }
 
-  // ===== data loading triggers =====
-  useEffect(() => {
-    (async () => {
-      setMessage("");
-      setIsRefreshing(true);
-      try {
-        if (view === "review") {
-          await refreshAll();
-        } else if (view === "library") {
-          await Promise.all([fetchDecks(), fetchStats(), fetchLibraryCards()]);
-        } else {
-          await Promise.all([fetchDecks(), fetchStats()]);
-        }
-      } finally {
-        setIsRefreshing(false);
-        setIsBootLoading(false);
+// ===== data loading triggers =====
+useEffect(() => {
+  (async () => {
+    setIsRefreshing(true);
+    try {
+      if (view === "review") {
+        await refreshAll();
+      } else if (view === "library") {
+        await Promise.all([fetchDecks(), fetchStats(), fetchLibraryCards()]);
+      } else {
+        await Promise.all([fetchDecks(), fetchStats()]);
       }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, deckFilter, mode, sortBy, sortOrder, librarySortBy, librarySortOrder]);
+    } finally {
+      setIsRefreshing(false);
+      setIsBootLoading(false);
+    }
+  })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [view, deckFilter, mode, sortBy, sortOrder, librarySortBy, librarySortOrder]);
+
 
   // when decks update, keep deck manager inputs sane
   useEffect(() => {
@@ -1068,7 +1068,16 @@ export default function Flashcards() {
     if (!token) return handle401();
 
     if (!importText.trim()) {
-      setMessage("⚠️ Paste data for import");
+      const inserted = Number(data.inserted || 0);
+const skipped = Number(data.skippedAsDuplicates || 0);
+const received = Number(data.received || 0);
+
+if (inserted === 0) {
+  setMessage(`ℹ️ Імпорт: додано 0. Усі ${skipped} карток — дублікати (вже є в базі).`);
+} else {
+  setMessage(`✅ Імпорт: додано ${inserted}. Дублікатів: ${skipped}. Отримано: ${received}.`);
+}
+
       return;
     }
 
