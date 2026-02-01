@@ -5,13 +5,12 @@ import { stringify } from "csv-stringify/sync";
 import { parse } from "csv-parse/sync";
 
 const router = express.Router();
-
 const DEFAULT_DECK = "Без теми";
 
 // ============================================
 // GET /api/cards
 // mode=due | all
-// sort=nextReview | createdAt | word | accuracy
+// sort=nextReview | createdAt | word | translation | accuracy
 // order=asc | desc
 // deck=...
 // ============================================
@@ -29,22 +28,39 @@ router.get("/", auth, async (req, res) => {
 
     if (deck && deck !== "ALL") filter.deck = deck;
 
+    // due includes: missing/null OR <= now
     if (mode === "due") {
-      filter.nextReview = { $lte: now };
+      filter.$or = [
+        { nextReview: { $exists: false } },
+        { nextReview: null },
+        { nextReview: { $lte: now } },
+      ];
     }
 
+    // DB sort for most fields
     let mongoSort = {};
-    if (sort === "nextreview") mongoSort = { nextReview: order };
-    else if (sort === "createdat") mongoSort = { createdAt: order };
-    else if (sort === "word") mongoSort = { word: order };
-    else mongoSort = { nextReview: order };
+    if (sort === "nextreview") mongoSort = { nextReview: order, _id: 1 };
+    else if (sort === "createdat") mongoSort = { createdAt: order, _id: 1 };
+    else if (sort === "word") mongoSort = { word: order, _id: 1 };
+    else if (sort === "translation") mongoSort = { translation: order, _id: 1 };
+    else mongoSort = { nextReview: order, _id: 1 };
 
     let cards = await WordCard.find(filter).sort(mongoSort);
 
+    // accuracy: computed in JS (because stored fields)
     if (sort === "accuracy") {
       cards = cards.sort((a, b) => {
         const accA = a.reviewCount ? a.correctCount / a.reviewCount : 0;
         const accB = b.reviewCount ? b.correctCount / b.reviewCount : 0;
+
+        if (accA === accB) {
+          // stable tie-breaker
+          const ca = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const cb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          if (ca === cb) return String(a._id).localeCompare(String(b._id));
+          return (ca - cb) * order;
+        }
+
         return (accA - accB) * order;
       });
     }
@@ -76,6 +92,141 @@ router.get("/decks", auth, async (req, res) => {
 });
 
 // ============================================
+// PUT /api/cards/decks/rename
+// body: { from, to }
+// ============================================
+router.put("/decks/rename", auth, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const from = String(req.body.from || "").trim();
+    const to = String(req.body.to || "").trim();
+
+    if (!from || !to) return res.status(400).json({ message: "from/to required" });
+    if (from === DEFAULT_DECK) return res.status(400).json({ message: "Не можна перейменувати дефолтну тему" });
+    if (from === to) return res.json({ message: "No changes", moved: 0, conflicts: 0 });
+
+    const cards = await WordCard.find({ userId, deck: from });
+
+    let moved = 0;
+    let conflicts = 0;
+
+    for (const c of cards) {
+      c.deck = to;
+      try {
+        await c.save();
+        moved += 1;
+      } catch (e) {
+        if (e && e.code === 11000) {
+          conflicts += 1;
+          continue;
+        }
+        throw e;
+      }
+    }
+
+    return res.json({ message: "Deck renamed", moved, conflicts });
+  } catch (err) {
+    console.error("❌ rename deck error:", err);
+    return res.status(500).json({ message: "Помилка перейменування теми" });
+  }
+});
+
+// ============================================
+// DELETE /api/cards/decks/:name
+// query: mode=move|delete  & to=...
+// ============================================
+router.delete("/decks/:name", auth, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const name = String(req.params.name || "").trim();
+    const mode = String(req.query.mode || "move").toLowerCase();
+    const to = String(req.query.to || DEFAULT_DECK).trim() || DEFAULT_DECK;
+
+    if (!name) return res.status(400).json({ message: "deck name required" });
+    if (name === DEFAULT_DECK) return res.status(400).json({ message: "Не можна видалити дефолтну тему" });
+
+    if (mode === "delete") {
+      const r = await WordCard.deleteMany({ userId, deck: name });
+      return res.json({ message: "Deck deleted", deletedCards: r.deletedCount });
+    }
+
+    // mode=move
+    const cards = await WordCard.find({ userId, deck: name });
+
+    let moved = 0;
+    let conflicts = 0;
+
+    for (const c of cards) {
+      c.deck = to;
+      try {
+        await c.save();
+        moved += 1;
+      } catch (e) {
+        if (e && e.code === 11000) {
+          conflicts += 1;
+          continue;
+        }
+        throw e;
+      }
+    }
+
+    return res.json({ message: "Deck removed (cards moved)", moved, conflicts, to });
+  } catch (err) {
+    console.error("❌ delete deck error:", err);
+    return res.status(500).json({ message: "Помилка видалення теми" });
+  }
+});
+
+// ============================================
+// PATCH /api/cards/bulk
+// { ids: [...], action: "delete" | "moveDeck", toDeck? }
+// ============================================
+router.patch("/bulk", auth, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
+    const action = String(req.body.action || "").toLowerCase();
+    const toDeck = String(req.body.toDeck || DEFAULT_DECK).trim() || DEFAULT_DECK;
+
+    if (!ids.length) return res.status(400).json({ message: "ids required" });
+    if (ids.length > 500) return res.status(400).json({ message: "Too many ids (max 500)" });
+
+    if (action === "delete") {
+      const r = await WordCard.deleteMany({ userId, _id: { $in: ids } });
+      return res.json({ message: "Deleted", deleted: r.deletedCount });
+    }
+
+    if (action === "movedeck") {
+      const cards = await WordCard.find({ userId, _id: { $in: ids } });
+
+      let moved = 0;
+      let conflicts = 0;
+
+      for (const c of cards) {
+        c.deck = toDeck;
+        try {
+          await c.save();
+          moved += 1;
+        } catch (e) {
+          if (e && e.code === 11000) {
+            conflicts += 1;
+            continue;
+          }
+          throw e;
+        }
+      }
+
+      return res.json({ message: "Moved", moved, conflicts, toDeck });
+    }
+
+    return res.status(400).json({ message: "Unknown action" });
+  } catch (err) {
+    console.error("❌ bulk error:", err);
+    return res.status(500).json({ message: "Помилка bulk операції" });
+  }
+});
+
+// ============================================
 // GET /api/cards/all (legacy)
 // ============================================
 router.get("/all", auth, async (req, res) => {
@@ -99,7 +250,7 @@ router.get("/due", auth, async (req, res) => {
 
     const cards = await WordCard.find({
       userId,
-      nextReview: { $lte: now },
+      $or: [{ nextReview: { $exists: false } }, { nextReview: null }, { nextReview: { $lte: now } }],
     }).sort({ nextReview: 1 });
 
     res.json(cards);
@@ -165,7 +316,7 @@ router.post("/", auth, async (req, res) => {
 // ============================================
 const reviewHandler = async (req, res) => {
   try {
-    const { known } = req.body; // фронт надсилає known (true/false)
+    const { known } = req.body;
 
     const card = await WordCard.findOne({ _id: req.params.id, userId: req.userId });
     if (!card) return res.status(404).json({ message: "Картку не знайдено" });
@@ -174,10 +325,7 @@ const reviewHandler = async (req, res) => {
     if (known) card.correctCount = (card.correctCount || 0) + 1;
     card.lastReviewed = new Date();
 
-    // інтервали повторення (в хвилинах)
     const intervals = [1, 5, 30, 180, 1440, 4320, 10080, 43200];
-    // 1m, 5m, 30m, 3h, 1d, 3d, 7d, 30d
-
     const level = Math.min(card.correctCount || 0, intervals.length - 1);
 
     if (known) {
@@ -251,10 +399,8 @@ router.put("/:id", auth, async (req, res) => {
 });
 
 // ============================================
-// GET /api/cards/stats  (GLOBAL stats)
-// learned rule: correctCount>=3 AND accuracy>=70%
+// GET /api/cards/stats
 // ============================================
-// ✅ Статистика по всіх картках користувача (надійно через Mongo)
 router.get("/stats", auth, async (req, res) => {
   try {
     const userId = req.userId;
@@ -265,22 +411,18 @@ router.get("/stats", auth, async (req, res) => {
 
     const LEARNED_THRESHOLD = 3;
 
-    // 1) totalCards
     const totalCards = await WordCard.countDocuments({ userId });
 
-    // 2) dueNow
     const dueNow = await WordCard.countDocuments({
       userId,
       $or: [{ nextReview: { $exists: false } }, { nextReview: null }, { nextReview: { $lte: now } }],
     });
 
-    // 3) reviewedToday
     const reviewedToday = await WordCard.countDocuments({
       userId,
       lastReviewed: { $gte: startOfToday },
     });
 
-    // 4) totals + learned via aggregation
     const agg = await WordCard.aggregate([
       { $match: { userId } },
       {
@@ -322,7 +464,6 @@ router.get("/stats", auth, async (req, res) => {
     return res.status(500).json({ message: "Помилка при отриманні статистики" });
   }
 });
-
 
 // ============================================
 // EXPORT: GET /api/cards/export?format=json|csv
@@ -439,9 +580,9 @@ router.post("/import", auth, async (req, res) => {
       return res.status(400).json({ message: "Немає валідних карток для імпорту" });
     }
 
-    const uniqKey = (w, t, d) => `${(w || "").toLowerCase()}___${(t || "").toLowerCase()}___${(d || "").toLowerCase()}`;
+    const uniqKey = (w, t, d) =>
+      `${(w || "").toLowerCase()}___${(t || "").toLowerCase()}___${(d || "").toLowerCase()}`;
 
-    // dedup within file
     const map = new Map();
     for (const c of incoming) {
       const key = uniqKey(c.word, c.translation, c.deck || DEFAULT_DECK);
@@ -449,9 +590,10 @@ router.post("/import", auth, async (req, res) => {
     }
     const uniqueIncoming = Array.from(map.values());
 
-    // existing keys from DB
     const existing = await WordCard.find({ userId }, { word: 1, translation: 1, deck: 1 }).lean();
-    const existingSet = new Set(existing.map((e) => uniqKey(e.word || "", e.translation || "", e.deck || DEFAULT_DECK)));
+    const existingSet = new Set(
+      existing.map((e) => uniqKey(e.word || "", e.translation || "", e.deck || DEFAULT_DECK))
+    );
 
     const toInsert = uniqueIncoming
       .filter((c) => !existingSet.has(uniqKey(c.word, c.translation, c.deck || DEFAULT_DECK)))
