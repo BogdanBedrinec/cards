@@ -65,10 +65,15 @@ export default function Flashcards() {
   const [deckForNewCard, setDeckForNewCard] = useState(DEFAULT_DECK);
   const [newDeckName, setNewDeckName] = useState("");
 
-  // mode + sorting (affects review list)
-  const [mode, setMode] = useState("due"); // due | all
-  const [sortBy, setSortBy] = useState("nextReview"); // nextReview | createdAt | word | accuracy
-  const [sortOrder, setSortOrder] = useState("asc"); // asc | desc
+  // ===== Review queue params (hidden UI now) =====
+  const [mode, setMode] = useState("due"); // keep due for review
+  const [sortBy, setSortBy] = useState("nextReview");
+  const [sortOrder, setSortOrder] = useState("asc");
+
+  // ===== Library sorting params (UI shown) =====
+  // default: newest first
+  const [librarySortBy, setLibrarySortBy] = useState("createdAt"); // createdAt | word | nextReview | accuracy
+  const [librarySortOrder, setLibrarySortOrder] = useState("desc"); // asc | desc
 
   // stats
   const [stats, setStats] = useState(null);
@@ -111,10 +116,6 @@ export default function Flashcards() {
   const [libraryLoading, setLibraryLoading] = useState(false);
   const [librarySearch, setLibrarySearch] = useState("");
 
-  // ✅ Library sorting (A)
-  const [librarySortBy, setLibrarySortBy] = useState("createdAt"); // createdAt | word | nextReview | accuracy | reviewCount
-  const [librarySortOrder, setLibrarySortOrder] = useState("desc"); // asc | desc
-
   // edit modal
   const [editOpen, setEditOpen] = useState(false);
   const [editCard, setEditCard] = useState(null);
@@ -134,11 +135,6 @@ export default function Flashcards() {
         add: "➕ Hinzufügen",
         refresh: "Aktualisieren",
         deckFilter: "Thema",
-        mode: "Modus",
-        sort: "Sortierung",
-        order: "Reihenfolge",
-        due: "Jetzt wiederholen",
-        all: "Alle Karten",
         showTranslation: "Übersetzung anzeigen",
         know: "Weiß ich ✅",
         dontKnow: "Weiß ich nicht ❌",
@@ -151,8 +147,6 @@ export default function Flashcards() {
         translationPlaceholder: "Übersetzung",
         tipAfterAdd: "Tipp: Danach zu ⚡ Wiederholen wechseln.",
         uiLang: "UI",
-        libraryHint:
-          "Bibliothek — Verwaltung (Themen/Filter) + Import/Export. Karten werden in ⚡ Wiederholen trainiert.",
         loading: "Loading…",
         retry: "Retry",
         offlineHint: "Server not reachable. Did you start backend?",
@@ -164,6 +158,8 @@ export default function Flashcards() {
         cancel: "Cancel",
         save: "Save",
         editTitle: "Edit card",
+        sort: "Sortierung",
+        order: "Reihenfolge",
       },
       en: {
         review: "⚡ Review",
@@ -171,11 +167,6 @@ export default function Flashcards() {
         add: "➕ Add",
         refresh: "Refresh",
         deckFilter: "Topic",
-        mode: "Mode",
-        sort: "Sorting",
-        order: "Order",
-        due: "Review now",
-        all: "All cards",
         showTranslation: "Show translation",
         know: "I know ✅",
         dontKnow: "I don’t know ❌",
@@ -188,7 +179,6 @@ export default function Flashcards() {
         translationPlaceholder: "Translation",
         tipAfterAdd: "Tip: Switch to ⚡ Review after adding.",
         uiLang: "UI",
-        libraryHint: "Library — management + import/export. Cards are trained in ⚡ Review.",
         loading: "Loading…",
         retry: "Retry",
         offlineHint: "Server not reachable. Did you start backend?",
@@ -200,6 +190,8 @@ export default function Flashcards() {
         cancel: "Cancel",
         save: "Save",
         editTitle: "Edit card",
+        sort: "Sorting",
+        order: "Order",
       },
       uk: {
         review: "⚡ Повторення",
@@ -207,11 +199,6 @@ export default function Flashcards() {
         add: "➕ Додати",
         refresh: "Оновити",
         deckFilter: "Тема",
-        mode: "Режим",
-        sort: "Сортування",
-        order: "Порядок",
-        due: "Повторити зараз",
-        all: "Всі картки",
         showTranslation: "Показати переклад",
         know: "Знаю ✅",
         dontKnow: "Не знаю ❌",
@@ -224,8 +211,6 @@ export default function Flashcards() {
         translationPlaceholder: "Переклад",
         tipAfterAdd: "Порада: після додавання переходь у ⚡ Повторення.",
         uiLang: "UI",
-        libraryHint:
-          "Бібліотека — керування (теми/фільтри) + імпорт/експорт. Картки тренуються в ⚡ Повторенні.",
         loading: "Завантаження…",
         retry: "Повторити",
         offlineHint: "Сервер недоступний. Ти запустив бекенд?",
@@ -237,6 +222,8 @@ export default function Flashcards() {
         cancel: "Скасувати",
         save: "Зберегти",
         editTitle: "Редагування картки",
+        sort: "Сортування",
+        order: "Порядок",
       },
     }),
     []
@@ -329,7 +316,7 @@ export default function Flashcards() {
     setMessage(`${prefix}: ${serverMsg || human}${hint}`);
   }
 
-  // ✅ Reset session progress when user changes queue parameters
+  // ✅ Reset session progress when user changes queue parameters (review only)
   useEffect(() => {
     if (view !== "review") return;
     setSessionDone(0);
@@ -362,7 +349,7 @@ export default function Flashcards() {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, deckFilter, mode, sortBy, sortOrder]);
+  }, [view, deckFilter, mode, sortBy, sortOrder, librarySortBy, librarySortOrder]);
 
   async function fetchDecks() {
     const token = getToken();
@@ -428,6 +415,7 @@ export default function Flashcards() {
     }
   }
 
+  // ===== Review fetch (due queue) =====
   async function fetchCards() {
     const token = getToken();
     if (!token) return;
@@ -439,9 +427,9 @@ export default function Flashcards() {
     setIsCardsLoading(true);
     try {
       const params = new URLSearchParams();
-      params.set("mode", mode);
-      params.set("sort", sortBy);
-      params.set("order", sortOrder);
+      params.set("mode", "due"); // fixed for review
+      params.set("sort", "nextReview");
+      params.set("order", "asc");
       if (deckFilter !== "ALL") params.set("deck", deckFilter);
 
       const url = `${API}/api/cards?${params.toString()}`;
@@ -466,8 +454,7 @@ export default function Flashcards() {
       setCards(list);
       setMessage("");
 
-      // ✅ if due-mode and sessionTotal not initialized yet — set it once
-      if (view === "review" && mode === "due" && sessionTotal === 0 && sessionDone === 0) {
+      if (view === "review" && sessionTotal === 0 && sessionDone === 0) {
         setSessionTotal(list.length);
       }
     } catch (err) {
@@ -477,7 +464,7 @@ export default function Flashcards() {
     }
   }
 
-  // ============== Library: fetch all cards (mode=all) ==============
+  // ============== Library: fetch all cards (mode=all) + sort/order ==============
   async function fetchLibraryCards() {
     const token = getToken();
     if (!token) return;
@@ -486,6 +473,8 @@ export default function Flashcards() {
     try {
       const params = new URLSearchParams();
       params.set("mode", "all");
+      params.set("sort", librarySortBy);
+      params.set("order", librarySortOrder);
       if (deckFilter !== "ALL") params.set("deck", deckFilter);
 
       const { signal, cleanup } = withTimeout();
@@ -510,58 +499,18 @@ export default function Flashcards() {
     }
   }
 
-  // ✅ Library: filter + sort in one place
   const filteredLibraryCards = useMemo(() => {
     const q = librarySearch.trim().toLowerCase();
-    let list = Array.isArray(libraryCards) ? [...libraryCards] : [];
+    if (!q) return libraryCards;
 
-    if (q) {
-      list = list.filter((c) => {
-        const w = (c.word || "").toLowerCase();
-        const tr = (c.translation || "").toLowerCase();
-        const ex = (c.example || "").toLowerCase();
-        const dk = (c.deck || "").toLowerCase();
-        return w.includes(q) || tr.includes(q) || ex.includes(q) || dk.includes(q);
-      });
-    }
-
-    const dir = librarySortOrder === "desc" ? -1 : 1;
-
-    const accuracy = (c) => {
-      const rc = c.reviewCount || 0;
-      const cc = c.correctCount || 0;
-      return rc ? cc / rc : 0;
-    };
-
-    list.sort((a, b) => {
-      const A = a || {};
-      const B = b || {};
-
-      if (librarySortBy === "word") {
-        return String(A.word || "").localeCompare(String(B.word || ""), undefined, { sensitivity: "base" }) * dir;
-      }
-
-      if (librarySortBy === "createdAt") {
-        return (new Date(A.createdAt || 0) - new Date(B.createdAt || 0)) * dir;
-      }
-
-      if (librarySortBy === "nextReview") {
-        return (new Date(A.nextReview || 0) - new Date(B.nextReview || 0)) * dir;
-      }
-
-      if (librarySortBy === "reviewCount") {
-        return ((A.reviewCount || 0) - (B.reviewCount || 0)) * dir;
-      }
-
-      if (librarySortBy === "accuracy") {
-        return (accuracy(A) - accuracy(B)) * dir;
-      }
-
-      return 0;
+    return libraryCards.filter((c) => {
+      const w = (c.word || "").toLowerCase();
+      const tr = (c.translation || "").toLowerCase();
+      const ex = (c.example || "").toLowerCase();
+      const dk = (c.deck || "").toLowerCase();
+      return w.includes(q) || tr.includes(q) || ex.includes(q) || dk.includes(q);
     });
-
-    return list;
-  }, [libraryCards, librarySearch, librarySortBy, librarySortOrder]);
+  }, [libraryCards, librarySearch]);
 
   async function handleDeleteCard(id) {
     const token = getToken();
@@ -782,19 +731,11 @@ export default function Flashcards() {
       const ok = await sendReview(currentReviewCard._id, known);
       if (!ok) return;
 
-      // ✅ due-mode прогрес + індекс
-      if (mode === "due") {
-        setSessionDone((d) => d + 1);
-        setShowAnswer(false);
-        setReviewIndex(0);
-        await Promise.all([fetchCards(), fetchStats(), fetchDecks()]);
-        return;
-      }
-
-      // all-mode
-      await refreshAll();
+      // due-mode прогрес + індекс
+      setSessionDone((d) => d + 1);
       setShowAnswer(false);
-      setReviewIndex((i) => i + 1);
+      setReviewIndex(0);
+      await Promise.all([fetchCards(), fetchStats(), fetchDecks()]);
     } finally {
       setIsReviewing(false);
     }
@@ -993,12 +934,9 @@ export default function Flashcards() {
       .finally(() => setIsRefreshing(false));
   }
 
-  // ✅ progress numbers
-  const progressTotal = mode === "due" ? (sessionTotal || cards.length) : cards.length;
-  const progressIndex =
-    mode === "due"
-      ? Math.min(sessionDone + 1, progressTotal || 0)
-      : Math.min(reviewIndex + 1, cards.length);
+  // ✅ progress numbers (review = due session)
+  const progressTotal = sessionTotal || cards.length;
+  const progressIndex = Math.min(sessionDone + 1, progressTotal || 0);
 
   return (
     <div className="flashcards-container" data-theme={theme}>
@@ -1120,29 +1058,25 @@ export default function Flashcards() {
             </div>
           )}
 
-          {view === "review" && (
+          {/* ✅ Sorting only in Library */}
+          {view === "library" && (
             <>
               <div className="ctrl">
-                <div className="ctrl-label">{t.mode}</div>
-                <select value={mode} onChange={(e) => setMode(e.target.value)}>
-                  <option value="due">{t.due}</option>
-                  <option value="all">{t.all}</option>
-                </select>
-              </div>
-
-              <div className="ctrl">
                 <div className="ctrl-label">{t.sort}</div>
-                <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                  <option value="nextReview">🕒 nextReview</option>
+                <select value={librarySortBy} onChange={(e) => setLibrarySortBy(e.target.value)}>
                   <option value="createdAt">🆕 createdAt</option>
-                  <option value="word">🔤 word (A–Z)</option>
+                  <option value="word">🔤 word</option>
+                  <option value="nextReview">🕒 nextReview</option>
                   <option value="accuracy">🎯 accuracy</option>
                 </select>
               </div>
 
               <div className="ctrl">
                 <div className="ctrl-label">{t.order}</div>
-                <select value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+                <select
+                  value={librarySortOrder}
+                  onChange={(e) => setLibrarySortOrder(e.target.value)}
+                >
                   <option value="asc">⬆️ asc</option>
                   <option value="desc">⬇️ desc</option>
                 </select>
@@ -1241,40 +1175,15 @@ export default function Flashcards() {
                 </button>
               </div>
 
-              <div className="review-nav">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setReviewIndex((i) => Math.max(0, i - 1));
-                    setShowAnswer(false);
-                  }}
-                  disabled={reviewIndex === 0}
-                  aria-label="Previous card"
-                >
-                  ◀
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setReviewIndex((i) => Math.min(cards.length - 1, i + 1));
-                    setShowAnswer(false);
-                  }}
-                  disabled={reviewIndex >= cards.length - 1}
-                  aria-label="Next card"
-                >
-                  ▶
-                </button>
-              </div>
-
-              {currentReviewCard?.nextReview && new Date(currentReviewCard.nextReview) > new Date() && (
-                <div className="meta" style={{ textAlign: "center", marginTop: 10 }}>
-                  ⏳ Next: {formatNextReview(currentReviewCard.nextReview)}
-                  {minutesUntil(currentReviewCard.nextReview) !== null && (
-                    <> (~ {minutesUntil(currentReviewCard.nextReview)} min)</>
-                  )}
-                </div>
-              )}
+              {currentReviewCard?.nextReview &&
+                new Date(currentReviewCard.nextReview) > new Date() && (
+                  <div className="meta" style={{ textAlign: "center", marginTop: 10 }}>
+                    ⏳ Next: {formatNextReview(currentReviewCard.nextReview)}
+                    {minutesUntil(currentReviewCard.nextReview) !== null && (
+                      <> (~ {minutesUntil(currentReviewCard.nextReview)} min)</>
+                    )}
+                  </div>
+                )}
             </div>
           )}
         </div>
@@ -1345,20 +1254,6 @@ export default function Flashcards() {
               style={{ flex: 1, minWidth: 220 }}
             />
 
-            {/* ✅ Library sort controls (A) */}
-            <select value={librarySortBy} onChange={(e) => setLibrarySortBy(e.target.value)}>
-              <option value="createdAt">🆕 createdAt</option>
-              <option value="word">🔤 word</option>
-              <option value="nextReview">🕒 nextReview</option>
-              <option value="reviewCount">🔁 reviewCount</option>
-              <option value="accuracy">🎯 accuracy</option>
-            </select>
-
-            <select value={librarySortOrder} onChange={(e) => setLibrarySortOrder(e.target.value)}>
-              <option value="asc">⬆️ asc</option>
-              <option value="desc">⬇️ desc</option>
-            </select>
-
             <button type="button" onClick={fetchLibraryCards} disabled={libraryLoading}>
               {libraryLoading ? t.loading : t.reload}
             </button>
@@ -1378,11 +1273,7 @@ export default function Flashcards() {
             ) : (
               <div style={{ display: "grid", gap: 10 }}>
                 {filteredLibraryCards.map((c) => (
-                  <div
-                    key={c._id}
-                    className="panel"
-                    style={{ padding: 12, display: "grid", gap: 6 }}
-                  >
+                  <div key={c._id} className="panel" style={{ padding: 12, display: "grid", gap: 6 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                       <b>{c.deck || DEFAULT_DECK}</b>
 
