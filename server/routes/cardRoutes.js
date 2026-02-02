@@ -3,6 +3,7 @@ import auth from "../middleware/auth.js";
 import WordCard from "../models/WordCard.js";
 import { stringify } from "csv-stringify/sync";
 import { parse } from "csv-parse/sync";
+import mongoose from "mongoose"; // додай зверху файлу, якщо ще нема
 
 const router = express.Router();
 const DEFAULT_DECK = "Без теми";
@@ -349,6 +350,114 @@ const reviewHandler = async (req, res) => {
 
 router.put("/:id/review", auth, reviewHandler);
 router.post("/:id/review", auth, reviewHandler);
+
+// ============================================
+// BULK: POST /api/cards/bulk-delete
+// body: { ids: ["id1","id2", ...] }
+// ============================================
+router.post("/bulk-delete", auth, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
+
+    if (ids.length === 0) {
+      return res.status(400).json({ message: "ids має бути непорожнім масивом" });
+    }
+
+    // валідні ObjectId (щоб не падало)
+    const objectIds = ids
+      .filter((id) => mongoose.Types.ObjectId.isValid(id))
+      .map((id) => new mongoose.Types.ObjectId(id));
+
+    if (objectIds.length === 0) {
+      return res.status(400).json({ message: "Немає валідних id" });
+    }
+
+    const result = await WordCard.deleteMany({
+      userId,
+      _id: { $in: objectIds },
+    });
+
+    return res.json({
+      message: "Bulk delete ✅",
+      requested: ids.length,
+      validIds: objectIds.length,
+      deleted: result.deletedCount || 0,
+    });
+  } catch (err) {
+    console.error("❌ bulk-delete error:", err);
+    return res.status(500).json({ message: "Помилка bulk delete" });
+  }
+});
+
+// ============================================
+// BULK: POST /api/cards/bulk-move
+// body: { ids: ["id1","id2", ...], deck: "New Deck" }
+// ============================================
+router.post("/bulk-move", auth, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
+    const deckRaw = req.body?.deck;
+
+    if (ids.length === 0) {
+      return res.status(400).json({ message: "ids має бути непорожнім масивом" });
+    }
+
+    const newDeck = String(deckRaw || DEFAULT_DECK).trim() || DEFAULT_DECK;
+
+    // валідні ObjectId
+    const objectIds = ids
+      .filter((id) => mongoose.Types.ObjectId.isValid(id))
+      .map((id) => new mongoose.Types.ObjectId(id));
+
+    if (objectIds.length === 0) {
+      return res.status(400).json({ message: "Немає валідних id" });
+    }
+
+    // updateMany може впасти через unique index (userId+word+translation+deck),
+    // якщо у цільовому deck вже є така сама картка.
+    // Тому робимо "обережний" bulkWrite з ordered:false
+    const ops = objectIds.map((id) => ({
+      updateOne: {
+        filter: { _id: id, userId },
+        update: { $set: { deck: newDeck } },
+      },
+    }));
+
+    let bulkRes;
+    try {
+      bulkRes = await WordCard.bulkWrite(ops, { ordered: false });
+    } catch (e) {
+      // Навіть якщо частина впала через дублікати — bulkWrite все одно може частково оновити
+      bulkRes = e?.result || null;
+
+      // Повернемо зрозуміле повідомлення
+      return res.status(207).json({
+        message:
+          "Bulk move частково виконано ⚠️ (частина карток не перенеслась через дублікати у цільовій темі)",
+        toDeck: newDeck,
+        requested: ids.length,
+        validIds: objectIds.length,
+        modified: bulkRes?.nModified ?? bulkRes?.modifiedCount ?? 0,
+        matched: bulkRes?.nMatched ?? bulkRes?.matchedCount ?? 0,
+      });
+    }
+
+    return res.json({
+      message: "Bulk move ✅",
+      toDeck: newDeck,
+      requested: ids.length,
+      validIds: objectIds.length,
+      matched: bulkRes?.matchedCount ?? bulkRes?.nMatched ?? 0,
+      modified: bulkRes?.modifiedCount ?? bulkRes?.nModified ?? 0,
+    });
+  } catch (err) {
+    console.error("❌ bulk-move error:", err);
+    return res.status(500).json({ message: "Помилка bulk move" });
+  }
+});
+
 
 // ============================================
 // DELETE /api/cards/:id
