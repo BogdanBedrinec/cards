@@ -120,6 +120,13 @@ export default function Flashcards() {
   const [bulkDeck, setBulkDeck] = useState(DEFAULT_DECK);
   const [bulkBusy, setBulkBusy] = useState(false);
 
+  // --- deck manager (rename / remove deck) ---
+const [deckManageFrom, setDeckManageFrom] = useState(DEFAULT_DECK);
+const [deckManageTo, setDeckManageTo] = useState("");
+const [deckRemoveTo, setDeckRemoveTo] = useState(DEFAULT_DECK);
+const [deckManageBusy, setDeckManageBusy] = useState(false);
+
+
   // edit modal
   const [editOpen, setEditOpen] = useState(false);
   const [editCard, setEditCard] = useState(null);
@@ -421,6 +428,13 @@ export default function Flashcards() {
       if (bulkDeck && !withDefault.includes(bulkDeck)) {
         setBulkDeck(DEFAULT_DECK);
       }
+if (deckManageFrom && !withDefault.includes(deckManageFrom)) {
+  setDeckManageFrom(DEFAULT_DECK);
+}
+if (deckRemoveTo && !withDefault.includes(deckRemoveTo)) {
+  setDeckRemoveTo(DEFAULT_DECK);
+}
+
     } catch (err) {
       if (err?.name !== "AbortError") setFriendlyError("❌ Decks", err);
     } finally {
@@ -656,6 +670,109 @@ export default function Flashcards() {
       setBulkBusy(false);
     }
   }
+
+  async function renameDeck() {
+  const token = getToken();
+  if (!token) return handle401();
+
+  const from = String(deckManageFrom || "").trim();
+  const to = String(deckManageTo || "").trim();
+
+  if (!from || !to) return;
+  if (from === DEFAULT_DECK) {
+    setMessage("⚠️ Не можна перейменувати 'Без теми'");
+    return;
+  }
+
+  const ok = window.confirm(`Rename deck "${from}" → "${to}" ?`);
+  if (!ok) return;
+
+  setDeckManageBusy(true);
+  setMessage("");
+
+  try {
+    const { signal, cleanup } = withTimeout();
+    const res = await fetch(`${API}/api/cards/decks/rename`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ from, to }),
+      signal,
+    }).finally(cleanup);
+
+    if (res.status === 401) return handle401();
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      setFriendlyError("❌ Rename deck", null, data?.message || data?.error);
+      return;
+    }
+
+    setMessage(`✅ ${data?.message || "Deck renamed"} (moved=${data?.moved || 0}, conflicts=${data?.conflicts || 0})`);
+    setDeckManageTo("");
+
+    await Promise.all([fetchDecks(), fetchLibraryCards(), fetchStats()]);
+  } catch (err) {
+    setFriendlyError("❌ Rename deck", err);
+  } finally {
+    setDeckManageBusy(false);
+  }
+}
+
+async function removeDeckMoveCards() {
+  const token = getToken();
+  if (!token) return handle401();
+
+  const name = String(deckManageFrom || "").trim();
+  const to = String(deckRemoveTo || DEFAULT_DECK).trim() || DEFAULT_DECK;
+
+  if (!name) return;
+  if (name === DEFAULT_DECK) {
+    setMessage("⚠️ Не можна видалити 'Без теми'");
+    return;
+  }
+
+  const ok = window.confirm(`Remove deck "${name}" (move cards → "${to}") ?`);
+  if (!ok) return;
+
+  setDeckManageBusy(true);
+  setMessage("");
+
+  try {
+    const { signal, cleanup } = withTimeout();
+    const url = `${API}/api/cards/decks/${encodeURIComponent(name)}?mode=move&to=${encodeURIComponent(to)}`;
+
+    const res = await fetch(url, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+      signal,
+    }).finally(cleanup);
+
+    if (res.status === 401) return handle401();
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      setFriendlyError("❌ Remove deck", null, data?.message || data?.error);
+      return;
+    }
+
+    setMessage(
+      `✅ ${data?.message || "Deck removed"} (moved=${data?.moved || 0}, conflicts=${data?.conflicts || 0})`
+    );
+
+    // якщо видалили тему яку ти фільтруєш — скинемо фільтр
+    if (deckFilter === name) setDeckFilter("ALL");
+
+    await Promise.all([fetchDecks(), fetchLibraryCards(), fetchStats()]);
+  } catch (err) {
+    setFriendlyError("❌ Remove deck", err);
+  } finally {
+    setDeckManageBusy(false);
+  }
+}
+
 
   async function handleDeleteCard(id) {
     const token = getToken();
@@ -1408,6 +1525,71 @@ export default function Flashcards() {
               {filteredLibraryCards.length} / {libraryCards.length}
             </div>
           </div>
+
+<div className="panel" style={{ marginTop: 12, padding: 12 }}>
+  <b>🗂 Теми (Deck manager)</b>
+
+  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end", marginTop: 10 }}>
+    <div>
+      <div style={{ opacity: 0.75, fontSize: 12 }}>From</div>
+      <select
+        value={deckManageFrom}
+        onChange={(e) => setDeckManageFrom(e.target.value)}
+        disabled={deckManageBusy}
+      >
+        {decks.map((d) => (
+          <option key={d} value={d}>
+            {d}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <div style={{ flex: 1, minWidth: 220 }}>
+      <div style={{ opacity: 0.75, fontSize: 12 }}>New name (rename)</div>
+      <input
+        value={deckManageTo}
+        onChange={(e) => setDeckManageTo(e.target.value)}
+        disabled={deckManageBusy}
+        placeholder="Напр. Food"
+      />
+    </div>
+
+    <button
+      type="button"
+      onClick={renameDeck}
+      disabled={deckManageBusy || !deckManageTo.trim()}
+      title="Rename selected deck"
+    >
+      ✏️ Rename
+    </button>
+
+    <div>
+      <div style={{ opacity: 0.75, fontSize: 12 }}>Remove: move cards →</div>
+      <select
+        value={deckRemoveTo}
+        onChange={(e) => setDeckRemoveTo(e.target.value)}
+        disabled={deckManageBusy}
+      >
+        {decks.map((d) => (
+          <option key={d} value={d}>
+            {d}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <button
+      type="button"
+      onClick={removeDeckMoveCards}
+      disabled={deckManageBusy}
+      title="Remove deck (move cards)"
+    >
+      🗑 Remove
+    </button>
+  </div>
+</div>
+
 
 <div className="panel bulk-bar">
   <div className="bulk-left">
