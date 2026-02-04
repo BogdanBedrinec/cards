@@ -71,8 +71,7 @@ export default function Flashcards() {
   const [sortOrder] = useState("asc");
 
   // ===== Library sorting params (UI shown) =====
-  // default: newest first
-  const [librarySortBy, setLibrarySortBy] = useState("createdAt"); // createdAt | word | translation | nextReview | accuracy
+  const [librarySortBy, setLibrarySortBy] = useState("createdAt"); // createdAt | word | nextReview | accuracy
   const [librarySortOrder, setLibrarySortOrder] = useState("desc"); // asc | desc
 
   // stats
@@ -116,16 +115,10 @@ export default function Flashcards() {
   const [libraryLoading, setLibraryLoading] = useState(false);
   const [librarySearch, setLibrarySearch] = useState("");
 
-  // --- bulk actions state ---
+  // --- bulk selection state (library) ---
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [bulkDeck, setBulkDeck] = useState(DEFAULT_DECK);
-  const [bulkLoading, setBulkLoading] = useState(false);
-
-  // --- deck manager state ---
-  const [deckManageFrom, setDeckManageFrom] = useState(DEFAULT_DECK);
-  const [deckManageTo, setDeckManageTo] = useState("");
-  const [deckManageDeleteMode, setDeckManageDeleteMode] = useState("move"); // move | delete
-  const [deckManageLoading, setDeckManageLoading] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   // edit modal
   const [editOpen, setEditOpen] = useState(false);
@@ -171,20 +164,14 @@ export default function Flashcards() {
         editTitle: "Edit card",
         sort: "Sortierung",
         order: "Reihenfolge",
-
-        // new
-        bulk: "Bulk",
+        // bulk
+        selected: "Selected",
         selectAll: "Select all",
         clear: "Clear",
         moveTo: "Move to",
+        move: "Move",
         deleteSelected: "Delete selected",
-        deckManager: "Deck manager",
-        fromDeck: "From",
-        toDeck: "To",
-        rename: "Rename",
-        removeDeck: "Remove deck",
-        deleteCards: "Delete cards",
-        moveCardsToDefault: "Move cards → default",
+        confirmDeleteN: "Delete selected cards?",
       },
       en: {
         review: "⚡ Review",
@@ -217,20 +204,14 @@ export default function Flashcards() {
         editTitle: "Edit card",
         sort: "Sorting",
         order: "Order",
-
-        // new
-        bulk: "Bulk",
+        // bulk
+        selected: "Selected",
         selectAll: "Select all",
         clear: "Clear",
         moveTo: "Move to",
+        move: "Move",
         deleteSelected: "Delete selected",
-        deckManager: "Deck manager",
-        fromDeck: "From",
-        toDeck: "To",
-        rename: "Rename",
-        removeDeck: "Remove deck",
-        deleteCards: "Delete cards",
-        moveCardsToDefault: "Move cards → default",
+        confirmDeleteN: "Delete selected cards?",
       },
       uk: {
         review: "⚡ Повторення",
@@ -263,20 +244,14 @@ export default function Flashcards() {
         editTitle: "Редагування картки",
         sort: "Сортування",
         order: "Порядок",
-
-        // new
-        bulk: "Масові дії",
+        // bulk
+        selected: "Вибрано",
         selectAll: "Вибрати все",
         clear: "Очистити",
-        moveTo: "Перенести в",
-        deleteSelected: "Видалити вибране",
-        deckManager: "Керування темами",
-        fromDeck: "З теми",
-        toDeck: "В тему",
-        rename: "Перейменувати",
-        removeDeck: "Видалити тему",
-        deleteCards: "Видалити картки",
-        moveCardsToDefault: "Перемістити → Без теми",
+        moveTo: "Перемістити в",
+        move: "Перемістити",
+        deleteSelected: "Видалити вибрані",
+        confirmDeleteN: "Видалити вибрані картки?",
       },
     }),
     []
@@ -379,38 +354,41 @@ export default function Flashcards() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, deckFilter, mode, sortBy, sortOrder]);
 
+  // Clear library selection when leaving library or changing deck filter
+  useEffect(() => {
+    if (view !== "library") {
+      setSelectedIds(new Set());
+      return;
+    }
+    // when deck filter changes inside library — clear selection to avoid surprises
+    setSelectedIds(new Set());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, deckFilter]);
+
   async function refreshAll() {
     await Promise.all([fetchDecks(), fetchCards(), fetchStats()]);
   }
 
-// ===== data loading triggers =====
-useEffect(() => {
-  (async () => {
-    setIsRefreshing(true);
-    try {
-      if (view === "review") {
-        await refreshAll();
-      } else if (view === "library") {
-        await Promise.all([fetchDecks(), fetchStats(), fetchLibraryCards()]);
-      } else {
-        await Promise.all([fetchDecks(), fetchStats()]);
-      }
-    } finally {
-      setIsRefreshing(false);
-      setIsBootLoading(false);
-    }
-  })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [view, deckFilter, mode, sortBy, sortOrder, librarySortBy, librarySortOrder]);
-
-
-  // when decks update, keep deck manager inputs sane
+  // ===== data loading triggers =====
   useEffect(() => {
-    if (!decks?.length) return;
-    if (!decks.includes(deckManageFrom)) setDeckManageFrom(DEFAULT_DECK);
-    if (!decks.includes(bulkDeck)) setBulkDeck(DEFAULT_DECK);
+    (async () => {
+      setMessage("");
+      setIsRefreshing(true);
+      try {
+        if (view === "review") {
+          await refreshAll();
+        } else if (view === "library") {
+          await Promise.all([fetchDecks(), fetchStats(), fetchLibraryCards()]);
+        } else {
+          await Promise.all([fetchDecks(), fetchStats()]);
+        }
+      } finally {
+        setIsRefreshing(false);
+        setIsBootLoading(false);
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [decks]);
+  }, [view, deckFilter, librarySortBy, librarySortOrder]);
 
   async function fetchDecks() {
     const token = getToken();
@@ -439,6 +417,9 @@ useEffect(() => {
 
       if (deckForNewCard && !withDefault.includes(deckForNewCard)) {
         setDeckForNewCard(DEFAULT_DECK);
+      }
+      if (bulkDeck && !withDefault.includes(bulkDeck)) {
+        setBulkDeck(DEFAULT_DECK);
       }
     } catch (err) {
       if (err?.name !== "AbortError") setFriendlyError("❌ Decks", err);
@@ -488,7 +469,7 @@ useEffect(() => {
     setIsCardsLoading(true);
     try {
       const params = new URLSearchParams();
-      params.set("mode", "due");
+      params.set("mode", "due"); // fixed for review
       params.set("sort", "nextReview");
       params.set("order", "asc");
       if (deckFilter !== "ALL") params.set("deck", deckFilter);
@@ -573,20 +554,8 @@ useEffect(() => {
     });
   }, [libraryCards, librarySearch]);
 
-  // keep selection consistent when list changes
-  useEffect(() => {
-    if (view !== "library") return;
-    const visible = new Set(filteredLibraryCards.map((c) => c._id));
-    setSelectedIds((prev) => {
-      if (prev.size === 0) return prev;
-      const next = new Set();
-      for (const id of prev) {
-        if (visible.has(id)) next.add(id);
-      }
-      return next;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteredLibraryCards, view]);
+  // selection helpers
+  const selectedCount = selectedIds.size;
 
   function toggleSelect(id) {
     setSelectedIds((prev) => {
@@ -597,12 +566,95 @@ useEffect(() => {
     });
   }
 
-  function selectAllVisible() {
-    setSelectedIds(new Set(filteredLibraryCards.map((c) => c._id)));
+  function selectAllFiltered() {
+    setSelectedIds(() => new Set(filteredLibraryCards.map((c) => c._id)));
   }
 
   function clearSelection() {
     setSelectedIds(new Set());
+  }
+
+  async function bulkMove() {
+    const token = getToken();
+    if (!token) return handle401();
+
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+
+    const deck = (bulkDeck || DEFAULT_DECK).trim() || DEFAULT_DECK;
+
+    setBulkBusy(true);
+    setMessage("");
+    try {
+      const { signal, cleanup } = withTimeout();
+      const res = await fetch(`${API}/api/cards/bulk-move`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids, deck }),
+        signal,
+      }).finally(cleanup);
+
+      if (res.status === 401) return handle401();
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setFriendlyError("❌ Bulk move", null, data?.message || data?.error);
+        return;
+      }
+
+      setMessage(`✅ ${data?.message || "Bulk move ok"}`);
+      clearSelection();
+      await Promise.all([fetchLibraryCards(), fetchDecks(), fetchStats()]);
+    } catch (err) {
+      setFriendlyError("❌ Bulk move", err);
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function bulkDelete() {
+    const token = getToken();
+    if (!token) return handle401();
+
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+
+    const ok = window.confirm(`${t.confirmDeleteN} (${ids.length})`);
+    if (!ok) return;
+
+    setBulkBusy(true);
+    setMessage("");
+    try {
+      const { signal, cleanup } = withTimeout();
+      const res = await fetch(`${API}/api/cards/bulk-delete`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids }),
+        signal,
+      }).finally(cleanup);
+
+      if (res.status === 401) return handle401();
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setFriendlyError("❌ Bulk delete", null, data?.message || data?.error);
+        return;
+      }
+
+      setMessage(`✅ ${data?.message || "Bulk delete ok"}`);
+      clearSelection();
+      await Promise.all([fetchLibraryCards(), fetchDecks(), fetchStats()]);
+    } catch (err) {
+      setFriendlyError("❌ Bulk delete", err);
+    } finally {
+      setBulkBusy(false);
+    }
   }
 
   async function handleDeleteCard(id) {
@@ -630,150 +682,6 @@ useEffect(() => {
       await Promise.all([fetchLibraryCards(), fetchStats(), fetchDecks()]);
     } catch (err) {
       setFriendlyError("❌ Delete", err);
-    }
-  }
-
-  // ===== Bulk actions =====
-  async function bulkRequest(action, payload = {}) {
-    const token = getToken();
-    if (!token) return handle401();
-
-    const ids = Array.from(selectedIds);
-    if (!ids.length) {
-      setMessage("⚠️ Select at least one card");
-      return;
-    }
-
-    setBulkLoading(true);
-    try {
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards/bulk`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ ids, action, ...payload }),
-        signal,
-      }).finally(cleanup);
-
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setFriendlyError("❌ Bulk", null, data?.message || data?.error);
-        return;
-      }
-
-      setMessage(`✅ ${data.message || "Done"}`);
-      clearSelection();
-      await Promise.all([fetchLibraryCards(), fetchStats(), fetchDecks()]);
-    } catch (err) {
-      setFriendlyError("❌ Bulk", err);
-    } finally {
-      setBulkLoading(false);
-    }
-  }
-
-  async function bulkDeleteSelected() {
-    if (!window.confirm(`Delete ${selectedIds.size} selected cards?`)) return;
-    await bulkRequest("delete");
-  }
-
-  async function bulkMoveSelected() {
-    const toDeck = (bulkDeck || DEFAULT_DECK).trim() || DEFAULT_DECK;
-    if (!window.confirm(`Move ${selectedIds.size} cards to "${toDeck}"?`)) return;
-    await bulkRequest("moveDeck", { toDeck });
-  }
-
-  // ===== Deck manager =====
-  async function renameDeck() {
-    const token = getToken();
-    if (!token) return handle401();
-
-    const from = (deckManageFrom || "").trim();
-    const to = (deckManageTo || "").trim();
-
-    if (!from || from === "ALL") return setMessage("⚠️ Choose deck to rename");
-    if (from === DEFAULT_DECK) return setMessage("⚠️ Default deck cannot be renamed");
-    if (!to) return setMessage("⚠️ Enter new deck name");
-    if (to === from) return setMessage("⚠️ Same name");
-
-    if (!window.confirm(`Rename deck "${from}" → "${to}" ?`)) return;
-
-    setDeckManageLoading(true);
-    try {
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards/decks/rename`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from, to }),
-        signal,
-      }).finally(cleanup);
-
-      if (res.status === 401) return handle401();
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        setFriendlyError("❌ Rename deck", null, data?.message || data?.error);
-        return;
-      }
-
-      setMessage(`✅ ${data.message || "Renamed"} (moved=${data.moved || 0}, conflicts=${data.conflicts || 0})`);
-      setDeckManageTo("");
-      await Promise.all([fetchDecks(), fetchStats(), fetchLibraryCards()]);
-      setDeckManageFrom(to);
-      setDeckFilter("ALL");
-    } catch (err) {
-      setFriendlyError("❌ Rename deck", err);
-    } finally {
-      setDeckManageLoading(false);
-    }
-  }
-
-  async function removeDeck() {
-    const token = getToken();
-    if (!token) return handle401();
-
-    const name = (deckManageFrom || "").trim();
-    if (!name || name === "ALL") return setMessage("⚠️ Choose deck");
-    if (name === DEFAULT_DECK) return setMessage("⚠️ Default deck cannot be removed");
-
-    const modeQ = deckManageDeleteMode === "delete" ? "delete" : "move";
-    const confirmText =
-      modeQ === "delete"
-        ? `DELETE deck "${name}" and ALL its cards? (cannot undo)`
-        : `Remove deck "${name}" and move its cards to "${DEFAULT_DECK}"?`;
-
-    if (!window.confirm(confirmText)) return;
-
-    setDeckManageLoading(true);
-    try {
-      const url =
-        modeQ === "delete"
-          ? `${API}/api/cards/decks/${encodeURIComponent(name)}?mode=delete`
-          : `${API}/api/cards/decks/${encodeURIComponent(name)}?mode=move&to=${encodeURIComponent(DEFAULT_DECK)}`;
-
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(url, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-        signal,
-      }).finally(cleanup);
-
-      if (res.status === 401) return handle401();
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        setFriendlyError("❌ Remove deck", null, data?.message || data?.error);
-        return;
-      }
-
-      setMessage(`✅ ${data.message || "Done"}`);
-      await Promise.all([fetchDecks(), fetchStats(), fetchLibraryCards()]);
-      setDeckManageFrom(DEFAULT_DECK);
-      setDeckFilter("ALL");
-    } catch (err) {
-      setFriendlyError("❌ Remove deck", err);
-    } finally {
-      setDeckManageLoading(false);
     }
   }
 
@@ -968,6 +876,7 @@ useEffect(() => {
       const ok = await sendReview(currentReviewCard._id, known);
       if (!ok) return;
 
+      // due-mode прогрес + індекс
       setSessionDone((d) => d + 1);
       setShowAnswer(false);
       setReviewIndex(0);
@@ -1068,16 +977,7 @@ useEffect(() => {
     if (!token) return handle401();
 
     if (!importText.trim()) {
-      const inserted = Number(data.inserted || 0);
-const skipped = Number(data.skippedAsDuplicates || 0);
-const received = Number(data.received || 0);
-
-if (inserted === 0) {
-  setMessage(`ℹ️ Імпорт: додано 0. Усі ${skipped} карток — дублікати (вже є в базі).`);
-} else {
-  setMessage(`✅ Імпорт: додано ${inserted}. Дублікатів: ${skipped}. Отримано: ${received}.`);
-}
-
+      setMessage("⚠️ Paste data for import");
       return;
     }
 
@@ -1311,7 +1211,6 @@ if (inserted === 0) {
                 <select value={librarySortBy} onChange={(e) => setLibrarySortBy(e.target.value)}>
                   <option value="createdAt">🆕 createdAt</option>
                   <option value="word">🔤 word</option>
-                  <option value="translation">🌍 translation</option>
                   <option value="nextReview">🕒 nextReview</option>
                   <option value="accuracy">🎯 accuracy</option>
                 </select>
@@ -1491,54 +1390,7 @@ if (inserted === 0) {
       ) : (
         // ===== Library view =====
         <div className="panel" style={{ marginTop: 12, padding: 12 }}>
-          {/* Deck manager */}
-          <div className="panel" style={{ padding: 12, marginBottom: 12 }}>
-            <b>{t.deckManager}</b>
-
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10, alignItems: "center" }}>
-              <div style={{ display: "grid", gap: 4 }}>
-                <div style={{ opacity: 0.8, fontSize: 12 }}>{t.fromDeck}</div>
-                <select value={deckManageFrom} onChange={(e) => setDeckManageFrom(e.target.value)}>
-                  {decks.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={{ display: "grid", gap: 4 }}>
-                <div style={{ opacity: 0.8, fontSize: 12 }}>{t.toDeck}</div>
-                <input
-                  value={deckManageTo}
-                  onChange={(e) => setDeckManageTo(e.target.value)}
-                  placeholder={DEFAULT_DECK}
-                  style={{ minWidth: 220 }}
-                />
-              </div>
-
-              <button type="button" onClick={renameDeck} disabled={deckManageLoading}>
-                ✏️ {deckManageLoading ? t.loading : t.rename}
-              </button>
-
-              <div style={{ display: "grid", gap: 4 }}>
-                <div style={{ opacity: 0.8, fontSize: 12 }}>{t.removeDeck}</div>
-                <select
-                  value={deckManageDeleteMode}
-                  onChange={(e) => setDeckManageDeleteMode(e.target.value)}
-                >
-                  <option value="move">{t.moveCardsToDefault}</option>
-                  <option value="delete">{t.deleteCards}</option>
-                </select>
-              </div>
-
-              <button type="button" onClick={removeDeck} disabled={deckManageLoading}>
-                🗑 {deckManageLoading ? t.loading : t.removeDeck}
-              </button>
-            </div>
-          </div>
-
-          {/* Search / reload */}
+          {/* Top row: search + reload + counts */}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
             <input
               type="text"
@@ -1548,7 +1400,7 @@ if (inserted === 0) {
               style={{ flex: 1, minWidth: 220 }}
             />
 
-            <button type="button" onClick={fetchLibraryCards} disabled={libraryLoading}>
+            <button type="button" onClick={fetchLibraryCards} disabled={libraryLoading || bulkBusy}>
               {libraryLoading ? t.loading : t.reload}
             </button>
 
@@ -1557,39 +1409,73 @@ if (inserted === 0) {
             </div>
           </div>
 
-          {/* Bulk bar */}
-          <div className="panel" style={{ padding: 12, marginTop: 12 }}>
+          {/* Bulk actions row */}
+          <div
+            className="panel"
+            style={{
+              marginTop: 12,
+              padding: 10,
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              <b>{t.bulk}:</b>
-              <div style={{ opacity: 0.8 }}>
-                selected: <b>{selectedIds.size}</b>
-              </div>
+              <b>
+                {t.selected}: {selectedCount}
+              </b>
 
-              <button type="button" onClick={selectAllVisible} disabled={bulkLoading || filteredLibraryCards.length === 0}>
+              <button type="button" onClick={selectAllFiltered} disabled={filteredLibraryCards.length === 0 || bulkBusy}>
                 ✅ {t.selectAll}
               </button>
-              <button type="button" onClick={clearSelection} disabled={bulkLoading || selectedIds.size === 0}>
+
+              <button type="button" onClick={clearSelection} disabled={selectedCount === 0 || bulkBusy}>
                 ✖ {t.clear}
               </button>
+            </div>
 
-              <select value={bulkDeck} onChange={(e) => setBulkDeck(e.target.value)} disabled={bulkLoading}>
-                {decks.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <span style={{ opacity: 0.85 }}>{t.moveTo}:</span>
+
+              <select
+                value={bulkDeck}
+                onChange={(e) => setBulkDeck(e.target.value)}
+                disabled={bulkBusy}
+              >
+                {decks.length === 0 ? (
+                  <option value={DEFAULT_DECK}>{DEFAULT_DECK}</option>
+                ) : (
+                  decks.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))
+                )}
               </select>
 
-              <button type="button" onClick={bulkMoveSelected} disabled={bulkLoading || selectedIds.size === 0}>
-                📦 {bulkLoading ? t.loading : t.moveTo}
+              <button
+                type="button"
+                onClick={bulkMove}
+                disabled={selectedCount === 0 || bulkBusy}
+                title="Move selected to chosen deck"
+              >
+                📦 {bulkBusy ? t.loading : t.move}
               </button>
 
-              <button type="button" onClick={bulkDeleteSelected} disabled={bulkLoading || selectedIds.size === 0}>
-                🗑 {bulkLoading ? t.loading : t.deleteSelected}
+              <button
+                type="button"
+                onClick={bulkDelete}
+                disabled={selectedCount === 0 || bulkBusy}
+                title="Delete selected"
+              >
+                🗑 {bulkBusy ? t.loading : t.deleteSelected}
               </button>
             </div>
           </div>
 
+          {/* Cards list */}
           <div style={{ marginTop: 12 }}>
             {libraryLoading ? (
               <div>
@@ -1599,61 +1485,48 @@ if (inserted === 0) {
               <div style={{ opacity: 0.8, padding: 8 }}>{t.noFound}</div>
             ) : (
               <div style={{ display: "grid", gap: 10 }}>
-                {filteredLibraryCards.map((c) => {
-                  const checked = selectedIds.has(c._id);
-                  const acc =
-                    c.reviewCount && c.reviewCount > 0
-                      ? Math.round((c.correctCount / c.reviewCount) * 100)
-                      : 0;
-
-                  return (
-                    <div
-                      key={c._id}
-                      className="panel"
-                      style={{
-                        padding: 12,
-                        display: "grid",
-                        gap: 6,
-                        border: checked ? "1px solid rgba(120,200,255,0.6)" : undefined,
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => toggleSelect(c._id)}
-                            aria-label="Select card"
-                          />
-                          <b>{c.deck || DEFAULT_DECK}</b>
-                        </div>
-
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <button type="button" onClick={() => openEdit(c)}>
-                            ✏️ {t.edit}
-                          </button>
-                          <button type="button" onClick={() => handleDeleteCard(c._id)}>
-                            🗑 {t.del}
-                          </button>
-                        </div>
+                {filteredLibraryCards.map((c) => (
+                  <div
+                    key={c._id}
+                    className="panel"
+                    style={{ padding: 12, display: "grid", gap: 6 }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(c._id)}
+                          onChange={() => toggleSelect(c._id)}
+                          disabled={bulkBusy}
+                          aria-label="Select card"
+                        />
+                        <b>{c.deck || DEFAULT_DECK}</b>
                       </div>
 
-                      <div>
-                        <b>{langLabel(learningLang)}:</b> {c.word}
-                      </div>
-                      <div>
-                        <b>{langLabel(nativeLang)}:</b> {c.translation}
-                      </div>
-                      {c.example ? <div style={{ opacity: 0.9 }}>📘 {c.example}</div> : null}
-
-                      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", opacity: 0.75 }}>
-                        <span>reviews: {c.reviewCount || 0}</span>
-                        <span>correct: {c.correctCount || 0}</span>
-                        <span>accuracy: {acc}%</span>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button type="button" onClick={() => openEdit(c)} disabled={bulkBusy}>
+                          ✏️ {t.edit}
+                        </button>
+                        <button type="button" onClick={() => handleDeleteCard(c._id)} disabled={bulkBusy}>
+                          🗑 {t.del}
+                        </button>
                       </div>
                     </div>
-                  );
-                })}
+
+                    <div>
+                      <b>{langLabel(learningLang)}:</b> {c.word}
+                    </div>
+                    <div>
+                      <b>{langLabel(nativeLang)}:</b> {c.translation}
+                    </div>
+                    {c.example ? <div style={{ opacity: 0.9 }}>📘 {c.example}</div> : null}
+
+                    <div style={{ display: "flex", gap: 12, flexWrap: "wrap", opacity: 0.75 }}>
+                      <span>reviews: {c.reviewCount || 0}</span>
+                      <span>correct: {c.correctCount || 0}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
