@@ -1409,72 +1409,67 @@ export default function Flashcards() {
             </div>
           </div>
 
-          {/* Bulk actions row */}
-          <div
-            className="panel"
-            style={{
-              marginTop: 12,
-              padding: 10,
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              <b>
-                {t.selected}: {selectedCount}
-              </b>
+<div className="panel bulk-bar">
+  <div className="bulk-left">
+  <b>
+    {t.selected}: {selectedCount}
+  </b>
 
-              <button type="button" onClick={selectAllFiltered} disabled={filteredLibraryCards.length === 0 || bulkBusy}>
-                ✅ {t.selectAll}
-              </button>
+  <button
+    type="button"
+    onClick={selectAllFiltered}
+    disabled={filteredLibraryCards.length === 0 || bulkBusy}
+  >
+    ✅ {t.selectAll}
+  </button>
 
-              <button type="button" onClick={clearSelection} disabled={selectedCount === 0 || bulkBusy}>
-                ✖ {t.clear}
-              </button>
-            </div>
+  <button
+    type="button"
+    onClick={clearSelection}
+    disabled={selectedCount === 0 || bulkBusy}
+  >
+    ✖ {t.clear}
+  </button>
+</div>
 
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-              <span style={{ opacity: 0.85 }}>{t.moveTo}:</span>
+<div className="bulk-right">
+  <span className="bulk-label">{t.moveTo}:</span>
 
-              <select
-                value={bulkDeck}
-                onChange={(e) => setBulkDeck(e.target.value)}
-                disabled={bulkBusy}
-              >
-                {decks.length === 0 ? (
-                  <option value={DEFAULT_DECK}>{DEFAULT_DECK}</option>
-                ) : (
-                  decks.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))
-                )}
-              </select>
+  <select
+    value={bulkDeck}
+    onChange={(e) => setBulkDeck(e.target.value)}
+    disabled={bulkBusy}
+  >
+    {decks.length === 0 ? (
+      <option value={DEFAULT_DECK}>{DEFAULT_DECK}</option>
+    ) : (
+      decks.map((d) => (
+        <option key={d} value={d}>
+          {d}
+        </option>
+      ))
+    )}
+  </select>
 
-              <button
-                type="button"
-                onClick={bulkMove}
-                disabled={selectedCount === 0 || bulkBusy}
-                title="Move selected to chosen deck"
-              >
-                📦 {bulkBusy ? t.loading : t.move}
-              </button>
+  <button
+    type="button"
+    onClick={bulkMove}
+    disabled={selectedCount === 0 || bulkBusy}
+  >
+    📦 {bulkBusy ? t.loading : t.move}
+  </button>
 
-              <button
-                type="button"
-                onClick={bulkDelete}
-                disabled={selectedCount === 0 || bulkBusy}
-                title="Delete selected"
-              >
-                🗑 {bulkBusy ? t.loading : t.deleteSelected}
-              </button>
-            </div>
-          </div>
+  <button
+    type="button"
+    onClick={bulkDelete}
+    disabled={selectedCount === 0 || bulkBusy}
+  >
+    🗑 {bulkBusy ? t.loading : t.deleteSelected}
+  </button>
+</div>
+</div>
 
+            
           {/* Cards list */}
           <div style={{ marginTop: 12 }}>
             {libraryLoading ? (
@@ -1493,13 +1488,6 @@ export default function Flashcards() {
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(c._id)}
-                          onChange={() => toggleSelect(c._id)}
-                          disabled={bulkBusy}
-                          aria-label="Select card"
-                        />
                         <b>{c.deck || DEFAULT_DECK}</b>
                       </div>
 
