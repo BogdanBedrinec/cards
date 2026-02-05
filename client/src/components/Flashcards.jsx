@@ -46,6 +46,7 @@ function humanFetchError(err) {
 }
 
 export default function Flashcards() {
+  console.log("FLASHCARDS COMPONENT LOADED v-remove-test");
   const navigate = useNavigate();
 
   const [cards, setCards] = useState([]);
@@ -1585,7 +1586,16 @@ async function removeDeckMoveCards() {
       disabled={deckManageBusy}
       title="Remove deck (move cards)"
     >
-      🗑 Remove
+      <button
+  type="button"
+  onClick={() => {
+    console.log("REMOVE CLICK");
+    handleDeckRemove(); // або твоя назва функції
+  }}
+>
+  Remove
+</button>
+
     </button>
   </div>
 </div>
