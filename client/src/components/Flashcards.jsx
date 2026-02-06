@@ -1380,16 +1380,16 @@ export default function Flashcards() {
               </div>
 
               <div className="review-main">
-              <div className="review-word">
-                {langLabel(learningLang)} (learning): {currentReviewCard?.word}
-              </div>
+<div className="review-word">
+  {langLabel(learningLang)} (learning): {currentReviewCard?.word}
+</div>
+
 
 
                 {showAnswer ? (
                   <>
-                <div className="review-translation">
-                  {langLabel(nativeLang)} (native): {currentReviewCard?.translation}
-                </div>
+<div className="review-translation">{currentReviewCard?.translation}</div>
+
 
                     {currentReviewCard?.example ? (
                       <div className="review-example">📘 {currentReviewCard.example}</div>
@@ -1434,14 +1434,14 @@ export default function Flashcards() {
           <form className="add-card-form" onSubmit={handleAddCard}>
             <input
               type="text"
-              placeholder={`${langLabel(learningLang)}: ${t.wordPlaceholder}`}
+              placeholder={t.wordPlaceholder}
               value={word}
               onChange={(e) => setWord(e.target.value)}
               autoFocus
             />
             <input
               type="text"
-              placeholder={`${langLabel(nativeLang)}: ${t.translationPlaceholder}`}
+              placeholder={t.translationPlaceholder}
               value={translation}
               onChange={(e) => setTranslation(e.target.value)}
             />
@@ -1711,13 +1711,13 @@ export default function Flashcards() {
                     type="text"
                     value={editWord}
                     onChange={(e) => setEditWord(e.target.value)}
-                    placeholder={`${langLabel(learningLang)}: word`}
+                    placeholder="word"
                   />
                   <input
                     type="text"
                     value={editTranslation}
                     onChange={(e) => setEditTranslation(e.target.value)}
-                    placeholder={`${langLabel(nativeLang)}: translation`}
+                    placeholder="translation"
                   />
                   <input
                     type="text"
