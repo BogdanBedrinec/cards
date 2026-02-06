@@ -1380,9 +1380,8 @@ export default function Flashcards() {
               </div>
 
               <div className="review-main">
-<div className="review-word">
-  {langLabel(learningLang)} (learning): {currentReviewCard?.word}
-</div>
+<div className="review-word">{currentReviewCard?.word}</div>
+
 
 
 
