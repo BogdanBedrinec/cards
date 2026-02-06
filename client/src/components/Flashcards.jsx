@@ -1159,25 +1159,6 @@ export default function Flashcards() {
   }
 
   // ===== UI lang change (PATCH to server) =====
-  async function handleUiLangChange(newLang) {
-    const lang = normalizeLang(newLang, "de");
-
-    setInterfaceLang(lang);
-    localStorage.setItem(LS_UI, lang);
-
-    const token = getToken();
-    if (!token) return;
-
-    await fetch(`${API}/api/users/me/ui-lang`, {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ interfaceLang: lang }),
-    }).catch(() => {});
-  }
-
   function logout() {
     localStorage.removeItem("token");
     localStorage.removeItem("userId");
@@ -1305,15 +1286,6 @@ export default function Flashcards() {
         </div>
 
         <div className="toolbar-row toolbar-row-controls">
-          <div className="ctrl">
-            <div className="ctrl-label">{t.uiLang}</div>
-            <select value={interfaceLang} onChange={(e) => handleUiLangChange(e.target.value)}>
-              <option value="de">DE</option>
-              <option value="en">EN</option>
-              <option value="uk">UK</option>
-            </select>
-          </div>
-
           {(view === "review" || view === "library") && (
             <div className="ctrl">
               <div className="ctrl-label">{t.deckFilter}</div>
@@ -1408,15 +1380,17 @@ export default function Flashcards() {
               </div>
 
               <div className="review-main">
-                <div className="review-word">
-                  {langLabel(learningLang)}: {currentReviewCard?.word}
-                </div>
+              <div className="review-word">
+                {langLabel(learningLang)} (learning): {currentReviewCard?.word}
+              </div>
+
 
                 {showAnswer ? (
                   <>
-                    <div className="review-translation">
-                      {langLabel(nativeLang)}: {currentReviewCard?.translation}
-                    </div>
+                <div className="review-translation">
+                  {langLabel(nativeLang)} (native): {currentReviewCard?.translation}
+                </div>
+
                     {currentReviewCard?.example ? (
                       <div className="review-example">📘 {currentReviewCard.example}</div>
                     ) : null}
