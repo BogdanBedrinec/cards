@@ -1,3 +1,6 @@
+// Flashcards.jsx (clean fixed version)
+// Replace your entire Flashcards.jsx with this file.
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Flashcards.css";
@@ -46,7 +49,6 @@ function humanFetchError(err) {
 }
 
 export default function Flashcards() {
-  console.log("FLASHCARDS COMPONENT LOADED v-remove-test");
   const navigate = useNavigate();
 
   const [cards, setCards] = useState([]);
@@ -122,11 +124,10 @@ export default function Flashcards() {
   const [bulkBusy, setBulkBusy] = useState(false);
 
   // --- deck manager (rename / remove deck) ---
-const [deckManageFrom, setDeckManageFrom] = useState(DEFAULT_DECK);
-const [deckManageTo, setDeckManageTo] = useState("");
-const [deckRemoveTo, setDeckRemoveTo] = useState(DEFAULT_DECK);
-const [deckManageBusy, setDeckManageBusy] = useState(false);
-
+  const [deckManageFrom, setDeckManageFrom] = useState(DEFAULT_DECK);
+  const [deckManageTo, setDeckManageTo] = useState(""); // new name for rename
+  const [deckRemoveTo, setDeckRemoveTo] = useState(DEFAULT_DECK); // move cards to
+  const [deckManageBusy, setDeckManageBusy] = useState(false);
 
   // edit modal
   const [editOpen, setEditOpen] = useState(false);
@@ -368,7 +369,6 @@ const [deckManageBusy, setDeckManageBusy] = useState(false);
       setSelectedIds(new Set());
       return;
     }
-    // when deck filter changes inside library — clear selection to avoid surprises
     setSelectedIds(new Set());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, deckFilter]);
@@ -423,19 +423,11 @@ const [deckManageBusy, setDeckManageBusy] = useState(false);
       const withDefault = list.includes(DEFAULT_DECK) ? list : [DEFAULT_DECK, ...list];
       setDecks(withDefault);
 
-      if (deckForNewCard && !withDefault.includes(deckForNewCard)) {
-        setDeckForNewCard(DEFAULT_DECK);
-      }
-      if (bulkDeck && !withDefault.includes(bulkDeck)) {
-        setBulkDeck(DEFAULT_DECK);
-      }
-if (deckManageFrom && !withDefault.includes(deckManageFrom)) {
-  setDeckManageFrom(DEFAULT_DECK);
-}
-if (deckRemoveTo && !withDefault.includes(deckRemoveTo)) {
-  setDeckRemoveTo(DEFAULT_DECK);
-}
+      if (deckForNewCard && !withDefault.includes(deckForNewCard)) setDeckForNewCard(DEFAULT_DECK);
+      if (bulkDeck && !withDefault.includes(bulkDeck)) setBulkDeck(DEFAULT_DECK);
 
+      if (deckManageFrom && !withDefault.includes(deckManageFrom)) setDeckManageFrom(DEFAULT_DECK);
+      if (deckRemoveTo && !withDefault.includes(deckRemoveTo)) setDeckRemoveTo(DEFAULT_DECK);
     } catch (err) {
       if (err?.name !== "AbortError") setFriendlyError("❌ Decks", err);
     } finally {
@@ -484,7 +476,7 @@ if (deckRemoveTo && !withDefault.includes(deckRemoveTo)) {
     setIsCardsLoading(true);
     try {
       const params = new URLSearchParams();
-      params.set("mode", "due"); // fixed for review
+      params.set("mode", "due");
       params.set("sort", "nextReview");
       params.set("order", "asc");
       if (deckFilter !== "ALL") params.set("deck", deckFilter);
@@ -501,7 +493,6 @@ if (deckRemoveTo && !withDefault.includes(deckRemoveTo)) {
       if (res.status === 401) return handle401();
 
       const data = await res.json().catch(() => null);
-
       if (!res.ok) {
         setFriendlyError("❌ Cards", null, data?.message || data?.error);
         return;
@@ -622,7 +613,7 @@ if (deckRemoveTo && !withDefault.includes(deckRemoveTo)) {
 
       setMessage(`✅ ${data?.message || "Bulk move ok"}`);
       clearSelection();
-      await Promise.all([fetchLibraryCards(), fetchDecks(), fetchStats()]);
+      await Promise.all([fetchLibraryCards(), fetchDecks(), fetchCards(), fetchStats()]);
     } catch (err) {
       setFriendlyError("❌ Bulk move", err);
     } finally {
@@ -664,7 +655,7 @@ if (deckRemoveTo && !withDefault.includes(deckRemoveTo)) {
 
       setMessage(`✅ ${data?.message || "Bulk delete ok"}`);
       clearSelection();
-      await Promise.all([fetchLibraryCards(), fetchDecks(), fetchStats()]);
+      await Promise.all([fetchLibraryCards(), fetchDecks(), fetchCards(), fetchStats()]);
     } catch (err) {
       setFriendlyError("❌ Bulk delete", err);
     } finally {
@@ -673,107 +664,118 @@ if (deckRemoveTo && !withDefault.includes(deckRemoveTo)) {
   }
 
   async function renameDeck() {
-  const token = getToken();
-  if (!token) return handle401();
+    const token = getToken();
+    if (!token) return handle401();
 
-  const from = String(deckManageFrom || "").trim();
-  const to = String(deckManageTo || "").trim();
+    const from = String(deckManageFrom || "").trim();
+    const to = String(deckManageTo || "").trim();
 
-  if (!from || !to) return;
-  if (from === DEFAULT_DECK) {
-    setMessage("⚠️ Не можна перейменувати 'Без теми'");
-    return;
-  }
+    if (!from || !to) return;
 
-  const ok = window.confirm(`Rename deck "${from}" → "${to}" ?`);
-  if (!ok) return;
-
-  setDeckManageBusy(true);
-  setMessage("");
-
-  try {
-    const { signal, cleanup } = withTimeout();
-    const res = await fetch(`${API}/api/cards/decks/rename`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ from, to }),
-      signal,
-    }).finally(cleanup);
-
-    if (res.status === 401) return handle401();
-
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-      setFriendlyError("❌ Rename deck", null, data?.message || data?.error);
+    if (from === DEFAULT_DECK) {
+      setMessage("⚠️ Не можна перейменувати 'Без теми'");
       return;
     }
 
-    setMessage(`✅ ${data?.message || "Deck renamed"} (moved=${data?.moved || 0}, conflicts=${data?.conflicts || 0})`);
-    setDeckManageTo("");
+    const ok = window.confirm(`Rename deck "${from}" → "${to}" ?`);
+    if (!ok) return;
 
-    await Promise.all([fetchDecks(), fetchLibraryCards(), fetchStats()]);
-  } catch (err) {
-    setFriendlyError("❌ Rename deck", err);
-  } finally {
-    setDeckManageBusy(false);
+    setDeckManageBusy(true);
+    setMessage("");
+
+    try {
+      const { signal, cleanup } = withTimeout();
+      const res = await fetch(`${API}/api/cards/decks/rename`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ from, to }),
+        signal,
+      }).finally(cleanup);
+
+      if (res.status === 401) return handle401();
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setFriendlyError("❌ Rename deck", null, data?.message || data?.error);
+        return;
+      }
+
+      setMessage(
+        `✅ ${data?.message || "Deck renamed"} (moved=${data?.moved || 0}, conflicts=${
+          data?.conflicts || 0
+        })`
+      );
+      setDeckManageTo("");
+
+      // if filter points to old deck — reset
+      if (deckFilter === from) setDeckFilter("ALL");
+
+      await Promise.all([fetchDecks(), fetchLibraryCards(), fetchCards(), fetchStats()]);
+    } catch (err) {
+      setFriendlyError("❌ Rename deck", err);
+    } finally {
+      setDeckManageBusy(false);
+    }
   }
-}
 
-async function removeDeckMoveCards() {
-  const token = getToken();
-  if (!token) return handle401();
+  async function removeDeckMoveCards() {
+    const token = getToken();
+    if (!token) return handle401();
 
-  const name = String(deckManageFrom || "").trim();
-  const to = String(deckRemoveTo || DEFAULT_DECK).trim() || DEFAULT_DECK;
+    const name = String(deckManageFrom || "").trim();
+    const to = String(deckRemoveTo || DEFAULT_DECK).trim() || DEFAULT_DECK;
 
-  if (!name) return;
-  if (name === DEFAULT_DECK) {
-    setMessage("⚠️ Не можна видалити 'Без теми'");
-    return;
-  }
+    if (!name) return;
 
-  const ok = window.confirm(`Remove deck "${name}" (move cards → "${to}") ?`);
-  if (!ok) return;
-
-  setDeckManageBusy(true);
-  setMessage("");
-
-  try {
-    const { signal, cleanup } = withTimeout();
-    const url = `${API}/api/cards/decks/${encodeURIComponent(name)}?mode=move&to=${encodeURIComponent(to)}`;
-
-    const res = await fetch(url, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-      signal,
-    }).finally(cleanup);
-
-    if (res.status === 401) return handle401();
-
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-      setFriendlyError("❌ Remove deck", null, data?.message || data?.error);
+    if (name === DEFAULT_DECK) {
+      setMessage("⚠️ Не можна видалити 'Без теми'");
       return;
     }
 
-    setMessage(
-      `✅ ${data?.message || "Deck removed"} (moved=${data?.moved || 0}, conflicts=${data?.conflicts || 0})`
-    );
+    const ok = window.confirm(`Remove deck "${name}" (move cards → "${to}") ?`);
+    if (!ok) return;
 
-    // якщо видалили тему яку ти фільтруєш — скинемо фільтр
-    if (deckFilter === name) setDeckFilter("ALL");
+    setDeckManageBusy(true);
+    setMessage("");
 
-    await Promise.all([fetchDecks(), fetchLibraryCards(), fetchStats()]);
-  } catch (err) {
-    setFriendlyError("❌ Remove deck", err);
-  } finally {
-    setDeckManageBusy(false);
+    try {
+      const { signal, cleanup } = withTimeout();
+      const url = `${API}/api/cards/decks/${encodeURIComponent(name)}?mode=move&to=${encodeURIComponent(
+        to
+      )}`;
+
+      const res = await fetch(url, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+        signal,
+      }).finally(cleanup);
+
+      if (res.status === 401) return handle401();
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setFriendlyError("❌ Remove deck", null, data?.message || data?.error);
+        return;
+      }
+
+      setMessage(
+        `✅ ${data?.message || "Deck removed"} (moved=${data?.moved || 0}, conflicts=${
+          data?.conflicts || 0
+        })`
+      );
+
+      if (deckFilter === name) setDeckFilter("ALL");
+
+      await Promise.all([fetchDecks(), fetchLibraryCards(), fetchCards(), fetchStats()]);
+    } catch (err) {
+      setFriendlyError("❌ Remove deck", err);
+    } finally {
+      setDeckManageBusy(false);
+    }
   }
-}
-
 
   async function handleDeleteCard(id) {
     const token = getToken();
@@ -797,7 +799,7 @@ async function removeDeckMoveCards() {
         return;
       }
 
-      await Promise.all([fetchLibraryCards(), fetchStats(), fetchDecks()]);
+      await Promise.all([fetchLibraryCards(), fetchStats(), fetchDecks(), fetchCards()]);
     } catch (err) {
       setFriendlyError("❌ Delete", err);
     }
@@ -852,7 +854,7 @@ async function removeDeckMoveCards() {
 
       setEditOpen(false);
       setEditCard(null);
-      await Promise.all([fetchLibraryCards(), fetchStats(), fetchDecks()]);
+      await Promise.all([fetchLibraryCards(), fetchStats(), fetchDecks(), fetchCards()]);
     } catch (err) {
       setFriendlyError("❌ Update", err);
     }
@@ -904,7 +906,6 @@ async function removeDeckMoveCards() {
       if (res.status === 401) return handle401();
 
       const data = await res.json().catch(() => null);
-
       if (!res.ok) {
         setFriendlyError("❌ Add", null, data?.message || data?.error);
         return;
@@ -917,6 +918,7 @@ async function removeDeckMoveCards() {
       setMessage("✅ Added!");
       setSessionDone(0);
       setSessionTotal(0);
+
       await refreshAll();
       setView("review");
     } catch (err) {
@@ -947,7 +949,6 @@ async function removeDeckMoveCards() {
       }
 
       const data = await res.json().catch(() => null);
-
       if (!res.ok) {
         setFriendlyError("❌ Review", null, data?.message || data?.error);
         return false;
@@ -994,10 +995,10 @@ async function removeDeckMoveCards() {
       const ok = await sendReview(currentReviewCard._id, known);
       if (!ok) return;
 
-      // due-mode прогрес + індекс
       setSessionDone((d) => d + 1);
       setShowAnswer(false);
       setReviewIndex(0);
+
       await Promise.all([fetchCards(), fetchStats(), fetchDecks()]);
     } finally {
       setIsReviewing(false);
@@ -1126,6 +1127,7 @@ async function removeDeckMoveCards() {
       setImportText("");
       setSessionDone(0);
       setSessionTotal(0);
+
       await refreshAll();
       if (view === "library") await fetchLibraryCards();
     } catch (err) {
@@ -1321,7 +1323,6 @@ async function removeDeckMoveCards() {
             </div>
           )}
 
-          {/* ✅ Sorting only in Library */}
           {view === "library" && (
             <>
               <div className="ctrl">
@@ -1383,7 +1384,6 @@ async function removeDeckMoveCards() {
         </div>
       )}
 
-      {/* ===== View content ===== */}
       {view === "review" ? (
         <div className="review-mode">
           {isCardsLoading ? (
@@ -1508,7 +1508,6 @@ async function removeDeckMoveCards() {
       ) : (
         // ===== Library view =====
         <div className="panel" style={{ marginTop: 12, padding: 12 }}>
-          {/* Top row: search + reload + counts */}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
             <input
               type="text"
@@ -1527,141 +1526,124 @@ async function removeDeckMoveCards() {
             </div>
           </div>
 
-<div className="panel" style={{ marginTop: 12, padding: 12 }}>
-  <b>🗂 Теми (Deck manager)</b>
+          {/* Deck manager */}
+          <div className="panel" style={{ marginTop: 12, padding: 12 }}>
+            <b>🗂 Теми (Deck manager)</b>
 
-  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end", marginTop: 10 }}>
-    <div>
-      <div style={{ opacity: 0.75, fontSize: 12 }}>From</div>
-      <select
-        value={deckManageFrom}
-        onChange={(e) => setDeckManageFrom(e.target.value)}
-        disabled={deckManageBusy}
-      >
-        {decks.map((d) => (
-          <option key={d} value={d}>
-            {d}
-          </option>
-        ))}
-      </select>
-    </div>
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+                alignItems: "end",
+                marginTop: 10,
+              }}
+            >
+              <div>
+                <div style={{ opacity: 0.75, fontSize: 12 }}>From</div>
+                <select
+                  value={deckManageFrom}
+                  onChange={(e) => setDeckManageFrom(e.target.value)}
+                  disabled={deckManageBusy}
+                >
+                  {decks.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-    <div style={{ flex: 1, minWidth: 220 }}>
-      <div style={{ opacity: 0.75, fontSize: 12 }}>New name (rename)</div>
-      <input
-        value={deckManageTo}
-        onChange={(e) => setDeckManageTo(e.target.value)}
-        disabled={deckManageBusy}
-        placeholder="Напр. Food"
-      />
-    </div>
+              <div style={{ flex: 1, minWidth: 220 }}>
+                <div style={{ opacity: 0.75, fontSize: 12 }}>New name (rename)</div>
+                <input
+                  value={deckManageTo}
+                  onChange={(e) => setDeckManageTo(e.target.value)}
+                  disabled={deckManageBusy}
+                  placeholder="Напр. Food"
+                />
+              </div>
 
-    <button
-      type="button"
-      onClick={renameDeck}
-      disabled={deckManageBusy || !deckManageTo.trim()}
-      title="Rename selected deck"
-    >
-      ✏️ Rename
-    </button>
+              <button
+                type="button"
+                onClick={renameDeck}
+                disabled={deckManageBusy || !deckManageTo.trim()}
+                title="Rename selected deck"
+              >
+                ✏️ Rename
+              </button>
 
-    <div>
-      <div style={{ opacity: 0.75, fontSize: 12 }}>Remove: move cards →</div>
-      <select
-        value={deckRemoveTo}
-        onChange={(e) => setDeckRemoveTo(e.target.value)}
-        disabled={deckManageBusy}
-      >
-        {decks.map((d) => (
-          <option key={d} value={d}>
-            {d}
-          </option>
-        ))}
-      </select>
-    </div>
+              <div>
+                <div style={{ opacity: 0.75, fontSize: 12 }}>Remove: move cards →</div>
+                <select
+                  value={deckRemoveTo}
+                  onChange={(e) => setDeckRemoveTo(e.target.value)}
+                  disabled={deckManageBusy}
+                >
+                  {decks.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-    <button
-      type="button"
-      onClick={removeDeckMoveCards}
-      disabled={deckManageBusy}
-      title="Remove deck (move cards)"
-    >
-      <button
-  type="button"
-  onClick={() => {
-    console.log("REMOVE CLICK");
-    handleDeckRemove(); // або твоя назва функції
-  }}
->
-  Remove
-</button>
+              <button
+                type="button"
+                onClick={removeDeckMoveCards}
+                disabled={deckManageBusy}
+                title="Remove deck (move cards)"
+              >
+                🗑 Remove
+              </button>
+            </div>
+          </div>
 
-    </button>
-  </div>
-</div>
+          {/* Bulk bar */}
+          <div className="panel bulk-bar" style={{ marginTop: 12 }}>
+            <div className="bulk-left">
+              <b>
+                {t.selected}: {selectedCount}
+              </b>
 
+              <button
+                type="button"
+                onClick={selectAllFiltered}
+                disabled={filteredLibraryCards.length === 0 || bulkBusy}
+              >
+                ✅ {t.selectAll}
+              </button>
 
-<div className="panel bulk-bar">
-  <div className="bulk-left">
-  <b>
-    {t.selected}: {selectedCount}
-  </b>
+              <button type="button" onClick={clearSelection} disabled={selectedCount === 0 || bulkBusy}>
+                ✖ {t.clear}
+              </button>
+            </div>
 
-  <button
-    type="button"
-    onClick={selectAllFiltered}
-    disabled={filteredLibraryCards.length === 0 || bulkBusy}
-  >
-    ✅ {t.selectAll}
-  </button>
+            <div className="bulk-right">
+              <span className="bulk-label">{t.moveTo}:</span>
 
-  <button
-    type="button"
-    onClick={clearSelection}
-    disabled={selectedCount === 0 || bulkBusy}
-  >
-    ✖ {t.clear}
-  </button>
-</div>
+              <select value={bulkDeck} onChange={(e) => setBulkDeck(e.target.value)} disabled={bulkBusy}>
+                {decks.length === 0 ? (
+                  <option value={DEFAULT_DECK}>{DEFAULT_DECK}</option>
+                ) : (
+                  decks.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))
+                )}
+              </select>
 
-<div className="bulk-right">
-  <span className="bulk-label">{t.moveTo}:</span>
+              <button type="button" onClick={bulkMove} disabled={selectedCount === 0 || bulkBusy}>
+                📦 {bulkBusy ? t.loading : t.move}
+              </button>
 
-  <select
-    value={bulkDeck}
-    onChange={(e) => setBulkDeck(e.target.value)}
-    disabled={bulkBusy}
-  >
-    {decks.length === 0 ? (
-      <option value={DEFAULT_DECK}>{DEFAULT_DECK}</option>
-    ) : (
-      decks.map((d) => (
-        <option key={d} value={d}>
-          {d}
-        </option>
-      ))
-    )}
-  </select>
+              <button type="button" onClick={bulkDelete} disabled={selectedCount === 0 || bulkBusy}>
+                🗑 {bulkBusy ? t.loading : t.deleteSelected}
+              </button>
+            </div>
+          </div>
 
-  <button
-    type="button"
-    onClick={bulkMove}
-    disabled={selectedCount === 0 || bulkBusy}
-  >
-    📦 {bulkBusy ? t.loading : t.move}
-  </button>
-
-  <button
-    type="button"
-    onClick={bulkDelete}
-    disabled={selectedCount === 0 || bulkBusy}
-  >
-    🗑 {bulkBusy ? t.loading : t.deleteSelected}
-  </button>
-</div>
-</div>
-
-            
           {/* Cards list */}
           <div style={{ marginTop: 12 }}>
             {libraryLoading ? (
@@ -1673,13 +1655,17 @@ async function removeDeckMoveCards() {
             ) : (
               <div style={{ display: "grid", gap: 10 }}>
                 {filteredLibraryCards.map((c) => (
-                  <div
-                    key={c._id}
-                    className="panel"
-                    style={{ padding: 12, display: "grid", gap: 6 }}
-                  >
+                  <div key={c._id} className="panel" style={{ padding: 12, display: "grid", gap: 6 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                        {/* selection checkbox */}
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(c._id)}
+                          onChange={() => toggleSelect(c._id)}
+                          disabled={bulkBusy}
+                          title="Select"
+                        />
                         <b>{c.deck || DEFAULT_DECK}</b>
                       </div>
 
