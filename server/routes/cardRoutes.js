@@ -103,34 +103,47 @@ router.put("/decks/rename", auth, async (req, res) => {
     const to = String(req.body.to || "").trim();
 
     if (!from || !to) return res.status(400).json({ message: "from/to required" });
-    if (from === DEFAULT_DECK) return res.status(400).json({ message: "Не можна перейменувати дефолтну тему" });
+    if (from === DEFAULT_DECK)
+      return res.status(400).json({ message: "Не можна перейменувати дефолтну тему" });
     if (from === to) return res.json({ message: "No changes", moved: 0, conflicts: 0 });
 
-    const cards = await WordCard.find({ userId, deck: from });
+    // знайти всі _id карток у цьому deck
+    const cards = await WordCard.find({ userId, deck: from }, { _id: 1 }).lean();
+    const ids = cards.map((c) => c._id);
 
-    let moved = 0;
-    let conflicts = 0;
-
-    for (const c of cards) {
-      c.deck = to;
-      try {
-        await c.save();
-        moved += 1;
-      } catch (e) {
-        if (e && e.code === 11000) {
-          conflicts += 1;
-          continue;
-        }
-        throw e;
-      }
+    if (ids.length === 0) {
+      return res.json({ message: "Deck renamed", moved: 0, conflicts: 0 });
     }
 
-    return res.json({ message: "Deck renamed", moved, conflicts });
+    const ops = ids.map((id) => ({
+      updateOne: {
+        filter: { _id: id, userId },
+        update: { $set: { deck: to } },
+      },
+    }));
+
+    try {
+      const bulkRes = await WordCard.bulkWrite(ops, { ordered: false });
+      return res.json({
+        message: "Deck renamed",
+        moved: bulkRes.modifiedCount ?? bulkRes.nModified ?? 0,
+        conflicts: 0,
+      });
+    } catch (e) {
+      const r = e?.result;
+      return res.status(207).json({
+        message:
+          "Deck rename частково виконано ⚠️ (частина не перейменована через дублікати у цільовій темі)",
+        moved: r?.nModified ?? r?.modifiedCount ?? 0,
+        conflicts: "unknown",
+      });
+    }
   } catch (err) {
     console.error("❌ rename deck error:", err);
     return res.status(500).json({ message: "Помилка перейменування теми" });
   }
 });
+
 
 // ============================================
 // DELETE /api/cards/decks/:name
@@ -144,7 +157,8 @@ router.delete("/decks/:name", auth, async (req, res) => {
     const to = String(req.query.to || DEFAULT_DECK).trim() || DEFAULT_DECK;
 
     if (!name) return res.status(400).json({ message: "deck name required" });
-    if (name === DEFAULT_DECK) return res.status(400).json({ message: "Не можна видалити дефолтну тему" });
+    if (name === DEFAULT_DECK)
+      return res.status(400).json({ message: "Не можна видалити дефолтну тему" });
 
     if (mode === "delete") {
       const r = await WordCard.deleteMany({ userId, deck: name });
@@ -152,31 +166,48 @@ router.delete("/decks/:name", auth, async (req, res) => {
     }
 
     // mode=move
-    const cards = await WordCard.find({ userId, deck: name });
-
-    let moved = 0;
-    let conflicts = 0;
-
-    for (const c of cards) {
-      c.deck = to;
-      try {
-        await c.save();
-        moved += 1;
-      } catch (e) {
-        if (e && e.code === 11000) {
-          conflicts += 1;
-          continue;
-        }
-        throw e;
-      }
+    if (to === name) {
+      return res.status(400).json({ message: "to не може дорівнювати deck, який видаляємо" });
     }
 
-    return res.json({ message: "Deck removed (cards moved)", moved, conflicts, to });
+    const cards = await WordCard.find({ userId, deck: name }, { _id: 1 }).lean();
+    const ids = cards.map((c) => c._id);
+
+    if (ids.length === 0) {
+      return res.json({ message: "Deck removed (cards moved)", moved: 0, conflicts: 0, to });
+    }
+
+    const ops = ids.map((id) => ({
+      updateOne: {
+        filter: { _id: id, userId },
+        update: { $set: { deck: to } },
+      },
+    }));
+
+    try {
+      const bulkRes = await WordCard.bulkWrite(ops, { ordered: false });
+      return res.json({
+        message: "Deck removed (cards moved)",
+        moved: bulkRes.modifiedCount ?? bulkRes.nModified ?? 0,
+        conflicts: 0,
+        to,
+      });
+    } catch (e) {
+      const r = e?.result;
+      return res.status(207).json({
+        message:
+          "Remove deck частково виконано ⚠️ (частина не перенесена через дублікати у цільовій темі)",
+        moved: r?.nModified ?? r?.modifiedCount ?? 0,
+        conflicts: "unknown",
+        to,
+      });
+    }
   } catch (err) {
     console.error("❌ delete deck error:", err);
     return res.status(500).json({ message: "Помилка видалення теми" });
   }
 });
+
 
 // ============================================
 // PATCH /api/cards/bulk

@@ -1203,6 +1203,11 @@ export default function Flashcards() {
   const progressTotal = sessionTotal || cards.length;
   const progressIndex = Math.min(sessionDone + 1, progressTotal || 0);
 
+
+  const isDefaultFrom = String(deckManageFrom || "").trim() === DEFAULT_DECK;
+  const isSameRemoveTarget =
+  String(deckRemoveTo || "").trim() === String(deckManageFrom || "").trim();
+
   return (
     <div className="flashcards-container" data-theme={theme}>
       <h1 className="title">📚 Flashcards</h1>
@@ -1564,14 +1569,15 @@ export default function Flashcards() {
                 />
               </div>
 
-              <button
-                type="button"
-                onClick={renameDeck}
-                disabled={deckManageBusy || !deckManageTo.trim()}
-                title="Rename selected deck"
-              >
-                ✏️ Rename
-              </button>
+<button
+  type="button"
+  onClick={renameDeck}
+  disabled={deckManageBusy || !deckManageTo.trim() || isDefaultFrom}
+  title="Rename selected deck"
+>
+  ✏️ Rename
+</button>
+
 
               <div>
                 <div style={{ opacity: 0.75, fontSize: 12 }}>Remove: move cards →</div>
@@ -1588,14 +1594,15 @@ export default function Flashcards() {
                 </select>
               </div>
 
-              <button
-                type="button"
-                onClick={removeDeckMoveCards}
-                disabled={deckManageBusy}
-                title="Remove deck (move cards)"
-              >
-                🗑 Remove
-              </button>
+<button
+  type="button"
+  onClick={removeDeckMoveCards}
+  disabled={deckManageBusy || isDefaultFrom || isSameRemoveTarget}
+  title="Remove deck (move cards)"
+>
+  🗑 Remove
+</button>
+
             </div>
           </div>
 
