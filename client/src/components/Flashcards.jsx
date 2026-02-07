@@ -148,6 +148,7 @@ export default function Flashcards() {
         add: "➕ Hinzufügen",
         refresh: "Aktualisieren",
         deckFilter: "Thema",
+        allDecks: "Alle",
         showTranslation: "Übersetzung anzeigen",
         know: "Weiß ich ✅",
         dontKnow: "Weiß ich nicht ❌",
@@ -188,6 +189,7 @@ export default function Flashcards() {
         add: "➕ Add",
         refresh: "Refresh",
         deckFilter: "Topic",
+        allDecks: "All",
         showTranslation: "Show translation",
         know: "I know ✅",
         dontKnow: "I don’t know ❌",
@@ -228,6 +230,7 @@ export default function Flashcards() {
         add: "➕ Додати",
         refresh: "Оновити",
         deckFilter: "Тема",
+        allDecks: "Усі",
         showTranslation: "Показати переклад",
         know: "Знаю ✅",
         dontKnow: "Не знаю ❌",
@@ -1290,7 +1293,7 @@ export default function Flashcards() {
             <div className="ctrl">
               <div className="ctrl-label">{t.deckFilter}</div>
               <select value={deckFilter} onChange={(e) => setDeckFilter(e.target.value)}>
-                <option value="ALL">ALL</option>
+<option value="ALL">{t.allDecks}</option>
                 {decks.map((d) => (
                   <option key={d} value={d}>
                     {d}

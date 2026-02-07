@@ -397,3 +397,27 @@ button:disabled{ opacity: .55; cursor: not-allowed; }
   .toolbar button{ padding: 10px 10px; font-size: 13px; }
   .icon-btn{ width: 42px; height: 40px; }
 }
+
+/* --- Make native selects/inputs dark-friendly --- */
+:root {
+  color-scheme: light;
+}
+
+body[data-theme="dark"], 
+.flashcards-container[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+/* controls */
+.flashcards-container select,
+.flashcards-container input,
+.flashcards-container textarea {
+  background: transparent;
+  color: inherit;
+}
+
+/* dropdown options (works in many browsers, not all) */
+.flashcards-container option {
+  background-color: #0b1020;
+  color: #e9eefc;
+}
