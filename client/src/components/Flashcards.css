@@ -397,66 +397,55 @@ button:disabled{ opacity: .55; cursor: not-allowed; }
   .toolbar button{ padding: 10px 10px; font-size: 13px; }
   .icon-btn{ width: 42px; height: 40px; }
 }
+/* ============================
+   Native controls: theme-safe
+   ============================ */
 
-/* --- Make native selects/inputs dark-friendly --- */
-:root {
-  color-scheme: light;
-}
+:root { color-scheme: light; }
 
-body[data-theme="dark"], 
-.flashcards-container[data-theme="dark"] {
-  color-scheme: dark;
-}
+body[data-theme="dark"] { color-scheme: dark; }
 
-/* controls */
-.flashcards-container select,
+/* Keep inputs/selects readable + consistent */
 .flashcards-container input,
+.flashcards-container select,
 .flashcards-container textarea {
-  background: transparent;
-  color: inherit;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
 }
 
-/* dropdown options (works in many browsers, not all) */
-.flashcards-container option {
+/* Options dropdown:
+   NOTE: styling <option> works in many browsers, but not all.
+*/
+.flashcards-container[data-theme="light"] option {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+.flashcards-container[data-theme="dark"] option {
   background-color: #0b1020;
   color: #e9eefc;
 }
 
-:root {
-  --stripe-light: #ffffff;
-  --stripe-dark: #0b1020;
-}
-.flashcards-container[data-theme="light"] select,
-.flashcards-container[data-theme="light"] option {
-  background-color: var(--stripe-light);
-  color: #0b1020;
-}
-.flashcards-container[data-theme="dark"] select,
-.flashcards-container[data-theme="dark"] option {
-  background-color: var(--stripe-dark);
-  color: #e9eefc;
-}
-.flashcards-container select {
-  border: 1px solid rgba(255, 255, 255, 0.15);
+/* ============================
+   Checkbox/radio — fix "blue box"
+   ============================ */
+
+/* This is the key: remove default blue checked fill */
+.flashcards-container input[type="checkbox"],
+.flashcards-container input[type="radio"] {
+  accent-color: var(--accent);
 }
 
-.flashcards-container[data-theme="dark"] select {
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-/* прибираємо дефолтний focus ring від браузера */
-.flashcards-container input[type="checkbox"] {
+/* Remove ugly focus outline from mouse clicks */
+.flashcards-container input[type="checkbox"]:focus,
+.flashcards-container input[type="radio"]:focus {
   outline: none;
 }
 
-/* показуємо фокус тільки коли він реально потрібен (клавіатура) */
-.flashcards-container input[type="checkbox"]:focus {
+/* Keep accessible focus for keyboard users */
+.flashcards-container input[type="checkbox"]:focus-visible,
+.flashcards-container input[type="radio"]:focus-visible {
   outline: none;
-}
-
-/* modern browsers: focus-visible */
-.flashcards-container input[type="checkbox"]:focus-visible {
-  outline: 2px solid rgba(140, 110, 255, 0.7);
-  outline-offset: 2px;
-  border-radius: 4px;
+  box-shadow: 0 0 0 4px var(--focus);
+  border-radius: 6px;
 }
