@@ -1275,22 +1275,27 @@ removeBtn: "🗑 Видалити",
 {stats && (
   <div className="stats">
     <div>
-      <b>Total:</b> {stats.totalCards}
+      <b>{t.total}:</b> {stats.totalCards}
     </div>
+
     <div>
-      <b>Due now:</b> {stats.dueNow}
+      <b>{t.dueNow}:</b> {stats.dueNow}
     </div>
+
     <div>
-      <b>Learned:</b> {stats.learned ?? 0}
+      <b>{t.accuracy}:</b> {stats.accuracy}%
     </div>
+
     <div>
-      <b>Remaining:</b> {stats.remaining ?? 0}
+      <b>{t.learned}:</b> {stats.learned ?? 0}
     </div>
+
     <div>
-      <b>Accuracy:</b> {stats.accuracy}%
+      <b>{t.remaining}:</b> {stats.remaining ?? 0}
     </div>
   </div>
 )}
+
 
 
 
