@@ -161,27 +161,25 @@ export default function Flashcards() {
         translationPlaceholder: "Übersetzung",
         tipAfterAdd: "Tipp: Danach zu ⚡ Wiederholen wechseln.",
         uiLang: "UI",
-        loading: "Loading…",
-        retry: "Retry",
-        offlineHint: "Server not reachable. Did you start backend?",
-        searchPlaceholder: "Search (word / translation / deck / example)…",
-        reload: "Reload",
-        noFound: "No cards found.",
-        edit: "Edit",
-        del: "Delete",
-        cancel: "Cancel",
-        save: "Save",
-        editTitle: "Edit card",
-        sort: "Sortierung",
-        order: "Reihenfolge",
-        // bulk
-        selected: "Selected",
-        selectAll: "Select all",
-        clear: "Clear",
-        moveTo: "Move to",
-        move: "Move",
-        deleteSelected: "Delete selected",
-        confirmDeleteN: "Delete selected cards?",
+        loading: "Laden…",
+retry: "Erneut versuchen",
+offlineHint: "Server nicht erreichbar. Läuft das Backend?",
+searchPlaceholder: "Suche (Wort / Übersetzung / Thema / Beispiel)…",
+reload: "Neu laden",
+noFound: "Keine Karten gefunden.",
+edit: "Bearbeiten",
+del: "Löschen",
+cancel: "Abbrechen",
+save: "Speichern",
+editTitle: "Karte bearbeiten",
+// bulk
+selected: "Ausgewählt",
+selectAll: "Alle auswählen",
+clear: "Leeren",
+moveTo: "Verschieben nach",
+move: "Verschieben",
+deleteSelected: "Ausgewählte löschen",
+confirmDeleteN: "Ausgewählte Karten löschen?",
         total: "Gesamt",
 dueNow: "Fällig jetzt",
 reviewedToday: "Heute wiederholt",
@@ -190,6 +188,17 @@ correct: "Richtig",
 accuracy: "Genauigkeit",
 learned: "Gelernt",
 remaining: "Verbleibend",
+
+az: "A → Z",
+za: "Z → A",
+
+deckManagerTitle: "🗂 Themen (Deck-Manager)",
+from: "Von",
+newName: "Neuer Name (umbenennen)",
+removeMoveTo: "Entfernen: Karten verschieben nach",
+renameBtn: "✏️ Umbenennen",
+removeBtn: "🗑 Entfernen",
+
 
       },
       en: {
@@ -241,6 +250,17 @@ accuracy: "Accuracy",
 learned: "Learned",
 remaining: "Remaining",
 
+az: "A → Z",
+za: "Z → A",
+
+deckManagerTitle: "🗂 Topics (Deck manager)",
+from: "From",
+newName: "New name (rename)",
+removeMoveTo: "Remove: move cards →",
+renameBtn: "✏️ Rename",
+removeBtn: "🗑 Remove",
+
+
       },
       uk: {
         review: "⚡ Повторення",
@@ -290,6 +310,17 @@ correct: "Правильно",
 accuracy: "Точність",
 learned: "Вивчено",
 remaining: "Залишилось",
+
+az: "А → Я",
+za: "Я → А",
+
+deckManagerTitle: "🗂 Теми (керування)",
+from: "Звідки",
+newName: "Нова назва (перейменувати)",
+removeMoveTo: "Видалити: перемістити картки в",
+renameBtn: "✏️ Перейменувати",
+removeBtn: "🗑 Видалити",
+
 
       },
     }),
@@ -1340,8 +1371,9 @@ remaining: "Залишилось",
   value={librarySortOrder}
   onChange={(e) => setLibrarySortOrder(e.target.value)}
 >
-  <option value="asc">A → Z</option>
-  <option value="desc">Z → A</option>
+<option value="asc">⬆️ {t.az}</option>
+<option value="desc">⬇️ {t.za}</option>
+
 </select>
 
               </div>
