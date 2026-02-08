@@ -1244,32 +1244,23 @@ remaining: "Залишилось",
 {stats && (
   <div className="stats">
     <div>
-      <b>{t.total}:</b> {stats.totalCards}
+      <b>Total:</b> {stats.totalCards}
     </div>
     <div>
-      <b>{t.dueNow}:</b> {stats.dueNow}
+      <b>Due now:</b> {stats.dueNow}
     </div>
     <div>
-      <b>{t.reviewedToday}:</b> {stats.reviewedToday}
+      <b>Learned:</b> {stats.learned ?? 0}
     </div>
     <div>
-      <b>{t.totalReviews}:</b> {stats.totalReviews}
+      <b>Remaining:</b> {stats.remaining ?? 0}
     </div>
     <div>
-      <b>{t.correct}:</b> {stats.totalCorrect}
-    </div>
-    <div>
-      <b>{t.accuracy}:</b> {stats.accuracy}%
-    </div>
-
-    <div>
-      <b>{t.learned}:</b> {stats.learned ?? 0}
-    </div>
-    <div>
-      <b>{t.remaining}:</b> {stats.remaining ?? 0}
+      <b>Accuracy:</b> {stats.accuracy}%
     </div>
   </div>
 )}
+
 
 
       <div className="toolbar">
@@ -1345,13 +1336,14 @@ remaining: "Залишилось",
 
               <div className="ctrl">
                 <div className="ctrl-label">{t.order}</div>
-                <select
-                  value={librarySortOrder}
-                  onChange={(e) => setLibrarySortOrder(e.target.value)}
-                >
-                  <option value="asc">⬆️ asc</option>
-                  <option value="desc">⬇️ desc</option>
-                </select>
+<select
+  value={librarySortOrder}
+  onChange={(e) => setLibrarySortOrder(e.target.value)}
+>
+  <option value="asc">A → Z</option>
+  <option value="desc">Z → A</option>
+</select>
+
               </div>
             </>
           )}
