@@ -209,6 +209,12 @@ export default function Flashcards() {
         cannotDeleteDefault: "⚠️ „Ohne Thema“ kann nicht gelöscht werden.",
         confirmRename: (from, to) => `Thema "${from}" → "${to}" umbenennen?`,
         confirmRemove: (name, to) => `Thema "${name}" entfernen (Karten → "${to}")?`,
+
+        sortByCreatedAt: "🆕 Erstellt",
+sortByWord: "🔤 Wort",
+sortByNextReview: "🕒 Nächste Wiederholung",
+sortByAccuracy: "🎯 Genauigkeit",
+
       },
 
       en: {
@@ -276,6 +282,12 @@ export default function Flashcards() {
         cannotDeleteDefault: "⚠️ “No topic” cannot be deleted.",
         confirmRename: (from, to) => `Rename topic "${from}" → "${to}"?`,
         confirmRemove: (name, to) => `Remove topic "${name}" (move cards → "${to}")?`,
+
+        sortByCreatedAt: "🆕 Created",
+sortByWord: "🔤 Word",
+sortByNextReview: "🕒 Next review",
+sortByAccuracy: "🎯 Accuracy",
+
       },
 
       uk: {
@@ -343,6 +355,12 @@ export default function Flashcards() {
         cannotDeleteDefault: "⚠️ «Без теми» не можна видалити.",
         confirmRename: (from, to) => `Перейменувати тему "${from}" → "${to}"?`,
         confirmRemove: (name, to) => `Видалити тему "${name}" (перемістити картки → "${to}")?`,
+
+        sortByCreatedAt: "🆕 Дата додавання",
+sortByWord: "🔤 Слово",
+sortByNextReview: "🕒 Наступний повтор",
+sortByAccuracy: "🎯 Точність",
+
       },
     }),
     []
@@ -1360,10 +1378,10 @@ export default function Flashcards() {
               <div className="ctrl">
                 <div className="ctrl-label">{t.sort}</div>
                 <select value={librarySortBy} onChange={(e) => setLibrarySortBy(e.target.value)}>
-                  <option value="createdAt">🆕 createdAt</option>
-                  <option value="word">🔤 word</option>
-                  <option value="nextReview">🕒 nextReview</option>
-                  <option value="accuracy">🎯 accuracy</option>
+<option value="createdAt">{t.sortByCreatedAt}</option>
+<option value="word">{t.sortByWord}</option>
+<option value="nextReview">{t.sortByNextReview}</option>
+<option value="accuracy">{t.sortByAccuracy}</option>
                 </select>
               </div>
 
@@ -1576,7 +1594,6 @@ export default function Flashcards() {
                   value={deckManageTo}
                   onChange={(e) => setDeckManageTo(e.target.value)}
                   disabled={deckManageBusy}
-                  placeholder="Напр. Food"
                 />
               </div>
 
