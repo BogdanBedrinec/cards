@@ -1,4 +1,4 @@
-// Flashcards.jsx (clean fixed version)
+// Flashcards.jsx (fixed)
 // Replace your entire Flashcards.jsx with this file.
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -7,7 +7,9 @@ import "./Flashcards.css";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const REQ_TIMEOUT_MS = 12000;
-const DEFAULT_DECK_KEY = "defaultDeck";
+
+// IMPORTANT: data key for default deck (stable, language-independent)
+const DEFAULT_DECK_ID = "__DEFAULT__";
 
 // localStorage keys for language settings
 const LS_UI = "fc_ui_lang"; // interface language
@@ -64,8 +66,8 @@ export default function Flashcards() {
 
   // decks
   const [decks, setDecks] = useState([]);
-  const [deckFilter, setDeckFilter] = useState("ALL"); // ALL | deck
-  const [deckForNewCard, setDeckForNewCard] = useState(DEFAULT_DECK);
+  const [deckFilter, setDeckFilter] = useState("ALL"); // ALL | deckId
+  const [deckForNewCard, setDeckForNewCard] = useState(DEFAULT_DECK_ID);
   const [newDeckName, setNewDeckName] = useState("");
 
   // ===== Review queue params (hidden UI now) =====
@@ -74,8 +76,8 @@ export default function Flashcards() {
   const [sortOrder] = useState("asc");
 
   // ===== Library sorting params (UI shown) =====
-  const [librarySortBy, setLibrarySortBy] = useState("createdAt"); // createdAt | word | nextReview | accuracy
-  const [librarySortOrder, setLibrarySortOrder] = useState("desc"); // asc | desc
+  const [librarySortBy, setLibrarySortBy] = useState("createdAt");
+  const [librarySortOrder, setLibrarySortOrder] = useState("desc");
 
   // stats
   const [stats, setStats] = useState(null);
@@ -120,13 +122,13 @@ export default function Flashcards() {
 
   // --- bulk selection state (library) ---
   const [selectedIds, setSelectedIds] = useState(() => new Set());
-  const [bulkDeck, setBulkDeck] = useState(DEFAULT_DECK);
+  const [bulkDeck, setBulkDeck] = useState(DEFAULT_DECK_ID);
   const [bulkBusy, setBulkBusy] = useState(false);
 
   // --- deck manager (rename / remove deck) ---
-  const [deckManageFrom, setDeckManageFrom] = useState(DEFAULT_DECK);
+  const [deckManageFrom, setDeckManageFrom] = useState(DEFAULT_DECK_ID);
   const [deckManageTo, setDeckManageTo] = useState(""); // new name for rename
-  const [deckRemoveTo, setDeckRemoveTo] = useState(DEFAULT_DECK); // move cards to
+  const [deckRemoveTo, setDeckRemoveTo] = useState(DEFAULT_DECK_ID); // move cards to
   const [deckManageBusy, setDeckManageBusy] = useState(false);
 
   // edit modal
@@ -135,7 +137,7 @@ export default function Flashcards() {
   const [editWord, setEditWord] = useState("");
   const [editTranslation, setEditTranslation] = useState("");
   const [editExample, setEditExample] = useState("");
-  const [editDeck, setEditDeck] = useState(DEFAULT_DECK);
+  const [editDeck, setEditDeck] = useState(DEFAULT_DECK_ID);
 
   const abortRef = useRef(null);
 
@@ -160,55 +162,55 @@ export default function Flashcards() {
         wordPlaceholder: "Wort",
         translationPlaceholder: "Übersetzung",
         tipAfterAdd: "Tipp: Danach zu ⚡ Wiederholen wechseln.",
-        uiLang: "UI",
         loading: "Laden…",
-retry: "Erneut versuchen",
-offlineHint: "Server nicht erreichbar. Läuft das Backend?",
-searchPlaceholder: "Suche (Wort / Übersetzung / Thema / Beispiel)…",
-reload: "Neu laden",
-noFound: "Keine Karten gefunden.",
-edit: "Bearbeiten",
-del: "Löschen",
-cancel: "Abbrechen",
-save: "Speichern",
-editTitle: "Karte bearbeiten",
-// bulk
-selected: "Ausgewählt",
-selectAll: "Alle auswählen",
-clear: "Leeren",
-moveTo: "Verschieben nach",
-move: "Verschieben",
-deleteSelected: "Ausgewählte löschen",
-confirmDeleteN: "Ausgewählte Karten löschen?",
+        retry: "Erneut versuchen",
+        offlineHint: "Server nicht erreichbar. Läuft das Backend?",
+        searchPlaceholder: "Suche (Wort / Übersetzung / Thema / Beispiel)…",
+        reload: "Neu laden",
+        noFound: "Keine Karten gefunden.",
+        edit: "Bearbeiten",
+        del: "Löschen",
+        cancel: "Abbrechen",
+        save: "Speichern",
+        editTitle: "Karte bearbeiten",
+
+        // stats
         total: "Gesamt",
-dueNow: "Fällig jetzt",
-reviewedToday: "Heute wiederholt",
-totalReviews: "Gesamt Wiederholungen",
-correct: "Richtig",
-accuracy: "Genauigkeit",
-learned: "Gelernt",
-remaining: "Verbleibend",
+        dueNow: "Fällig jetzt",
+        accuracy: "Genauigkeit",
+        learned: "Gelernt",
+        remaining: "Verbleibend",
 
-az: "A → Z",
-za: "Z → A",
+        // sorting
+        sort: "Sortierung",
+        order: "Reihenfolge",
+        az: "A → Z",
+        za: "Z → A",
 
-deckManagerTitle: "🗂 Themen (Deck-Manager)",
-from: "Von",
-newName: "Neuer Name (umbenennen)",
-removeMoveTo: "Entfernen: Karten verschieben nach",
-renameBtn: "✏️ Umbenennen",
-removeBtn: "🗑 Entfernen",
+        // deck manager
+        deckManagerTitle: "🗂 Themen (Deck-Manager)",
+        from: "Von",
+        newName: "Neuer Name (umbenennen)",
+        removeMoveTo: "Entfernen: Karten verschieben nach",
+        renameBtn: "Umbenennen",
+        removeBtn: "Entfernen",
 
-deckManagerTitle: "🗂 Themen (Deck Manager)",
-from: "Von",
-newName: "Neuer Name (umbenennen)",
-removeMoveTo: "Entfernen: Karten verschieben →",
-renameBtn: "Umbenennen",
-removeBtn: "Entfernen",
+        // bulk
+        selected: "Ausgewählt",
+        selectAll: "Alle auswählen",
+        clear: "Leeren",
+        moveTo: "Verschieben nach",
+        move: "Verschieben",
+        deleteSelected: "Ausgewählte löschen",
+        confirmDeleteN: "Ausgewählte Karten löschen?",
 
-defaultDeck: "Ohne Thema",
-
+        defaultDeck: "Ohne Thema",
+        cannotRenameDefault: "⚠️ „Ohne Thema“ kann nicht umbenannt werden.",
+        cannotDeleteDefault: "⚠️ „Ohne Thema“ kann nicht gelöscht werden.",
+        confirmRename: (from, to) => `Thema "${from}" → "${to}" umbenennen?`,
+        confirmRemove: (name, to) => `Thema "${name}" entfernen (Karten → "${to}")?`,
       },
+
       en: {
         review: "⚡ Review",
         library: "📖 Library",
@@ -227,11 +229,10 @@ defaultDeck: "Ohne Thema",
         wordPlaceholder: "Word",
         translationPlaceholder: "Translation",
         tipAfterAdd: "Tip: Switch to ⚡ Review after adding.",
-        uiLang: "UI",
         loading: "Loading…",
         retry: "Retry",
         offlineHint: "Server not reachable. Did you start backend?",
-        searchPlaceholder: "Search (word / translation / deck / example)…",
+        searchPlaceholder: "Search (word / translation / topic / example)…",
         reload: "Reload",
         noFound: "No cards found.",
         edit: "Edit",
@@ -239,8 +240,28 @@ defaultDeck: "Ohne Thema",
         cancel: "Cancel",
         save: "Save",
         editTitle: "Edit card",
+
+        // stats
+        total: "Total",
+        dueNow: "Due now",
+        accuracy: "Accuracy",
+        learned: "Learned",
+        remaining: "Remaining",
+
+        // sorting
         sort: "Sorting",
         order: "Order",
+        az: "A → Z",
+        za: "Z → A",
+
+        // deck manager
+        deckManagerTitle: "🗂 Topics (Deck manager)",
+        from: "From",
+        newName: "New name (rename)",
+        removeMoveTo: "Remove: move cards to",
+        renameBtn: "Rename",
+        removeBtn: "Remove",
+
         // bulk
         selected: "Selected",
         selectAll: "Select all",
@@ -249,36 +270,14 @@ defaultDeck: "Ohne Thema",
         move: "Move",
         deleteSelected: "Delete selected",
         confirmDeleteN: "Delete selected cards?",
-        total: "Total",
-dueNow: "Due now",
-reviewedToday: "Reviewed today",
-totalReviews: "Total reviews",
-correct: "Correct",
-accuracy: "Accuracy",
-learned: "Learned",
-remaining: "Remaining",
 
-az: "A → Z",
-za: "Z → A",
-
-deckManagerTitle: "🗂 Topics (Deck manager)",
-from: "From",
-newName: "New name (rename)",
-removeMoveTo: "Remove: move cards →",
-renameBtn: "✏️ Rename",
-removeBtn: "🗑 Remove",
-
-deckManagerTitle: "🗂 Topics (Deck Manager)",
-from: "From",
-newName: "New name (rename)",
-removeMoveTo: "Remove: move cards →",
-renameBtn: "Rename",
-removeBtn: "Remove",
-
-defaultDeck: "No topic",
-
-
+        defaultDeck: "No topic",
+        cannotRenameDefault: "⚠️ “No topic” cannot be renamed.",
+        cannotDeleteDefault: "⚠️ “No topic” cannot be deleted.",
+        confirmRename: (from, to) => `Rename topic "${from}" → "${to}"?`,
+        confirmRemove: (name, to) => `Remove topic "${name}" (move cards → "${to}")?`,
       },
+
       uk: {
         review: "⚡ Повторення",
         library: "📖 Бібліотека",
@@ -297,7 +296,6 @@ defaultDeck: "No topic",
         wordPlaceholder: "Слово",
         translationPlaceholder: "Переклад",
         tipAfterAdd: "Порада: після додавання переходь у ⚡ Повторення.",
-        uiLang: "UI",
         loading: "Завантаження…",
         retry: "Повторити",
         offlineHint: "Сервер недоступний. Ти запустив бекенд?",
@@ -309,8 +307,28 @@ defaultDeck: "No topic",
         cancel: "Скасувати",
         save: "Зберегти",
         editTitle: "Редагування картки",
+
+        // stats
+        total: "Усього",
+        dueNow: "До повтору зараз",
+        accuracy: "Точність",
+        learned: "Вивчено",
+        remaining: "Залишилось",
+
+        // sorting
         sort: "Сортування",
         order: "Порядок",
+        az: "А → Я",
+        za: "Я → А",
+
+        // deck manager
+        deckManagerTitle: "🗂 Теми (керування)",
+        from: "Звідки",
+        newName: "Нова назва (перейменувати)",
+        removeMoveTo: "Видалити: перемістити картки в",
+        renameBtn: "Перейменувати",
+        removeBtn: "Видалити",
+
         // bulk
         selected: "Вибрано",
         selectAll: "Вибрати все",
@@ -319,43 +337,21 @@ defaultDeck: "No topic",
         move: "Перемістити",
         deleteSelected: "Видалити вибрані",
         confirmDeleteN: "Видалити вибрані картки?",
-        total: "Усього",
-dueNow: "До повтору зараз",
-reviewedToday: "Повторено сьогодні",
-totalReviews: "Усього повторів",
-correct: "Правильно",
-accuracy: "Точність",
-learned: "Вивчено",
-remaining: "Залишилось",
 
-az: "А → Я",
-za: "Я → А",
-
-deckManagerTitle: "🗂 Теми (керування)",
-from: "Звідки",
-newName: "Нова назва (перейменувати)",
-removeMoveTo: "Видалити: перемістити картки в",
-renameBtn: "✏️ Перейменувати",
-removeBtn: "🗑 Видалити",
-
-deckManagerTitle: "🗂 Теми (Deck manager)",
-from: "З",
-newName: "Нова назва (перейменувати)",
-removeMoveTo: "Видалити: перемістити картки →",
-renameBtn: "Перейменувати",
-removeBtn: "Видалити",
-
-defaultDeck: "Без теми",
-
-
+        defaultDeck: "Без теми",
+        cannotRenameDefault: "⚠️ «Без теми» не можна перейменувати.",
+        cannotDeleteDefault: "⚠️ «Без теми» не можна видалити.",
+        confirmRename: (from, to) => `Перейменувати тему "${from}" → "${to}"?`,
+        confirmRemove: (name, to) => `Видалити тему "${name}" (перемістити картки → "${to}")?`,
       },
     }),
     []
   );
 
   const t = T[normalizeLang(interfaceLang, "de")] || T.de;
-  const DEFAULT_DECK = t[DEFAULT_DECK_KEY];
 
+  // label helper (MUST be inside component because it depends on `t`)
+  const deckLabel = (name) => (name === DEFAULT_DECK_ID ? t.defaultDeck : name);
 
   function langLabel(code) {
     if (code === "de") return "DE";
@@ -509,14 +505,14 @@ defaultDeck: "Без теми",
       }
 
       const list = Array.isArray(data) ? data : [];
-      const withDefault = list.includes(DEFAULT_DECK) ? list : [DEFAULT_DECK, ...list];
+      const withDefault = list.includes(DEFAULT_DECK_ID) ? list : [DEFAULT_DECK_ID, ...list];
       setDecks(withDefault);
 
-      if (deckForNewCard && !withDefault.includes(deckForNewCard)) setDeckForNewCard(DEFAULT_DECK);
-      if (bulkDeck && !withDefault.includes(bulkDeck)) setBulkDeck(DEFAULT_DECK);
+      if (deckForNewCard && !withDefault.includes(deckForNewCard)) setDeckForNewCard(DEFAULT_DECK_ID);
+      if (bulkDeck && !withDefault.includes(bulkDeck)) setBulkDeck(DEFAULT_DECK_ID);
 
-      if (deckManageFrom && !withDefault.includes(deckManageFrom)) setDeckManageFrom(DEFAULT_DECK);
-      if (deckRemoveTo && !withDefault.includes(deckRemoveTo)) setDeckRemoveTo(DEFAULT_DECK);
+      if (deckManageFrom && !withDefault.includes(deckManageFrom)) setDeckManageFrom(DEFAULT_DECK_ID);
+      if (deckRemoveTo && !withDefault.includes(deckRemoveTo)) setDeckRemoveTo(DEFAULT_DECK_ID);
     } catch (err) {
       if (err?.name !== "AbortError") setFriendlyError("❌ Decks", err);
     } finally {
@@ -601,7 +597,6 @@ defaultDeck: "Без теми",
     }
   }
 
-  // ============== Library: fetch all cards (mode=all) + sort/order ==============
   async function fetchLibraryCards() {
     const token = getToken();
     if (!token) return;
@@ -676,7 +671,7 @@ defaultDeck: "Без теми",
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
 
-    const deck = (bulkDeck || DEFAULT_DECK).trim() || DEFAULT_DECK;
+    const deck = (bulkDeck || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID;
 
     setBulkBusy(true);
     setMessage("");
@@ -758,15 +753,14 @@ defaultDeck: "Без теми",
 
     const from = String(deckManageFrom || "").trim();
     const to = String(deckManageTo || "").trim();
-
     if (!from || !to) return;
 
-if (from === DEFAULT_DECK) {
-  setMessage(`⚠️ Не можна перейменувати '${DEFAULT_DECK}'`);
-}
+    if (from === DEFAULT_DECK_ID) {
+      setMessage(t.cannotRenameDefault);
+      return;
+    }
 
-
-    const ok = window.confirm(`Rename deck "${from}" → "${to}" ?`);
+    const ok = window.confirm(t.confirmRename(deckLabel(from), to));
     if (!ok) return;
 
     setDeckManageBusy(true);
@@ -792,14 +786,9 @@ if (from === DEFAULT_DECK) {
         return;
       }
 
-      setMessage(
-        `✅ ${data?.message || "Deck renamed"} (moved=${data?.moved || 0}, conflicts=${
-          data?.conflicts || 0
-        })`
-      );
+      setMessage(`✅ ${data?.message || "Deck renamed"}`);
       setDeckManageTo("");
 
-      // if filter points to old deck — reset
       if (deckFilter === from) setDeckFilter("ALL");
 
       await Promise.all([fetchDecks(), fetchLibraryCards(), fetchCards(), fetchStats()]);
@@ -815,16 +804,15 @@ if (from === DEFAULT_DECK) {
     if (!token) return handle401();
 
     const name = String(deckManageFrom || "").trim();
-    const to = String(deckRemoveTo || DEFAULT_DECK).trim() || DEFAULT_DECK;
-
+    const to = String(deckRemoveTo || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID;
     if (!name) return;
 
-if (name === DEFAULT_DECK) {
-  setMessage(`⚠️ Не можна видалити '${DEFAULT_DECK}'`);
-}
+    if (name === DEFAULT_DECK_ID) {
+      setMessage(t.cannotDeleteDefault);
+      return;
+    }
 
-
-    const ok = window.confirm(`Remove deck "${name}" (move cards → "${to}") ?`);
+    const ok = window.confirm(t.confirmRemove(deckLabel(name), deckLabel(to)));
     if (!ok) return;
 
     setDeckManageBusy(true);
@@ -850,11 +838,7 @@ if (name === DEFAULT_DECK) {
         return;
       }
 
-      setMessage(
-        `✅ ${data?.message || "Deck removed"} (moved=${data?.moved || 0}, conflicts=${
-          data?.conflicts || 0
-        })`
-      );
+      setMessage(`✅ ${data?.message || "Deck removed"}`);
 
       if (deckFilter === name) setDeckFilter("ALL");
 
@@ -899,7 +883,7 @@ if (name === DEFAULT_DECK) {
     setEditWord(c.word || "");
     setEditTranslation(c.translation || "");
     setEditExample(c.example || "");
-    setEditDeck(c.deck || DEFAULT_DECK);
+    setEditDeck(c.deck || DEFAULT_DECK_ID);
     setEditOpen(true);
   }
 
@@ -913,7 +897,7 @@ if (name === DEFAULT_DECK) {
       word: editWord.trim(),
       translation: editTranslation.trim(),
       example: editExample.trim(),
-      deck: (editDeck || DEFAULT_DECK).trim(),
+      deck: (editDeck || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID,
     };
 
     if (!payload.word || !payload.translation) {
@@ -978,7 +962,7 @@ if (name === DEFAULT_DECK) {
         word: word.trim(),
         translation: translation.trim(),
         example: example.trim(),
-        deck: (deckForNewCard || DEFAULT_DECK).trim(),
+        deck: (deckForNewCard || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID,
       };
 
       const { signal, cleanup } = withTimeout();
@@ -1015,7 +999,6 @@ if (name === DEFAULT_DECK) {
     }
   }
 
-  // --- Review (PUT) ---
   async function sendReview(id, known) {
     const token = getToken();
     if (!token) {
@@ -1143,7 +1126,6 @@ if (name === DEFAULT_DECK) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, showAnswer, reviewCards.length, showImportExport, isReviewing, editOpen]);
 
-  // --- Export ---
   async function handleExport(format) {
     const token = getToken();
     if (!token) return handle401();
@@ -1179,7 +1161,6 @@ if (name === DEFAULT_DECK) {
     }
   }
 
-  // --- Import ---
   async function handleImport() {
     const token = getToken();
     if (!token) return handle401();
@@ -1247,15 +1228,13 @@ if (name === DEFAULT_DECK) {
     return Math.ceil(diffMs / 60000);
   }
 
-  // ===== UI lang change (PATCH to server) =====
   function logout() {
     localStorage.removeItem("token");
     localStorage.removeItem("userId");
     navigate("/login");
   }
 
-  const anyLoading =
-    isBootLoading || isRefreshing || isCardsLoading || isStatsLoading || isDecksLoading;
+  const anyLoading = isBootLoading || isRefreshing || isCardsLoading || isStatsLoading || isDecksLoading;
 
   function retryNow() {
     setMessage("");
@@ -1269,14 +1248,11 @@ if (name === DEFAULT_DECK) {
       .finally(() => setIsRefreshing(false));
   }
 
-  // ✅ progress numbers (review = due session)
   const progressTotal = sessionTotal || cards.length;
   const progressIndex = Math.min(sessionDone + 1, progressTotal || 0);
 
-
-  const isDefaultFrom = String(deckManageFrom || "").trim() === DEFAULT_DECK;
-  const isSameRemoveTarget =
-  String(deckRemoveTo || "").trim() === String(deckManageFrom || "").trim();
+  const isDefaultFrom = String(deckManageFrom || "").trim() === DEFAULT_DECK_ID;
+  const isSameRemoveTarget = String(deckRemoveTo || "").trim() === String(deckManageFrom || "").trim();
 
   return (
     <div className="flashcards-container" data-theme={theme}>
@@ -1300,32 +1276,25 @@ if (name === DEFAULT_DECK) {
         </div>
       )}
 
-{stats && (
-  <div className="stats">
-    <div>
-      <b>{t.total}:</b> {stats.totalCards}
-    </div>
-
-    <div>
-      <b>{t.dueNow}:</b> {stats.dueNow}
-    </div>
-
-    <div>
-      <b>{t.accuracy}:</b> {stats.accuracy}%
-    </div>
-
-    <div>
-      <b>{t.learned}:</b> {stats.learned ?? 0}
-    </div>
-
-    <div>
-      <b>{t.remaining}:</b> {stats.remaining ?? 0}
-    </div>
-  </div>
-)}
-
-
-
+      {stats && (
+        <div className="stats">
+          <div>
+            <b>{t.total}:</b> {stats.totalCards}
+          </div>
+          <div>
+            <b>{t.dueNow}:</b> {stats.dueNow}
+          </div>
+          <div>
+            <b>{t.accuracy}:</b> {stats.accuracy}%
+          </div>
+          <div>
+            <b>{t.learned}:</b> {stats.learned ?? 0}
+          </div>
+          <div>
+            <b>{t.remaining}:</b> {stats.remaining ?? 0}
+          </div>
+        </div>
+      )}
 
       <div className="toolbar">
         <div className="toolbar-row toolbar-row-top">
@@ -1376,10 +1345,10 @@ if (name === DEFAULT_DECK) {
             <div className="ctrl">
               <div className="ctrl-label">{t.deckFilter}</div>
               <select value={deckFilter} onChange={(e) => setDeckFilter(e.target.value)}>
-<option value="ALL">{t.allDecks}</option>
+                <option value="ALL">{t.allDecks}</option>
                 {decks.map((d) => (
                   <option key={d} value={d}>
-                    {d}
+                    {deckLabel(d)}
                   </option>
                 ))}
               </select>
@@ -1400,15 +1369,10 @@ if (name === DEFAULT_DECK) {
 
               <div className="ctrl">
                 <div className="ctrl-label">{t.order}</div>
-<select
-  value={librarySortOrder}
-  onChange={(e) => setLibrarySortOrder(e.target.value)}
->
-<option value="asc">⬆️ {t.az}</option>
-<option value="desc">⬇️ {t.za}</option>
-
-</select>
-
+                <select value={librarySortOrder} onChange={(e) => setLibrarySortOrder(e.target.value)}>
+                  <option value="asc">⬆️ {t.az}</option>
+                  <option value="desc">⬇️ {t.za}</option>
+                </select>
               </div>
             </>
           )}
@@ -1460,7 +1424,7 @@ if (name === DEFAULT_DECK) {
           ) : (
             <div className="review-card">
               <div className="review-top">
-                <span className="review-chip">{currentReviewCard?.deck || DEFAULT_DECK}</span>
+                <span className="review-chip">{deckLabel(currentReviewCard?.deck || DEFAULT_DECK_ID)}</span>
 
                 <span className="review-progress">
                   {progressTotal > 0 ? `${progressIndex} / ${progressTotal}` : `0 / 0`}
@@ -1468,16 +1432,11 @@ if (name === DEFAULT_DECK) {
               </div>
 
               <div className="review-main">
-<div className="review-word">{currentReviewCard?.word}</div>
-
-
-
+                <div className="review-word">{currentReviewCard?.word}</div>
 
                 {showAnswer ? (
                   <>
-<div className="review-translation">{currentReviewCard?.translation}</div>
-
-
+                    <div className="review-translation">{currentReviewCard?.translation}</div>
                     {currentReviewCard?.example ? (
                       <div className="review-example">📘 {currentReviewCard.example}</div>
                     ) : null}
@@ -1504,15 +1463,14 @@ if (name === DEFAULT_DECK) {
                 </button>
               </div>
 
-              {currentReviewCard?.nextReview &&
-                new Date(currentReviewCard.nextReview) > new Date() && (
-                  <div className="meta" style={{ textAlign: "center", marginTop: 10 }}>
-                    ⏳ Next: {formatNextReview(currentReviewCard.nextReview)}
-                    {minutesUntil(currentReviewCard.nextReview) !== null && (
-                      <> (~ {minutesUntil(currentReviewCard.nextReview)} min)</>
-                    )}
-                  </div>
-                )}
+              {currentReviewCard?.nextReview && new Date(currentReviewCard.nextReview) > new Date() && (
+                <div className="meta" style={{ textAlign: "center", marginTop: 10 }}>
+                  ⏳ Next: {formatNextReview(currentReviewCard.nextReview)}
+                  {minutesUntil(currentReviewCard.nextReview) !== null && (
+                    <> (~ {minutesUntil(currentReviewCard.nextReview)} min)</>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1542,11 +1500,11 @@ if (name === DEFAULT_DECK) {
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
               <select value={deckForNewCard} onChange={(e) => setDeckForNewCard(e.target.value)}>
                 {decks.length === 0 ? (
-                  <option value={DEFAULT_DECK}>{DEFAULT_DECK}</option>
+                  <option value={DEFAULT_DECK_ID}>{t.defaultDeck}</option>
                 ) : (
                   decks.map((d) => (
                     <option key={d} value={d}>
-                      {d}
+                      {deckLabel(d)}
                     </option>
                   ))
                 )}
@@ -1594,19 +1552,11 @@ if (name === DEFAULT_DECK) {
 
           {/* Deck manager */}
           <div className="panel" style={{ marginTop: 12, padding: 12 }}>
-<b>{t.deckManagerTitle}</b>
+            <b>{t.deckManagerTitle}</b>
 
-            <div
-              style={{
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
-                alignItems: "end",
-                marginTop: 10,
-              }}
-            >
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end", marginTop: 10 }}>
               <div>
-<div style={{ opacity: 0.75, fontSize: 12 }}>{t.from}</div>
+                <div style={{ opacity: 0.75, fontSize: 12 }}>{t.from}</div>
                 <select
                   value={deckManageFrom}
                   onChange={(e) => setDeckManageFrom(e.target.value)}
@@ -1614,15 +1564,14 @@ if (name === DEFAULT_DECK) {
                 >
                   {decks.map((d) => (
                     <option key={d} value={d}>
-                      {d}
+                      {deckLabel(d)}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div style={{ flex: 1, minWidth: 220 }}>
-<div style={{ opacity: 0.75, fontSize: 12 }}>{t.newName}</div>
-
+                <div style={{ opacity: 0.75, fontSize: 12 }}>{t.newName}</div>
                 <input
                   value={deckManageTo}
                   onChange={(e) => setDeckManageTo(e.target.value)}
@@ -1631,19 +1580,17 @@ if (name === DEFAULT_DECK) {
                 />
               </div>
 
-<button
-  type="button"
-  onClick={renameDeck}
-  disabled={deckManageBusy || !deckManageTo.trim() || isDefaultFrom}
-  title={t.renameBtn}
->
-  ✏️ {t.renameBtn}
-</button>
-
-
+              <button
+                type="button"
+                onClick={renameDeck}
+                disabled={deckManageBusy || !deckManageTo.trim() || isDefaultFrom}
+                title={t.renameBtn}
+              >
+                ✏️ {t.renameBtn}
+              </button>
 
               <div>
-<div style={{ opacity: 0.75, fontSize: 12 }}>{t.removeMoveTo}</div>
+                <div style={{ opacity: 0.75, fontSize: 12 }}>{t.removeMoveTo}</div>
                 <select
                   value={deckRemoveTo}
                   onChange={(e) => setDeckRemoveTo(e.target.value)}
@@ -1651,22 +1598,20 @@ if (name === DEFAULT_DECK) {
                 >
                   {decks.map((d) => (
                     <option key={d} value={d}>
-                      {d}
+                      {deckLabel(d)}
                     </option>
                   ))}
                 </select>
               </div>
 
-<button
-  type="button"
-  onClick={removeDeckMoveCards}
-  disabled={deckManageBusy || isDefaultFrom || isSameRemoveTarget}
-  title={t.removeBtn}
->
-  {t.removeBtn}
-</button>
-
-
+              <button
+                type="button"
+                onClick={removeDeckMoveCards}
+                disabled={deckManageBusy || isDefaultFrom || isSameRemoveTarget}
+                title={t.removeBtn}
+              >
+                🗑 {t.removeBtn}
+              </button>
             </div>
           </div>
 
@@ -1677,11 +1622,7 @@ if (name === DEFAULT_DECK) {
                 {t.selected}: {selectedCount}
               </b>
 
-              <button
-                type="button"
-                onClick={selectAllFiltered}
-                disabled={filteredLibraryCards.length === 0 || bulkBusy}
-              >
+              <button type="button" onClick={selectAllFiltered} disabled={filteredLibraryCards.length === 0 || bulkBusy}>
                 ✅ {t.selectAll}
               </button>
 
@@ -1695,11 +1636,11 @@ if (name === DEFAULT_DECK) {
 
               <select value={bulkDeck} onChange={(e) => setBulkDeck(e.target.value)} disabled={bulkBusy}>
                 {decks.length === 0 ? (
-                  <option value={DEFAULT_DECK}>{DEFAULT_DECK}</option>
+                  <option value={DEFAULT_DECK_ID}>{t.defaultDeck}</option>
                 ) : (
                   decks.map((d) => (
                     <option key={d} value={d}>
-                      {d}
+                      {deckLabel(d)}
                     </option>
                   ))
                 )}
@@ -1729,7 +1670,6 @@ if (name === DEFAULT_DECK) {
                   <div key={c._id} className="panel" style={{ padding: 12, display: "grid", gap: 6 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                        {/* selection checkbox */}
                         <input
                           type="checkbox"
                           checked={selectedIds.has(c._id)}
@@ -1737,7 +1677,7 @@ if (name === DEFAULT_DECK) {
                           disabled={bulkBusy}
                           title="Select"
                         />
-                        <b>{c.deck || DEFAULT_DECK}</b>
+                        <b>{deckLabel(c.deck || DEFAULT_DECK_ID)}</b>
                       </div>
 
                       <div style={{ display: "flex", gap: 8 }}>
@@ -1784,11 +1724,7 @@ if (name === DEFAULT_DECK) {
               }}
               onMouseDown={() => setEditOpen(false)}
             >
-              <div
-                className="panel"
-                style={{ width: "min(720px, 100%)", padding: 14 }}
-                onMouseDown={(e) => e.stopPropagation()}
-              >
+              <div className="panel" style={{ width: "min(720px, 100%)", padding: 14 }} onMouseDown={(e) => e.stopPropagation()}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                   <b>{t.editTitle}</b>
                   <button type="button" onClick={() => setEditOpen(false)}>
@@ -1797,12 +1733,7 @@ if (name === DEFAULT_DECK) {
                 </div>
 
                 <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
-                  <input
-                    type="text"
-                    value={editWord}
-                    onChange={(e) => setEditWord(e.target.value)}
-                    placeholder="word"
-                  />
+                  <input type="text" value={editWord} onChange={(e) => setEditWord(e.target.value)} placeholder="word" />
                   <input
                     type="text"
                     value={editTranslation}
@@ -1818,11 +1749,11 @@ if (name === DEFAULT_DECK) {
 
                   <select value={editDeck} onChange={(e) => setEditDeck(e.target.value)}>
                     {decks.length === 0 ? (
-                      <option value={DEFAULT_DECK}>{DEFAULT_DECK}</option>
+                      <option value={DEFAULT_DECK_ID}>{t.defaultDeck}</option>
                     ) : (
                       decks.map((d) => (
                         <option key={d} value={d}>
-                          {d}
+                          {deckLabel(d)}
                         </option>
                       ))
                     )}
