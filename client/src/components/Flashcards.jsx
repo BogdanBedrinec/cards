@@ -182,6 +182,15 @@ export default function Flashcards() {
         move: "Move",
         deleteSelected: "Delete selected",
         confirmDeleteN: "Delete selected cards?",
+        total: "Gesamt",
+dueNow: "Fällig jetzt",
+reviewedToday: "Heute wiederholt",
+totalReviews: "Gesamt Wiederholungen",
+correct: "Richtig",
+accuracy: "Genauigkeit",
+learned: "Gelernt",
+remaining: "Verbleibend",
+
       },
       en: {
         review: "⚡ Review",
@@ -223,6 +232,15 @@ export default function Flashcards() {
         move: "Move",
         deleteSelected: "Delete selected",
         confirmDeleteN: "Delete selected cards?",
+        total: "Total",
+dueNow: "Due now",
+reviewedToday: "Reviewed today",
+totalReviews: "Total reviews",
+correct: "Correct",
+accuracy: "Accuracy",
+learned: "Learned",
+remaining: "Remaining",
+
       },
       uk: {
         review: "⚡ Повторення",
@@ -264,6 +282,15 @@ export default function Flashcards() {
         move: "Перемістити",
         deleteSelected: "Видалити вибрані",
         confirmDeleteN: "Видалити вибрані картки?",
+        total: "Усього",
+dueNow: "До повтору зараз",
+reviewedToday: "Повторено сьогодні",
+totalReviews: "Усього повторів",
+correct: "Правильно",
+accuracy: "Точність",
+learned: "Вивчено",
+remaining: "Залишилось",
+
       },
     }),
     []
@@ -1214,35 +1241,36 @@ export default function Flashcards() {
         </div>
       )}
 
-      {stats && (
-        <div className="stats">
-          <div>
-            <b>Total:</b> {stats.totalCards}
-          </div>
-          <div>
-            <b>Due now:</b> {stats.dueNow}
-          </div>
-          <div>
-            <b>Reviewed today:</b> {stats.reviewedToday}
-          </div>
-          <div>
-            <b>Total reviews:</b> {stats.totalReviews}
-          </div>
-          <div>
-            <b>Correct:</b> {stats.totalCorrect}
-          </div>
-          <div>
-            <b>Accuracy:</b> {stats.accuracy}%
-          </div>
+{stats && (
+  <div className="stats">
+    <div>
+      <b>{t.total}:</b> {stats.totalCards}
+    </div>
+    <div>
+      <b>{t.dueNow}:</b> {stats.dueNow}
+    </div>
+    <div>
+      <b>{t.reviewedToday}:</b> {stats.reviewedToday}
+    </div>
+    <div>
+      <b>{t.totalReviews}:</b> {stats.totalReviews}
+    </div>
+    <div>
+      <b>{t.correct}:</b> {stats.totalCorrect}
+    </div>
+    <div>
+      <b>{t.accuracy}:</b> {stats.accuracy}%
+    </div>
 
-          <div>
-            <b>Learned:</b> {stats.learned ?? 0}
-          </div>
-          <div>
-            <b>Remaining:</b> {stats.remaining ?? 0}
-          </div>
-        </div>
-      )}
+    <div>
+      <b>{t.learned}:</b> {stats.learned ?? 0}
+    </div>
+    <div>
+      <b>{t.remaining}:</b> {stats.remaining ?? 0}
+    </div>
+  </div>
+)}
+
 
       <div className="toolbar">
         <div className="toolbar-row toolbar-row-top">
