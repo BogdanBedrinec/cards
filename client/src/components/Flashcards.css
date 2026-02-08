@@ -449,3 +449,59 @@ body[data-theme="dark"] { color-scheme: dark; }
   box-shadow: 0 0 0 4px var(--focus);
   border-radius: 6px;
 }
+/* ============================
+   Custom checkbox (kills native blue)
+   ============================ */
+
+.flashcards-container input[type="checkbox"]{
+  -webkit-appearance: none;
+  appearance: none;
+
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+
+  border: 1px solid var(--line);
+  background: transparent;
+
+  display: inline-block;
+  vertical-align: middle;
+  cursor: pointer;
+
+  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease, transform .05s ease;
+}
+
+/* checked state */
+.flashcards-container input[type="checkbox"]:checked{
+  background-color: var(--accent);
+  border-color: var(--accent);
+
+  /* white checkmark */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path fill='white' d='M6.2 11.2 2.7 7.7l1.1-1.1 2.4 2.4 6-6 1.1 1.1-7.1 7.1z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 14px 14px;
+}
+
+/* hover */
+.flashcards-container input[type="checkbox"]:hover{
+  border-color: rgba(79,70,229,.45);
+}
+
+/* keyboard focus only */
+.flashcards-container input[type="checkbox"]:focus{
+  outline: none;
+}
+.flashcards-container input[type="checkbox"]:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 4px var(--focus);
+}
+
+/* disabled */
+.flashcards-container input[type="checkbox"]:disabled{
+  opacity: .6;
+  cursor: not-allowed;
+}
+.flashcards-container[data-theme="dark"] input[type="checkbox"]{
+  border-color: rgba(255,255,255,.18);
+}
