@@ -7,7 +7,7 @@ import "./Flashcards.css";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const REQ_TIMEOUT_MS = 12000;
-const DEFAULT_DECK = "Без теми";
+const DEFAULT_DECK_KEY = "defaultDeck";
 
 // localStorage keys for language settings
 const LS_UI = "fc_ui_lang"; // interface language
@@ -199,6 +199,14 @@ removeMoveTo: "Entfernen: Karten verschieben nach",
 renameBtn: "✏️ Umbenennen",
 removeBtn: "🗑 Entfernen",
 
+deckManagerTitle: "🗂 Themen (Deck Manager)",
+from: "Von",
+newName: "Neuer Name (umbenennen)",
+removeMoveTo: "Entfernen: Karten verschieben →",
+renameBtn: "Umbenennen",
+removeBtn: "Entfernen",
+
+defaultDeck: "Ohne Thema",
 
       },
       en: {
@@ -259,6 +267,15 @@ newName: "New name (rename)",
 removeMoveTo: "Remove: move cards →",
 renameBtn: "✏️ Rename",
 removeBtn: "🗑 Remove",
+
+deckManagerTitle: "🗂 Topics (Deck Manager)",
+from: "From",
+newName: "New name (rename)",
+removeMoveTo: "Remove: move cards →",
+renameBtn: "Rename",
+removeBtn: "Remove",
+
+defaultDeck: "No topic",
 
 
       },
@@ -321,6 +338,15 @@ removeMoveTo: "Видалити: перемістити картки в",
 renameBtn: "✏️ Перейменувати",
 removeBtn: "🗑 Видалити",
 
+deckManagerTitle: "🗂 Теми (Deck manager)",
+from: "З",
+newName: "Нова назва (перейменувати)",
+removeMoveTo: "Видалити: перемістити картки →",
+renameBtn: "Перейменувати",
+removeBtn: "Видалити",
+
+defaultDeck: "Без теми",
+
 
       },
     }),
@@ -328,6 +354,8 @@ removeBtn: "🗑 Видалити",
   );
 
   const t = T[normalizeLang(interfaceLang, "de")] || T.de;
+  const DEFAULT_DECK = t[DEFAULT_DECK_KEY];
+
 
   function langLabel(code) {
     if (code === "de") return "DE";
@@ -733,10 +761,10 @@ removeBtn: "🗑 Видалити",
 
     if (!from || !to) return;
 
-    if (from === DEFAULT_DECK) {
-      setMessage("⚠️ Не можна перейменувати 'Без теми'");
-      return;
-    }
+if (from === DEFAULT_DECK) {
+  setMessage(`⚠️ Не можна перейменувати '${DEFAULT_DECK}'`);
+}
+
 
     const ok = window.confirm(`Rename deck "${from}" → "${to}" ?`);
     if (!ok) return;
@@ -791,10 +819,10 @@ removeBtn: "🗑 Видалити",
 
     if (!name) return;
 
-    if (name === DEFAULT_DECK) {
-      setMessage("⚠️ Не можна видалити 'Без теми'");
-      return;
-    }
+if (name === DEFAULT_DECK) {
+  setMessage(`⚠️ Не можна видалити '${DEFAULT_DECK}'`);
+}
+
 
     const ok = window.confirm(`Remove deck "${name}" (move cards → "${to}") ?`);
     if (!ok) return;
@@ -1566,7 +1594,7 @@ removeBtn: "🗑 Видалити",
 
           {/* Deck manager */}
           <div className="panel" style={{ marginTop: 12, padding: 12 }}>
-            <b>🗂 Теми (Deck manager)</b>
+<b>{t.deckManagerTitle}</b>
 
             <div
               style={{
@@ -1578,7 +1606,7 @@ removeBtn: "🗑 Видалити",
               }}
             >
               <div>
-                <div style={{ opacity: 0.75, fontSize: 12 }}>From</div>
+<div style={{ opacity: 0.75, fontSize: 12 }}>{t.from}</div>
                 <select
                   value={deckManageFrom}
                   onChange={(e) => setDeckManageFrom(e.target.value)}
@@ -1593,7 +1621,8 @@ removeBtn: "🗑 Видалити",
               </div>
 
               <div style={{ flex: 1, minWidth: 220 }}>
-                <div style={{ opacity: 0.75, fontSize: 12 }}>New name (rename)</div>
+<div style={{ opacity: 0.75, fontSize: 12 }}>{t.newName}</div>
+
                 <input
                   value={deckManageTo}
                   onChange={(e) => setDeckManageTo(e.target.value)}
@@ -1606,14 +1635,15 @@ removeBtn: "🗑 Видалити",
   type="button"
   onClick={renameDeck}
   disabled={deckManageBusy || !deckManageTo.trim() || isDefaultFrom}
-  title="Rename selected deck"
+  title={t.renameBtn}
 >
-  ✏️ Rename
+  ✏️ {t.renameBtn}
 </button>
 
 
+
               <div>
-                <div style={{ opacity: 0.75, fontSize: 12 }}>Remove: move cards →</div>
+<div style={{ opacity: 0.75, fontSize: 12 }}>{t.removeMoveTo}</div>
                 <select
                   value={deckRemoveTo}
                   onChange={(e) => setDeckRemoveTo(e.target.value)}
@@ -1631,10 +1661,11 @@ removeBtn: "🗑 Видалити",
   type="button"
   onClick={removeDeckMoveCards}
   disabled={deckManageBusy || isDefaultFrom || isSameRemoveTarget}
-  title="Remove deck (move cards)"
+  title={t.removeBtn}
 >
-  🗑 Remove
+  {t.removeBtn}
 </button>
+
 
             </div>
           </div>
