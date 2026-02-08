@@ -421,3 +421,25 @@ body[data-theme="dark"],
   background-color: #0b1020;
   color: #e9eefc;
 }
+
+:root {
+  --stripe-light: #ffffff;
+  --stripe-dark: #0b1020;
+}
+.flashcards-container[data-theme="light"] select,
+.flashcards-container[data-theme="light"] option {
+  background-color: var(--stripe-light);
+  color: #0b1020;
+}
+.flashcards-container[data-theme="dark"] select,
+.flashcards-container[data-theme="dark"] option {
+  background-color: var(--stripe-dark);
+  color: #e9eefc;
+}
+.flashcards-container select {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.flashcards-container[data-theme="dark"] select {
+  border-color: rgba(255, 255, 255, 0.2);
+}
