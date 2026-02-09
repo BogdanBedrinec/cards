@@ -28,7 +28,7 @@ export const addCard = async (req, res) => {
       word,
       translation,
       example: example || "",
-      deck: deck || "Без теми",
+      deck: deck || "__DEFAULT__",
     });
 
     res.json(card);

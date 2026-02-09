@@ -6,7 +6,7 @@ import { parse } from "csv-parse/sync";
 import mongoose from "mongoose"; // додай зверху файлу, якщо ще нема
 
 const router = express.Router();
-const DEFAULT_DECK = "Без теми";
+const DEFAULT_DECK = "__DEFAULT__";
 
 // ============================================
 // GET /api/cards

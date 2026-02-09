@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 
+const DEFAULT_DECK = "__DEFAULT__";
 const WordCardSchema = new mongoose.Schema(
   {
     userId: { type: String, required: true },
@@ -11,7 +12,7 @@ const WordCardSchema = new mongoose.Schema(
     correctCount: { type: Number, default: 0 },
     lastReviewed: { type: Date, default: null },
     nextReview: { type: Date, default: Date.now },
-    deck: { type: String, default: "Без теми" },
+    deck: { type: String, default: DEFAULT_DECK },
 
   },
   { timestamps: true } // ✅ ось це додає createdAt і updatedAt
