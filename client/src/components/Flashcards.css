@@ -505,3 +505,65 @@ body[data-theme="dark"] { color-scheme: dark; }
 .flashcards-container[data-theme="dark"] input[type="checkbox"]{
   border-color: rgba(255,255,255,.18);
 }
+
+/* ============================
+   Bulk bar (Ausgewählt) layout fix
+   ============================ */
+
+.bulk-bar{
+  display: grid;
+  grid-template-columns: 1fr 1fr;   /* left | right */
+  gap: 12px;
+  align-items: start;
+}
+
+/* left side */
+.bulk-left{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+/* right side */
+.bulk-right{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.bulk-label{
+  opacity: .75;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Make select not explode */
+.bulk-right select{
+  min-width: 180px;
+  max-width: 320px;
+}
+
+/* Buttons don’t stretch weirdly */
+.bulk-bar button{
+  white-space: nowrap;
+}
+
+/* Responsive: stack nicely */
+@media (max-width: 760px){
+  .bulk-bar{
+    grid-template-columns: 1fr;
+  }
+  .bulk-right{
+    justify-content: flex-start;
+  }
+  .bulk-right select{
+    min-width: 220px;
+    max-width: 100%;
+    flex: 1;
+  }
+}

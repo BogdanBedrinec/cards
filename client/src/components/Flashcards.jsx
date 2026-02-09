@@ -1633,7 +1633,7 @@ sortByAccuracy: "🎯 Точність",
           </div>
 
           {/* Bulk bar */}
-          <div className="panel bulk-bar" style={{ marginTop: 12 }}>
+<div className="panel bulk-bar" style={{ marginTop: 12, padding: 12 }}>
             <div className="bulk-left">
               <b>
                 {t.selected}: {selectedCount}
@@ -1667,9 +1667,11 @@ sortByAccuracy: "🎯 Точність",
                 📦 {bulkBusy ? t.loading : t.move}
               </button>
 
-              <button type="button" onClick={bulkDelete} disabled={selectedCount === 0 || bulkBusy}>
-                🗑 {bulkBusy ? t.loading : t.deleteSelected}
-              </button>
+<button type="button" onClick={bulkDelete} disabled={selectedCount === 0 || bulkBusy}>
+  🗑 {bulkBusy ? t.loading : "Löschen"}
+</button>
+
+
             </div>
           </div>
 
