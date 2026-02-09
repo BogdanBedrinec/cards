@@ -1568,69 +1568,78 @@ sortByAccuracy: "🎯 Точність",
             </div>
           </div>
 
-          {/* Deck manager */}
-          <div className="panel" style={{ marginTop: 12, padding: 12 }}>
-            <b>{t.deckManagerTitle}</b>
+{/* Deck manager */}
+<div className="panel deck-manager" style={{ marginTop: 12 }}>
+  <div className="deck-manager-title">
+    <b>{t.deckManagerTitle}</b>
+  </div>
 
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "end", marginTop: 10 }}>
-              <div>
-                <div style={{ opacity: 0.75, fontSize: 12 }}>{t.from}</div>
-                <select
-                  value={deckManageFrom}
-                  onChange={(e) => setDeckManageFrom(e.target.value)}
-                  disabled={deckManageBusy}
-                >
-                  {decks.map((d) => (
-                    <option key={d} value={d}>
-                      {deckLabel(d)}
-                    </option>
-                  ))}
-                </select>
-              </div>
+  <div className="deck-manager-row">
+    <div className="deck-manager-left">
+      <div className="dm-field">
+        <div className="dm-label">{t.from}</div>
+        <select
+          value={deckManageFrom}
+          onChange={(e) => setDeckManageFrom(e.target.value)}
+          disabled={deckManageBusy}
+        >
+          {decks.map((d) => (
+            <option key={d} value={d}>
+              {deckLabel(d)}
+            </option>
+          ))}
+        </select>
+      </div>
 
-              <div style={{ flex: 1, minWidth: 220 }}>
-                <div style={{ opacity: 0.75, fontSize: 12 }}>{t.newName}</div>
-                <input
-                  value={deckManageTo}
-                  onChange={(e) => setDeckManageTo(e.target.value)}
-                  disabled={deckManageBusy}
-                />
-              </div>
+      <div className="dm-field dm-grow">
+        <div className="dm-label">{t.newName}</div>
+        <input
+          value={deckManageTo}
+          onChange={(e) => setDeckManageTo(e.target.value)}
+          disabled={deckManageBusy}
+        />
+      </div>
 
-              <button
-                type="button"
-                onClick={renameDeck}
-                disabled={deckManageBusy || !deckManageTo.trim() || isDefaultFrom}
-                title={t.renameBtn}
-              >
-                ✏️ {t.renameBtn}
-              </button>
+      <button
+        className="dm-btn"
+        type="button"
+        onClick={renameDeck}
+        disabled={deckManageBusy || !deckManageTo.trim() || isDefaultFrom}
+        title={t.renameBtn}
+      >
+        ✏️ {t.renameBtn}
+      </button>
+    </div>
 
-              <div>
-                <div style={{ opacity: 0.75, fontSize: 12 }}>{t.removeMoveTo}</div>
-                <select
-                  value={deckRemoveTo}
-                  onChange={(e) => setDeckRemoveTo(e.target.value)}
-                  disabled={deckManageBusy}
-                >
-                  {decks.map((d) => (
-                    <option key={d} value={d}>
-                      {deckLabel(d)}
-                    </option>
-                  ))}
-                </select>
-              </div>
+    <div className="deck-manager-right">
+      <div className="dm-field">
+        <div className="dm-label">{t.removeMoveTo}</div>
+        <select
+          value={deckRemoveTo}
+          onChange={(e) => setDeckRemoveTo(e.target.value)}
+          disabled={deckManageBusy}
+        >
+          {decks.map((d) => (
+            <option key={d} value={d}>
+              {deckLabel(d)}
+            </option>
+          ))}
+        </select>
+      </div>
 
-              <button
-                type="button"
-                onClick={removeDeckMoveCards}
-                disabled={deckManageBusy || isDefaultFrom || isSameRemoveTarget}
-                title={t.removeBtn}
-              >
-                🗑 {t.removeBtn}
-              </button>
-            </div>
-          </div>
+      <button
+        className="dm-btn dm-danger"
+        type="button"
+        onClick={removeDeckMoveCards}
+        disabled={deckManageBusy || isDefaultFrom || isSameRemoveTarget}
+        title={t.removeBtn}
+      >
+        🗑 {t.removeBtn}
+      </button>
+    </div>
+  </div>
+</div>
+
 
           {/* Bulk bar */}
 <div className="panel bulk-bar" style={{ marginTop: 12, padding: 12 }}>
