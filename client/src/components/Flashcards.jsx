@@ -220,6 +220,11 @@ timeHour: "Std(unden)",
 timeDay: "Tag(e)",
 timeIn: "In",
 
+reviewCountLabel: "Bewertungen",
+correctCountLabel: "Richtig",
+dueNowLabel: "Fällig jetzt",
+
+
 
       },
 
@@ -299,6 +304,11 @@ timeHour: "h",
 timeDay: "day(s)",
 timeIn: "In",
 
+reviewCountLabel: "Reviews",
+correctCountLabel: "Correct",
+dueNowLabel: "Due now",
+
+
 
       },
 
@@ -377,6 +387,11 @@ timeMin: "хв(илин)",
 timeHour: "год(ин)",
 timeDay: "день(дні)",
 timeIn: "Через",
+
+reviewCountLabel: "Повторів",
+correctCountLabel: "Правильно",
+dueNowLabel: "До повтору зараз",
+
 
 
       },
@@ -1777,21 +1792,24 @@ function formatTimeUntil(dateStr) {
                     </div>
                     {c.example ? <div style={{ opacity: 0.9 }}>📘 {c.example}</div> : null}
 
-                    <div style={{ display: "flex", gap: 12, flexWrap: "wrap", opacity: 0.75 }}>
-                      <span>reviews: {c.reviewCount || 0}</span>
-                      <span>correct: {c.correctCount || 0}</span>
-                      {/* next review info (library) */}
-<div style={{ opacity: 0.8 }}>
-  {!c.nextReview || new Date(c.nextReview) <= new Date() ? (
-    <span>⏰ Due now</span>
-  ) : (
-    <span>⏳ {formatTimeUntil(c.nextReview)}</span>
-  )}
+<div style={{ display: "flex", gap: 12, flexWrap: "wrap", opacity: 0.75 }}>
+  <span>
+    {t.reviewCountLabel}: {c.reviewCount || 0}
+  </span>
+
+  <span>
+    {t.correctCountLabel}: {c.correctCount || 0}
+  </span>
+
+  <div style={{ opacity: 0.8 }}>
+    {!c.nextReview || new Date(c.nextReview) <= new Date() ? (
+      <span>⏰ {t.dueNowLabel}</span>
+    ) : (
+      <span>⏳ {formatTimeUntil(c.nextReview)}</span>
+    )}
+  </div>
 </div>
 
-
-
-                    </div>
                   </div>
                 ))}
               </div>
