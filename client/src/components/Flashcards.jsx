@@ -1502,14 +1502,12 @@ function formatTimeUntil(dateStr) {
                 </button>
               </div>
 
-              {currentReviewCard?.nextReview && new Date(currentReviewCard.nextReview) > new Date() && (
-                <div className="meta" style={{ textAlign: "center", marginTop: 10 }}>
-                  ⏳ Next: {formatNextReview(currentReviewCard.nextReview)}
-                  {minutesUntil(currentReviewCard.nextReview) !== null && (
-                    <> (~ {minutesUntil(currentReviewCard.nextReview)} min)</>
-                  )}
-                </div>
-              )}
+{currentReviewCard?.nextReview && new Date(currentReviewCard.nextReview) > new Date() && (
+  <div className="meta" style={{ textAlign: "center", marginTop: 10 }}>
+    ⏳ {formatTimeUntil(currentReviewCard.nextReview)}
+  </div>
+)}
+
             </div>
           )}
         </div>
@@ -1755,14 +1753,10 @@ function formatTimeUntil(dateStr) {
   {!c.nextReview || new Date(c.nextReview) <= new Date() ? (
     <span>⏰ Due now</span>
   ) : (
-    <>
-<span>⏳ {formatTimeUntil(c.nextReview)}</span>
-      <span style={{ marginLeft: 10, opacity: 0.75 }}>
-        ({formatNextReview(c.nextReview)})
-      </span>
-    </>
+    <span>⏳ {formatTimeUntil(c.nextReview)}</span>
   )}
 </div>
+
 
 
                     </div>
