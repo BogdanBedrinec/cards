@@ -412,9 +412,12 @@ timeIn: "Через",
       if (!token) return;
 
       try {
-        const res = await fetch(`${API}/api/users/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+const res = await fetch(`${API}/api/users/me`, {
+  headers: { Authorization: `Bearer ${token}` },
+  cache: "no-store",
+});
+
+
 
         if (res.status === 401) {
           localStorage.removeItem("token");
@@ -494,30 +497,39 @@ timeIn: "Через",
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, deckFilter]);
 
-  async function refreshAll() {
-    await Promise.all([fetchDecks(), fetchCards(), fetchStats()]);
-  }
+async function refreshAll() {
+  await Promise.all([fetchDecks(), fetchCards(), fetchStats()]);
+}
+
 
   // ===== data loading triggers =====
-  useEffect(() => {
-    (async () => {
-      setMessage("");
-      setIsRefreshing(true);
-      try {
-        if (view === "review") {
-          await refreshAll();
-        } else if (view === "library") {
-          await Promise.all([fetchDecks(), fetchStats(), fetchLibraryCards()]);
-        } else {
-          await Promise.all([fetchDecks(), fetchStats()]);
-        }
-      } finally {
-        setIsRefreshing(false);
-        setIsBootLoading(false);
+useEffect(() => {
+  (async () => {
+    setMessage("");
+    setIsRefreshing(true);
+
+    // 🔥 ВАЖЛИВО: примусовий "чистий старт"
+    setCards([]);
+    setLibraryCards([]);
+    setStats(null);
+    setDecks([]);
+
+    try {
+      if (view === "review") {
+        await refreshAll();
+      } else if (view === "library") {
+        await Promise.all([fetchDecks(), fetchStats(), fetchLibraryCards()]);
+      } else {
+        await Promise.all([fetchDecks(), fetchStats()]);
       }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, deckFilter, librarySortBy, librarySortOrder]);
+    } finally {
+      setIsRefreshing(false);
+      setIsBootLoading(false);
+    }
+  })();
+}, [view, deckFilter, librarySortBy, librarySortOrder]);
+
+
 
   async function fetchDecks() {
     const token = getToken();
@@ -526,11 +538,13 @@ timeIn: "Через",
     setIsDecksLoading(true);
     try {
       const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards/decks`, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
-        signal,
-      }).finally(cleanup);
+const res = await fetch(`${API}/api/cards/decks`, {
+  method: "GET",
+  headers: { Authorization: `Bearer ${token}` },
+  signal,
+  cache: "no-store",
+}).finally(cleanup);
+
 
       if (res.status === 401) return handle401();
 
@@ -563,11 +577,13 @@ timeIn: "Через",
     setIsStatsLoading(true);
     try {
       const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards/stats`, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
-        signal,
-      }).finally(cleanup);
+const res = await fetch(`${API}/api/cards/stats`, {
+  method: "GET",
+  headers: { Authorization: `Bearer ${token}` },
+  signal,
+  cache: "no-store",
+}).finally(cleanup);
+
 
       if (res.status === 401) return handle401();
 
@@ -605,11 +621,13 @@ timeIn: "Через",
       const url = `${API}/api/cards?${params.toString()}`;
 
       const { signal, cleanup } = withTimeout(controller.signal);
-      const res = await fetch(url, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
-        signal,
-      }).finally(cleanup);
+const res = await fetch(url, {
+  method: "GET",
+  headers: { Authorization: `Bearer ${token}` },
+  signal,
+  cache: "no-store",
+}).finally(cleanup);
+
 
       if (res.status === 401) return handle401();
 
@@ -646,10 +664,12 @@ timeIn: "Через",
       if (deckFilter !== "ALL") params.set("deck", deckFilter);
 
       const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        signal,
-      }).finally(cleanup);
+const res = await fetch(`${API}/api/cards?${params.toString()}`, {
+  headers: { Authorization: `Bearer ${token}` },
+  signal,
+  cache: "no-store",
+}).finally(cleanup);
+
 
       if (res.status === 401) return handle401();
 
@@ -1168,10 +1188,11 @@ timeIn: "Через",
 
     try {
       const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards/export?format=${format}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        signal,
-      }).finally(cleanup);
+const res = await fetch(`${API}/api/cards/export?format=${format}`, {
+  headers: { Authorization: `Bearer ${token}` },
+  signal,
+  cache: "no-store",
+}).finally(cleanup);
 
       if (res.status === 401) return handle401();
 
