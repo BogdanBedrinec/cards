@@ -50,6 +50,16 @@ app.get("/api/health", (req, res) => {
   res.json({ ok: true, time: new Date().toISOString() });
 });
 
+// ---------- No cache for API ----------
+app.use("/api", (req, res, next) => {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+  res.set("Surrogate-Control", "no-store");
+  next();
+});
+
+
 // ---------- Routes ----------
 app.use("/api/users", usersRoutes);
 app.use("/api/auth", authRoutes);

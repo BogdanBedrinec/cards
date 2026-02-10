@@ -541,9 +541,11 @@ useEffect(() => {
 const res = await fetch(`${API}/api/cards/decks`, {
   method: "GET",
   headers: { Authorization: `Bearer ${token}` },
-  signal,
   cache: "no-store",
+  signal,
 }).finally(cleanup);
+
+
 
 
       if (res.status === 401) return handle401();
@@ -580,9 +582,10 @@ const res = await fetch(`${API}/api/cards/decks`, {
 const res = await fetch(`${API}/api/cards/stats`, {
   method: "GET",
   headers: { Authorization: `Bearer ${token}` },
-  signal,
   cache: "no-store",
+  signal,
 }).finally(cleanup);
+
 
 
       if (res.status === 401) return handle401();
@@ -624,9 +627,10 @@ const res = await fetch(`${API}/api/cards/stats`, {
 const res = await fetch(url, {
   method: "GET",
   headers: { Authorization: `Bearer ${token}` },
-  signal,
   cache: "no-store",
+  signal,
 }).finally(cleanup);
+
 
 
       if (res.status === 401) return handle401();
@@ -666,9 +670,10 @@ const res = await fetch(url, {
       const { signal, cleanup } = withTimeout();
 const res = await fetch(`${API}/api/cards?${params.toString()}`, {
   headers: { Authorization: `Bearer ${token}` },
-  signal,
   cache: "no-store",
+  signal,
 }).finally(cleanup);
+
 
 
       if (res.status === 401) return handle401();
@@ -880,11 +885,13 @@ const res = await fetch(`${API}/api/cards?${params.toString()}`, {
         to
       )}`;
 
-      const res = await fetch(url, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-        signal,
-      }).finally(cleanup);
+const res = await fetch(url, {
+  method: "GET",
+  headers: { Authorization: `Bearer ${token}` },
+  cache: "no-store",
+  signal,
+}).finally(cleanup);
+
 
       if (res.status === 401) return handle401();
 
