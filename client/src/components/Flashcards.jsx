@@ -1238,13 +1238,28 @@ sortByAccuracy: "🎯 Точність",
     }).format(d);
   }
 
-  function minutesUntil(dateStr) {
-    const d = new Date(dateStr);
-    if (Number.isNaN(d.getTime())) return null;
+function formatTimeUntil(dateStr) {
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return null;
 
-    const diffMs = d.getTime() - Date.now();
-    return Math.ceil(diffMs / 60000);
+  const diffMs = d.getTime() - Date.now();
+  const diffMin = Math.ceil(diffMs / 60000);
+
+  if (diffMin <= 0) return null;
+
+  if (diffMin < 60) {
+    return `${diffMin} хв`;
   }
+
+  const diffHours = diffMin / 60;
+  if (diffHours < 24) {
+    return `${Math.ceil(diffHours)} год`;
+  }
+
+  const diffDays = diffHours / 24;
+  return `${Math.ceil(diffDays)} дн`;
+}
+
 
   function logout() {
     localStorage.removeItem("token");
@@ -1735,13 +1750,14 @@ sortByAccuracy: "🎯 Точність",
     <span>⏰ Due now</span>
   ) : (
     <>
-      <span>⏳ Next in: {minutesUntil(c.nextReview)} min</span>
+      <span>⏳ Через: {formatTimeUntil(c.nextReview)}</span>
       <span style={{ marginLeft: 10, opacity: 0.75 }}>
         ({formatNextReview(c.nextReview)})
       </span>
     </>
   )}
 </div>
+
 
                     </div>
                   </div>
