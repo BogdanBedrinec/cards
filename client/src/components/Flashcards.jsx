@@ -1729,6 +1729,20 @@ sortByAccuracy: "🎯 Точність",
                     <div style={{ display: "flex", gap: 12, flexWrap: "wrap", opacity: 0.75 }}>
                       <span>reviews: {c.reviewCount || 0}</span>
                       <span>correct: {c.correctCount || 0}</span>
+                      {/* next review info (library) */}
+<div style={{ opacity: 0.8 }}>
+  {!c.nextReview || new Date(c.nextReview) <= new Date() ? (
+    <span>⏰ Due now</span>
+  ) : (
+    <>
+      <span>⏳ Next in: {minutesUntil(c.nextReview)} min</span>
+      <span style={{ marginLeft: 10, opacity: 0.75 }}>
+        ({formatNextReview(c.nextReview)})
+      </span>
+    </>
+  )}
+</div>
+
                     </div>
                   </div>
                 ))}

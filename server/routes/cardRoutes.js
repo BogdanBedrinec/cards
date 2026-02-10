@@ -357,15 +357,41 @@ const reviewHandler = async (req, res) => {
     if (known) card.correctCount = (card.correctCount || 0) + 1;
     card.lastReviewed = new Date();
 
-    const intervals = [1, 5, 30, 180, 1440, 4320, 10080, 43200];
-    const level = Math.min(card.correctCount || 0, intervals.length - 1);
+// ✅ твій новий план інтервалів (в хвилинах)
+const intervals = [
+  1,      // 1 хв
+  5,      // 5 хв
+  10,     // 10 хв
+  30,     // 30 хв
+  60,     // 1 год
+  180,    // 3 год
+  360,    // 6 год
+  720,    // 12 год
+  1440,   // 1 день
+  4320,   // 3 дні
+  10080,  // 7 днів
+  20160,  // 14 днів
+  30240,  // 21 день
+  40320,  // 28 днів
+];
 
-    if (known) {
-      const minutes = intervals[level];
-      card.nextReview = new Date(Date.now() + minutes * 60 * 1000);
-    } else {
-      card.nextReview = new Date(Date.now() + 60 * 1000);
-    }
+if (known) {
+  // якщо правильно — прогрес росте
+  card.correctCount = (card.correctCount || 0) + 1;
+
+  // 1-ше правильне = 1 хв, 2-ге = 5 хв, ... 14-те і далі = 28 днів
+  const idx = Math.min(card.correctCount - 1, intervals.length - 1);
+  const minutes = intervals[idx];
+
+  card.nextReview = new Date(Date.now() + minutes * 60 * 1000);
+} else {
+  // ❌ якщо неправильно — повний ресет прогресу
+  card.correctCount = 0;
+
+  // старт знову з 1 хв
+  card.nextReview = new Date(Date.now() + 1 * 60 * 1000);
+}
+
 
     await card.save();
 
