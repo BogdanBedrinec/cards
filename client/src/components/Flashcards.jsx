@@ -215,9 +215,9 @@ sortByWord: "🔤 Wort",
 sortByNextReview: "🕒 Nächste Wiederholung",
 sortByAccuracy: "🎯 Genauigkeit",
 
-timeMin: "Min",
-timeHour: "Std",
-timeDay: "Tag",
+timeMin: "Min(uten)",
+timeHour: "Std(unden)",
+timeDay: "Tag(e)",
 timeIn: "In",
 
 
@@ -294,9 +294,9 @@ sortByWord: "🔤 Word",
 sortByNextReview: "🕒 Next review",
 sortByAccuracy: "🎯 Accuracy",
 
-timeMin: "min",
+timeMin: "min(s)",
 timeHour: "h",
-timeDay: "d",
+timeDay: "day(s)",
 timeIn: "In",
 
 
@@ -373,9 +373,9 @@ sortByWord: "🔤 Слово",
 sortByNextReview: "🕒 Наступний повтор",
 sortByAccuracy: "🎯 Точність",
 
-timeMin: "хв",
-timeHour: "год",
-timeDay: "дн",
+timeMin: "хв(илин)",
+timeHour: "год(ин)",
+timeDay: "день(дні)",
 timeIn: "Через",
 
 
@@ -1252,15 +1252,19 @@ function formatTimeUntil(dateStr) {
 
   if (diffMin <= 0) return null;
 
+  // < 1 години → хвилини
   if (diffMin < 60) {
     return `${t.timeIn} ${diffMin} ${t.timeMin}`;
   }
 
   const diffHours = diffMin / 60;
+
+  // < 1 дня → години
   if (diffHours < 24) {
     return `${t.timeIn} ${Math.ceil(diffHours)} ${t.timeHour}`;
   }
 
+  // ≥ 1 дня → дні
   const diffDays = diffHours / 24;
   return `${t.timeIn} ${Math.ceil(diffDays)} ${t.timeDay}`;
 }
