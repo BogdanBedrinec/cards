@@ -215,6 +215,12 @@ sortByWord: "🔤 Wort",
 sortByNextReview: "🕒 Nächste Wiederholung",
 sortByAccuracy: "🎯 Genauigkeit",
 
+timeMin: "Min",
+timeHour: "Std",
+timeDay: "Tag",
+timeIn: "In",
+
+
       },
 
       en: {
@@ -288,6 +294,12 @@ sortByWord: "🔤 Word",
 sortByNextReview: "🕒 Next review",
 sortByAccuracy: "🎯 Accuracy",
 
+timeMin: "min",
+timeHour: "h",
+timeDay: "d",
+timeIn: "In",
+
+
       },
 
       uk: {
@@ -360,6 +372,12 @@ sortByAccuracy: "🎯 Accuracy",
 sortByWord: "🔤 Слово",
 sortByNextReview: "🕒 Наступний повтор",
 sortByAccuracy: "🎯 Точність",
+
+timeMin: "хв",
+timeHour: "год",
+timeDay: "дн",
+timeIn: "Через",
+
 
       },
     }),
@@ -1225,19 +1243,6 @@ sortByAccuracy: "🎯 Точність",
     setShowImportExport(false);
   }
 
-  function formatNextReview(dateStr) {
-    const d = new Date(dateStr);
-    if (Number.isNaN(d.getTime())) return null;
-
-    return new Intl.DateTimeFormat("uk-UA", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(d);
-  }
-
 function formatTimeUntil(dateStr) {
   const d = new Date(dateStr);
   if (Number.isNaN(d.getTime())) return null;
@@ -1248,17 +1253,18 @@ function formatTimeUntil(dateStr) {
   if (diffMin <= 0) return null;
 
   if (diffMin < 60) {
-    return `${diffMin} хв`;
+    return `${t.timeIn} ${diffMin} ${t.timeMin}`;
   }
 
   const diffHours = diffMin / 60;
   if (diffHours < 24) {
-    return `${Math.ceil(diffHours)} год`;
+    return `${t.timeIn} ${Math.ceil(diffHours)} ${t.timeHour}`;
   }
 
   const diffDays = diffHours / 24;
-  return `${Math.ceil(diffDays)} дн`;
+  return `${t.timeIn} ${Math.ceil(diffDays)} ${t.timeDay}`;
 }
+
 
 
   function logout() {
@@ -1750,7 +1756,7 @@ function formatTimeUntil(dateStr) {
     <span>⏰ Due now</span>
   ) : (
     <>
-      <span>⏳ Через: {formatTimeUntil(c.nextReview)}</span>
+<span>⏳ {formatTimeUntil(c.nextReview)}</span>
       <span style={{ marginLeft: 10, opacity: 0.75 }}>
         ({formatNextReview(c.nextReview)})
       </span>
