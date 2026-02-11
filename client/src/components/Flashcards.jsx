@@ -401,6 +401,29 @@ dueNowLabel: "До повтору зараз",
 
   const t = T[normalizeLang(interfaceLang, "de")] || T.de;
 
+async function wakeBackend() {
+  try {
+    const { signal, cleanup } = withTimeout(null, 12000);
+    await fetch(`${API}/api/health`, { cache: "no-store", signal }).finally(cleanup);
+  } catch {
+    // якщо впало — retry нижче все одно спробує ще раз
+  }
+}
+
+async function retry(fn, tries = 4, delayMs = 1200) {
+  let lastErr = null;
+  for (let i = 0; i < tries; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  throw lastErr;
+}
+
+
   // label helper (MUST be inside component because it depends on `t`)
   const deckLabel = (name) => (name === DEFAULT_DECK_ID ? t.defaultDeck : name);
 
@@ -428,7 +451,10 @@ dueNowLabel: "До повтору зараз",
 
       try {
 const res = await fetch(`${API}/api/users/me`, {
-  headers: { Authorization: `Bearer ${token}` },
+  headers: {
+  Authorization: `Bearer ${token}`,
+  "Cache-Control": "no-cache",
+},
   cache: "no-store",
 });
 
@@ -513,36 +539,56 @@ const res = await fetch(`${API}/api/users/me`, {
   }, [view, deckFilter]);
 
 async function refreshAll() {
-  await Promise.all([fetchDecks(), fetchCards(), fetchStats()]);
+  await wakeBackend();
+  await Promise.all([
+    retry(fetchDecks, 4),
+    retry(fetchCards, 4),
+    retry(fetchStats, 4),
+  ]);
 }
 
 
-  // ===== data loading triggers =====
+
 useEffect(() => {
+  let cancelled = false;
+
   (async () => {
     setMessage("");
     setIsRefreshing(true);
 
-    // 🔥 ВАЖЛИВО: примусовий "чистий старт"
-    setCards([]);
-    setLibraryCards([]);
-    setStats(null);
-    setDecks([]);
-
     try {
+      await wakeBackend();
+
       if (view === "review") {
         await refreshAll();
       } else if (view === "library") {
-        await Promise.all([fetchDecks(), fetchStats(), fetchLibraryCards()]);
+        await Promise.all([
+          retry(fetchDecks, 4),
+          retry(fetchStats, 4),
+          retry(fetchLibraryCards, 4),
+        ]);
       } else {
-        await Promise.all([fetchDecks(), fetchStats()]);
+        await Promise.all([retry(fetchDecks, 4), retry(fetchStats, 4)]);
       }
+
+      if (!cancelled) setMessage("");
+    } catch (e) {
+      // важливо: НЕ чистимо state, просто показуємо повідомлення
+      if (!cancelled) setFriendlyError("❌ Load", e);
     } finally {
-      setIsRefreshing(false);
-      setIsBootLoading(false);
+      if (!cancelled) {
+        setIsRefreshing(false);
+        setIsBootLoading(false);
+      }
     }
   })();
+
+  return () => {
+    cancelled = true;
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [view, deckFilter, librarySortBy, librarySortOrder]);
+
 
 
 
@@ -555,7 +601,10 @@ useEffect(() => {
       const { signal, cleanup } = withTimeout();
 const res = await fetch(`${API}/api/cards/decks`, {
   method: "GET",
-  headers: { Authorization: `Bearer ${token}` },
+headers: {
+  Authorization: `Bearer ${token}`,
+  "Cache-Control": "no-cache",
+},
   cache: "no-store",
   signal,
 }).finally(cleanup);
@@ -566,10 +615,11 @@ const res = await fetch(`${API}/api/cards/decks`, {
       if (res.status === 401) return handle401();
 
       const data = await res.json().catch(() => []);
-      if (!res.ok) {
-        setFriendlyError("❌ Decks", null, data?.message || data?.error);
-        return;
-      }
+if (!res.ok) {
+  setFriendlyError("❌ Decks", null, data?.message || data?.error);
+  throw new Error(data?.message || data?.error || "Decks failed");
+}
+
 
       const list = Array.isArray(data) ? data : [];
       const withDefault = list.includes(DEFAULT_DECK_ID) ? list : [DEFAULT_DECK_ID, ...list];
@@ -596,7 +646,10 @@ const res = await fetch(`${API}/api/cards/decks`, {
       const { signal, cleanup } = withTimeout();
 const res = await fetch(`${API}/api/cards/stats`, {
   method: "GET",
-  headers: { Authorization: `Bearer ${token}` },
+headers: {
+  Authorization: `Bearer ${token}`,
+  "Cache-Control": "no-cache",
+},
   cache: "no-store",
   signal,
 }).finally(cleanup);
@@ -608,7 +661,7 @@ const res = await fetch(`${API}/api/cards/stats`, {
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         setFriendlyError("❌ Stats", null, data?.message || data?.error);
-        return;
+        throw new Error(data?.message || data?.error || "Stats failed");
       }
 
       setStats(data);
@@ -640,11 +693,15 @@ const res = await fetch(`${API}/api/cards/stats`, {
 
       const { signal, cleanup } = withTimeout(controller.signal);
 const res = await fetch(url, {
-  method: "GET",
-  headers: { Authorization: `Bearer ${token}` },
+  method: "DELETE",
+headers: {
+  Authorization: `Bearer ${token}`,
+  "Cache-Control": "no-cache",
+},
   cache: "no-store",
   signal,
 }).finally(cleanup);
+
 
 
 
@@ -653,7 +710,7 @@ const res = await fetch(url, {
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         setFriendlyError("❌ Cards", null, data?.message || data?.error);
-        return;
+        throw new Error(data?.message || data?.error || "Cards failed");
       }
 
       const list = Array.isArray(data) ? data : [];
@@ -684,7 +741,10 @@ const res = await fetch(url, {
 
       const { signal, cleanup } = withTimeout();
 const res = await fetch(`${API}/api/cards?${params.toString()}`, {
-  headers: { Authorization: `Bearer ${token}` },
+headers: {
+  Authorization: `Bearer ${token}`,
+  "Cache-Control": "no-cache",
+},
   cache: "no-store",
   signal,
 }).finally(cleanup);
@@ -696,7 +756,7 @@ const res = await fetch(`${API}/api/cards?${params.toString()}`, {
       const data = await res.json().catch(() => []);
       if (!res.ok) {
         setFriendlyError("❌ Library", null, data?.message || data?.error);
-        return;
+        throw new Error(data?.message || data?.error || "Library failed");
       }
 
       setLibraryCards(Array.isArray(data) ? data : []);
@@ -755,10 +815,11 @@ const res = await fetch(`${API}/api/cards?${params.toString()}`, {
       const { signal, cleanup } = withTimeout();
       const res = await fetch(`${API}/api/cards/bulk-move`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+headers: {
+  Authorization: `Bearer ${token}`,
+  "Content-Type": "application/json",
+  "Cache-Control": "no-cache",
+},
         body: JSON.stringify({ ids, deck }),
         signal,
       }).finally(cleanup);
@@ -798,9 +859,11 @@ const res = await fetch(`${API}/api/cards?${params.toString()}`, {
       const res = await fetch(`${API}/api/cards/bulk-delete`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+  Authorization: `Bearer ${token}`,
+  "Cache-Control": "no-cache",
+  "Content-Type": "application/json",
+},
+
         body: JSON.stringify({ ids }),
         signal,
       }).finally(cleanup);
@@ -847,9 +910,10 @@ const res = await fetch(`${API}/api/cards?${params.toString()}`, {
       const res = await fetch(`${API}/api/cards/decks/rename`, {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+  Authorization: `Bearer ${token}`,
+  "Cache-Control": "no-cache",
+  "Content-Type": "application/json",
+},
         body: JSON.stringify({ from, to }),
         signal,
       }).finally(cleanup);
@@ -901,11 +965,15 @@ const res = await fetch(`${API}/api/cards?${params.toString()}`, {
       )}`;
 
 const res = await fetch(url, {
-  method: "GET",
-  headers: { Authorization: `Bearer ${token}` },
+  method: "DELETE",
+headers: {
+  Authorization: `Bearer ${token}`,
+  "Cache-Control": "no-cache",
+},
   cache: "no-store",
   signal,
 }).finally(cleanup);
+
 
 
       if (res.status === 401) return handle401();
@@ -938,7 +1006,10 @@ const res = await fetch(url, {
       const { signal, cleanup } = withTimeout();
       const res = await fetch(`${API}/api/cards/${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+headers: {
+  Authorization: `Bearer ${token}`,
+  "Cache-Control": "no-cache",
+},
         signal,
       }).finally(cleanup);
 
@@ -987,10 +1058,12 @@ const res = await fetch(url, {
       const { signal, cleanup } = withTimeout();
       const res = await fetch(`${API}/api/cards/${editCard._id}`, {
         method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+headers: {
+  Authorization: `Bearer ${token}`,
+  "Cache-Control": "no-cache",
+  "Content-Type": "application/json",
+},
+
         body: JSON.stringify(payload),
         signal,
       }).finally(cleanup);
@@ -1046,10 +1119,11 @@ const res = await fetch(url, {
       const { signal, cleanup } = withTimeout();
       const res = await fetch(`${API}/api/cards`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+headers: {
+  Authorization: `Bearer ${token}`,
+  "Cache-Control": "no-cache",
+  "Content-Type": "application/json",
+},
         body: JSON.stringify(payload),
         signal,
       }).finally(cleanup);
@@ -1088,7 +1162,11 @@ const res = await fetch(url, {
       const { signal, cleanup } = withTimeout();
       const res = await fetch(`${API}/api/cards/${id}/review`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: {
+  Authorization: `Bearer ${token}`,
+  "Cache-Control": "no-cache",
+  "Content-Type": "application/json",
+},
         body: JSON.stringify({ known }),
         signal,
       }).finally(cleanup);
@@ -1211,7 +1289,10 @@ const res = await fetch(url, {
     try {
       const { signal, cleanup } = withTimeout();
 const res = await fetch(`${API}/api/cards/export?format=${format}`, {
-  headers: { Authorization: `Bearer ${token}` },
+headers: {
+  Authorization: `Bearer ${token}`,
+  "Cache-Control": "no-cache",
+},
   signal,
   cache: "no-store",
 }).finally(cleanup);
@@ -1257,7 +1338,11 @@ const res = await fetch(`${API}/api/cards/export?format=${format}`, {
       const { signal, cleanup } = withTimeout();
       const res = await fetch(`${API}/api/cards/import`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+headers: {
+  Authorization: `Bearer ${token}`,
+  "Cache-Control": "no-cache",
+  "Content-Type": "application/json",
+},
         body: JSON.stringify({ format: importFormat, data: dataPayload }),
         signal,
       }).finally(cleanup);
