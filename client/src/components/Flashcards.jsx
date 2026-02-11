@@ -1314,11 +1314,12 @@ function formatTimeUntil(dateStr) {
 
 
 
-  function logout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
-    navigate("/login");
-  }
+function logout() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("userId");
+  navigate("/", { replace: true }); 
+}
+
 
   const anyLoading = isBootLoading || isRefreshing || isCardsLoading || isStatsLoading || isDecksLoading;
 
