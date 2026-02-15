@@ -1,107 +1,93 @@
-# 📚 Flashcards App — Spaced Repetition Learning System
+# Flashcards App — Spaced Repetition Learning System
 
-A full-stack flashcards application built with React and Node.js that implements a custom spaced repetition algorithm.
+A full-stack flashcards web application designed for efficient vocabulary learning using an interval-based spaced repetition algorithm.
 
-The app helps users learn vocabulary efficiently by automatically scheduling reviews based on performance. It supports deck management, bulk operations, multilingual interface, and detailed learning statistics.
+The system automatically schedules card reviews based on user performance and stores the next review timestamp for each card in the database.
 
-This project demonstrates full-stack architecture, REST API design, authentication, state management, and interval-based learning logic.
-
----
-
-## 🚀 Live Demo
-
-Frontend: [Add your frontend URL here]  
-Backend API: [Add your backend URL here]
-
-Demo account:
-email: demo@demo.com
-password: demo123
----
-
-## ✨ Features
-
-- 🔐 Authentication (JWT)
-- 🧠 Custom spaced repetition algorithm
-- 🗂 Deck (Topic) management
-- 📦 Bulk actions (move / delete multiple cards)
-- 🌍 Multi-language UI (DE / EN / UK)
-- 🌙 Dark / Light mode
-- 📊 Learning statistics
-- ⏳ Next review time preview in library
-- 📁 Import / Export (JSON / CSV)
+This project demonstrates:
+- full-stack architecture
+- REST API design
+- JWT authentication
+- interval scheduling logic
+- deck-based content management
+- multilingual UI
 
 ---
 
-## 🧠 Spaced Repetition Logic
+## Live Demo
 
-Each card follows a fixed interval progression:
+Frontend: https://cards-frontend-xxxx.onrender.com  
+Backend API: https://cards-api-a10o.onrender.com
 
-1 min → 5 min → 10 min → 30 min → 1h → 3h → 6h → 12h →
-1d → 3d → 7d → 14d → 21d → 28d → 28d
-
-
-- If the user answers correctly → interval increases.
-- If the user answers incorrectly → progress resets to 1 minute.
-- After reaching 28 days, the interval stays at 28 days.
-
-The next review timestamp is stored in the database and recalculated after every review.
-
-This approach ensures long-term retention using interval-based scheduling.
+Demo account:  
+- Email: demo@demo.com  
+- Password: demo123  
 
 ---
 
-## 🛠 Tech Stack
+## Features
 
-Frontend:
-- React (Vite)
-- CSS (custom styling)
-- React Router
-
-Backend:
-- Node.js
-- Express
-- MongoDB (Mongoose)
 - JWT Authentication
+- Deterministic spaced repetition algorithm
+- Deck (Topic) management
+- Bulk actions (move / delete cards)
+- Multi-language UI (DE / EN / UK)
+- Dark / Light mode
+- Learning statistics
+- Next review time preview in Library
+- Import / Export (JSON / CSV)
 
-Architecture:
-- REST API
+---
+
+## Spaced Repetition Logic
+
+Each card follows a fixed review interval ladder:
+
+currentTime >= nextReview
+
+
+---
+
+## Tech Stack
+
+### Frontend
+- React (Vite) — UI rendering
+- React Router — navigation
+- Custom CSS — styling & theming
+
+### Backend
+- Node.js — runtime
+- Express — REST API
+- MongoDB (Mongoose) — persistence layer
+- JWT — authentication & protected routes
+
+### Architecture
 - Token-based authentication
-- Interval-based scheduling logic
+- RESTful API
+- Interval-based scheduling system
+- Deck-based content grouping
 
 ---
 
-## 📷 Screenshots
+## Screenshots
 
-### ⚡ Review Mode
-(Add screenshot here)
+### Review Mode
+![Review](./screenshots/review.png)
 
-### 📖 Library
-(Add screenshot here)
+### Library
+![Library](./screenshots/library.png)
 
-### 🗂 Deck Manager
-(Add screenshot here)
+### Deck Manager
+![Deck Manager](./screenshots/deck-manager.png)
 
 ---
 
-## 📦 Project Structure
-
+## Project Structure
 /client → React frontend
 /server → Express backend
-
-
 ---
 
-## 🧩 Future Improvements
+## Author
 
-- Custom interval settings
-- Push/email reminders
-- Mobile-first UI improvements
-- PWA support
-- Performance optimization for large datasets
-
----
-
-## 📌 Author
-
-Your Name  
-Junior Full-Stack Developer  
+Bohdan  
+Junior Full-Stack Developer
