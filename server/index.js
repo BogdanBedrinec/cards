@@ -27,20 +27,16 @@ const allowedOrigins = (process.env.CORS_ORIGINS || "")
 
 const corsOptions = {
   origin(origin, callback) {
-    // allow requests without origin (Postman/curl)
     if (!origin) return callback(null, true);
-
-    // if whitelist is empty => allow all (handy for first local run)
     if (allowedOrigins.length === 0) return callback(null, true);
-
     if (allowedOrigins.includes(origin)) return callback(null, true);
-
     return callback(new Error("CORS blocked: " + origin));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "Cache-Control", "Pragma"],
 };
+
 
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions)); // ✅ important for preflight
