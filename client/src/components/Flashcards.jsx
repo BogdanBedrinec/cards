@@ -593,8 +593,9 @@ useEffect(() => {
 
 
   async function fetchDecks() {
-    const token = getToken();
-    if (!token) return;
+const token = getToken();
+if (!token) return handle401();
+
 
     setIsDecksLoading(true);
     try {
@@ -638,8 +639,9 @@ if (!res.ok) {
   }
 
   async function fetchStats() {
-    const token = getToken();
-    if (!token) return;
+const token = getToken();
+if (!token) return handle401();
+
 
     setIsStatsLoading(true);
     try {
@@ -674,8 +676,9 @@ headers: {
 
   // ===== Review fetch (due queue) =====
   async function fetchCards() {
-    const token = getToken();
-    if (!token) return;
+const token = getToken();
+if (!token) return handle401();
+
 
     if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
@@ -693,14 +696,15 @@ headers: {
 
       const { signal, cleanup } = withTimeout(controller.signal);
 const res = await fetch(url, {
-  method: "DELETE",
-headers: {
-  Authorization: `Bearer ${token}`,
-  "Cache-Control": "no-cache",
-},
+  method: "GET",
+  headers: {
+    Authorization: `Bearer ${token}`,
+    "Cache-Control": "no-cache",
+  },
   cache: "no-store",
   signal,
 }).finally(cleanup);
+
 
 
 
@@ -728,8 +732,9 @@ headers: {
   }
 
   async function fetchLibraryCards() {
-    const token = getToken();
-    if (!token) return;
+const token = getToken();
+if (!token) return handle401();
+
 
     setLibraryLoading(true);
     try {
