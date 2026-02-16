@@ -279,17 +279,32 @@ input:focus, select:focus{
 .auth-links a.auth-pill:visited {
   color: inherit;
 }
+.auth-links a.auth-pill {
+  appearance: none;
+  -webkit-appearance: none;
 
-.auth-links {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-}
-
-.auth-links .auth-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-width: 120px; /* можеш 130-140 якщо хочеш */
+
+  text-decoration: none;
+  color: inherit;
+  font: inherit;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.auth-links a.auth-pill:visited {
+  color: inherit;
+}
+
+.auth-links a.auth-pill:hover {
+  text-decoration: none;
+}
+.auth-pill--disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: default;
 }

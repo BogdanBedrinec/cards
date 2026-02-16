@@ -199,23 +199,33 @@ return (
 
       {/* LINKS */}
 <div className="auth-links">
-  <button className="auth-pill" type="button" onClick={() => (window.location.href = "/flashcards")}>
+
+  <a
+    className="auth-pill"
+    href="/flashcards"
+  >
     🚀 Open App
-  </button>
+  </a>
 
   <a
     className="auth-pill"
     href="https://github.com/BogdanBedrinec/cards"
     target="_blank"
-    rel="noopener noreferrer"
+    rel="noreferrer"
   >
     💻 GitHub
   </a>
 
-  <button className="auth-pill" type="button" disabled>
+  <a
+    className="auth-pill auth-pill--disabled"
+    href="#"
+    onClick={(e) => e.preventDefault()}
+  >
     🎥 Video
-  </button>
+  </a>
+
 </div>
+
 
 
       <div className="auth-footnote" style={{ marginTop: 12 }}>
