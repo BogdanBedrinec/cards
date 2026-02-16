@@ -198,34 +198,12 @@ return (
       {demoMsg && <div className="auth-message">{demoMsg}</div>}
 
       {/* LINKS */}
+
 <div className="auth-links">
-
-  <a
-    className="auth-pill"
-    href="/flashcards"
-  >
-    🚀 Open App
-  </a>
-
-  <a
-    className="auth-pill"
-    href="https://github.com/BogdanBedrinec/cards"
-    target="_blank"
-    rel="noreferrer"
-  >
-    💻 GitHub
-  </a>
-
-  <a
-    className="auth-pill auth-pill--disabled"
-    href="#"
-    onClick={(e) => e.preventDefault()}
-  >
-    🎥 Video
-  </a>
-
+  <a className="auth-pill" href="/flashcards">🚀 Open App</a>
+  <a className="auth-pill" href="https://github.com/BogdanBedrinec/cards" target="_blank" rel="noreferrer">💻 GitHub</a>
+  <a className="auth-pill auth-pill--disabled" href="#" onClick={(e) => e.preventDefault()}>🎥 Video</a>
 </div>
-
 
 
       <div className="auth-footnote" style={{ marginTop: 12 }}>

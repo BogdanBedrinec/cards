@@ -308,3 +308,57 @@ input:focus, select:focus{
   pointer-events: none;
   cursor: default;
 }
+
+/* контейнер з 3 кнопками */
+.auth-links {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+/* базовий стиль для кнопок-лінків */
+.auth-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(10px);
+
+  font-weight: 600;
+  font-size: 14px;
+
+  cursor: pointer;
+  user-select: none;
+
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+/* прибрати стандартну “синю” поведінку лінків */
+.auth-pill,
+.auth-pill:visited {
+  color: inherit;
+  text-decoration: none;
+}
+
+.auth-pill:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
+  text-decoration: none;
+}
+
+.auth-pill:active {
+  transform: translateY(0px);
+}
+
+/* disabled для Video */
+.auth-pill--disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
