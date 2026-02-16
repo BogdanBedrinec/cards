@@ -212,9 +212,16 @@ return (
   target="_blank"
   rel="noopener noreferrer"
   className="auth-secondary"
+  style={{
+    textDecoration: "none",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  }}
 >
   💻 GitHub
 </a>
+
 
 
         <button
