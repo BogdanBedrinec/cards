@@ -268,3 +268,28 @@ input:focus, select:focus{
   align-items: center;
   justify-content: center;
 }
+
+/* make links look like the same pills as buttons */
+.auth-links a.auth-pill {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* kill visited purple/blue */
+.auth-links a.auth-pill:visited {
+  color: inherit;
+}
+
+.auth-links {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.auth-links .auth-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 120px; /* можеш 130-140 якщо хочеш */
+}

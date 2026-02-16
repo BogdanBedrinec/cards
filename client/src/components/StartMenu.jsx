@@ -198,37 +198,25 @@ return (
       {demoMsg && <div className="auth-message">{demoMsg}</div>}
 
       {/* LINKS */}
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
-<button
-  className="auth-secondary"
-  onClick={handleDemoLogin}
->
-  🚀 Open App
-</button>
+<div className="auth-links">
+  <button className="auth-pill" type="button" onClick={() => (window.location.href = "/flashcards")}>
+    🚀 Open App
+  </button>
 
+  <a
+    className="auth-pill"
+    href="https://github.com/BogdanBedrinec/cards"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    💻 GitHub
+  </a>
 
-<a
-  className="auth-pill"
-  href="https://github.com/BogdanBedrinec/cards"
-  target="_blank"
-  rel="noopener noreferrer"
->
-  💻 GitHub
-</a>
+  <button className="auth-pill" type="button" disabled>
+    🎥 Video
+  </button>
+</div>
 
-
-
-
-        <button
-          type="button"
-          className="auth-secondary"
-          onClick={() => openUrl(VIDEO_URL)}
-          disabled={!VIDEO_URL}
-          title={!VIDEO_URL ? "Add VIDEO_URL later" : "Watch demo video"}
-        >
-          🎥 Video
-        </button>
-      </div>
 
       <div className="auth-footnote" style={{ marginTop: 12 }}>
         React + Vite • Node/Express • MongoDB • JWT • REST API
