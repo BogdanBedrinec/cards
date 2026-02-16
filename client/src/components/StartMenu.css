@@ -262,3 +262,9 @@ input:focus, select:focus{
   .auth-title{ font-size: 24px; }
   .auth-badge{ display: none; } /* щоб не тиснуло в хедері */
 }
+.auth-pill {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
