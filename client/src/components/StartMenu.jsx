@@ -156,7 +156,8 @@ return (
   <div className="auth-wrap">
     <div className="auth-card">
       <div className="auth-head">
-        <h1 className="auth-title">Flashcards App</h1>
+<h1 className="auth-title">Flashcards Portfolio Demo</h1>
+
 
         <div className="auth-head-right">
           <div className="auth-badge">Portfolio demo</div>
@@ -198,24 +199,23 @@ return (
 
       {/* LINKS */}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
-        <button
-          type="button"
-          className="auth-secondary"
-          onClick={() => (FRONTEND_URL ? openUrl(FRONTEND_URL) : window.location.assign("/flashcards"))}
-          title={FRONTEND_URL ? "Open deployed app" : "Open app"}
-        >
-          🚀 Open App
-        </button>
+<button
+  className="auth-secondary"
+  onClick={handleDemoLogin}
+>
+  🚀 Open App
+</button>
 
-        <button
-          type="button"
-          className="auth-secondary"
-          onClick={() => openUrl(GITHUB_URL)}
-          disabled={!GITHUB_URL}
-          title={!GITHUB_URL ? "Set GITHUB_URL first" : "Open GitHub repository"}
-        >
-          💻 GitHub
-        </button>
+
+<a
+  href="https://github.com/BogdanBedrinec/cards"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="auth-secondary"
+>
+  💻 GitHub
+</a>
+
 
         <button
           type="button"
