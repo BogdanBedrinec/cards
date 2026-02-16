@@ -17,6 +17,12 @@ const DEMO_UI_LANG = "en";
 const DEMO_L1_NATIVE = "de";
 const DEMO_L2_LEARNING = "en";
 
+// публичні лінки (підставиш свої)
+const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || ""; // напр. https://cards-xxx.onrender.com
+const GITHUB_URL = import.meta.env.VITE_GITHUB_URL || "";     // напр. https://github.com/you/flashcards
+const VIDEO_URL = import.meta.env.VITE_VIDEO_URL || "";       // опційно, youtube/loom
+
+
 function getSavedTheme() {
   const saved = localStorage.getItem("flashcardsTheme");
   return saved === "dark" ? "dark" : "light";
@@ -74,6 +80,11 @@ export default function StartMenu({ initialMode = null }) {
     setMode("register");
     navigate("/register");
   }
+
+  function openUrl(url) {
+  if (!url) return;
+  window.open(url, "_blank", "noopener,noreferrer");
+}
 
   async function handleDemoLogin() {
     if (demoLoading) return;
@@ -140,57 +151,88 @@ export default function StartMenu({ initialMode = null }) {
     );
   }
 
-  // ===== Home UI =====
-  return (
-    <div className="auth-wrap">
-      <div className="auth-card">
-        <div className="auth-head">
-          <h1 className="auth-title">Welcome</h1>
+// ===== Home UI =====
+return (
+  <div className="auth-wrap">
+    <div className="auth-card">
+      <div className="auth-head">
+        <h1 className="auth-title">Flashcards App</h1>
 
-          <div className="auth-head-right">
-            <div className="auth-badge">Demo project</div>
+        <div className="auth-head-right">
+          <div className="auth-badge">Portfolio demo</div>
 
-            <button
-              type="button"
-              className="auth-themebtn"
-              onClick={toggleTheme}
-              title={theme === "dark" ? "Light theme" : "Dark theme"}
-              aria-label="Toggle theme"
-            >
-              {theme === "dark" ? "☀️" : "🌙"}
-            </button>
-          </div>
-        </div>
-
-        <p className="auth-sub">
-          Flashcards for language learning — review mode, stats, topics, import/export.
-        </p>
-
-        <div className="auth-actions">
-          <button className="auth-primary" type="button" onClick={goLogin}>
-            Log in
-          </button>
-
-          <button className="auth-secondary" type="button" onClick={goRegister}>
-            Create account
-          </button>
-
-          {/* ✅ DEMO BUTTON */}
           <button
-            className="auth-secondary"
             type="button"
-            onClick={handleDemoLogin}
-            disabled={demoLoading}
-            title="Login with a demo account"
+            className="auth-themebtn"
+            onClick={toggleTheme}
+            title={theme === "dark" ? "Light theme" : "Dark theme"}
+            aria-label="Toggle theme"
           >
-            {demoLoading ? "Opening demo..." : "✨ Try demo"}
+            {theme === "dark" ? "☀️" : "🌙"}
           </button>
         </div>
+      </div>
 
-        {demoMsg && <div className="auth-message">{demoMsg}</div>}
+      <p className="auth-sub">
+        A spaced-repetition flashcards app for learning vocabulary.
+        Review mode schedules cards automatically, library shows next review time,
+        topics + bulk actions keep everything organized.
+      </p>
 
-        <div className="auth-footnote">React + Vite • Node/Express • MongoDB</div>
+      {/* PRIMARY CTA */}
+      <div className="auth-actions" style={{ marginTop: 12 }}>
+        <button className="auth-primary" type="button" onClick={handleDemoLogin} disabled={demoLoading}>
+          {demoLoading ? "Opening demo..." : "✨ Try demo"}
+        </button>
+
+        <button className="auth-secondary" type="button" onClick={goLogin}>
+          Log in
+        </button>
+
+        <button className="auth-secondary" type="button" onClick={goRegister}>
+          Create account
+        </button>
+      </div>
+
+      {demoMsg && <div className="auth-message">{demoMsg}</div>}
+
+      {/* LINKS */}
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
+        <button
+          type="button"
+          className="auth-secondary"
+          onClick={() => (FRONTEND_URL ? openUrl(FRONTEND_URL) : window.location.assign("/flashcards"))}
+          title={FRONTEND_URL ? "Open deployed app" : "Open app"}
+        >
+          🚀 Open App
+        </button>
+
+        <button
+          type="button"
+          className="auth-secondary"
+          onClick={() => openUrl(GITHUB_URL)}
+          disabled={!GITHUB_URL}
+          title={!GITHUB_URL ? "Set GITHUB_URL first" : "Open GitHub repository"}
+        >
+          💻 GitHub
+        </button>
+
+        <button
+          type="button"
+          className="auth-secondary"
+          onClick={() => openUrl(VIDEO_URL)}
+          disabled={!VIDEO_URL}
+          title={!VIDEO_URL ? "Add VIDEO_URL later" : "Watch demo video"}
+        >
+          🎥 Video
+        </button>
+      </div>
+
+      <div className="auth-footnote" style={{ marginTop: 12 }}>
+        React + Vite • Node/Express • MongoDB • JWT • REST API
       </div>
     </div>
-  );
+  </div>
+);
+
 }

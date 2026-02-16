@@ -16,12 +16,12 @@ This project demonstrates:
 
 ## Live Demo
 
-Frontend: https://cards-frontend-xxxx.onrender.com  
+Frontend: https://cards-6rxm.onrender.com
 Backend API: https://cards-api-a10o.onrender.com
 
 Demo account:  
 - Email: demo@demo.com  
-- Password: demo123  
+- Password: demo12345  
 
 ---
 
