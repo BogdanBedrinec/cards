@@ -202,7 +202,7 @@ return (
 <div className="auth-links">
   <a className="auth-pill" href="/flashcards">🚀 Open App</a>
   <a className="auth-pill" href="https://github.com/BogdanBedrinec/cards" target="_blank" rel="noreferrer">💻 GitHub</a>
-  <a className="auth-pill auth-pill--disabled" href="#" onClick={(e) => e.preventDefault()}>🎥 Video</a>
+  <a className="auth-pill auth-pill--disabled" href="https://drive.google.com/file/d/1iW5fRu7CO8XUP_WU_odWtqQv_4WRE938/view?usp=sharing" onClick={(e) => e.preventDefault()}>🎥 Video</a>
 </div>
 
 

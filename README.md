@@ -80,16 +80,9 @@ currentTime >= nextReview
 ### Deck Manager
 ![Deck Manager](./screenshots/deck-manager.png)
 
----
-
 ## 🎥 Demo Video
+▶️ Watch: https://drive.google.com/file/d/1iW5fRu7CO8XUP_WU_odWtqQv_4WRE938/view?usp=sharing
 
-<iframe 
-  src="https://drive.google.com/file/d/1iW5fRu7CO8XUP_WU_odWtqQv_4WRE938/preview" 
-  width="100%" 
-  height="480" 
-  allow="autoplay">
-</iframe>
 
 ---
 
