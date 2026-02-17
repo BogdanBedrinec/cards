@@ -82,6 +82,17 @@ currentTime >= nextReview
 
 ---
 
+## 🎥 Demo Video
+
+<iframe 
+  src="https://drive.google.com/file/d/1iW5fRu7CO8XUP_WU_odWtqQv_4WRE938/preview" 
+  width="100%" 
+  height="480" 
+  allow="autoplay">
+</iframe>
+
+---
+
 ## Project Structure
 /client → React frontend
 /server → Express backend
