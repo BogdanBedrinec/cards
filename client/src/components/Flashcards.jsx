@@ -1462,7 +1462,7 @@ function logout() {
             <b>{t.dueNow}:</b> {stats.dueNow}
           </div>
           <div>
-            <b>{t.accuracy}:</b> {stats.accuracy}%
+            <b>{t.accuracy}:</b> {Math.min(100, Math.max(0, Number(stats.accuracy) || 0))}%
           </div>
           <div>
             <b>{t.learned}:</b> {stats.learned ?? 0}
