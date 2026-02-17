@@ -224,6 +224,9 @@ reviewCountLabel: "Bewertungen",
 correctCountLabel: "Richtig",
 dueNowLabel: "Fällig jetzt",
 
+delete: "Löschen",
+
+
 
 
       },
@@ -307,6 +310,9 @@ timeIn: "In",
 reviewCountLabel: "Reviews",
 correctCountLabel: "Correct",
 dueNowLabel: "Due now",
+
+delete: "Delete",
+
 
 
 
@@ -392,6 +398,7 @@ reviewCountLabel: "Повторів",
 correctCountLabel: "Правильно",
 dueNowLabel: "До повтору зараз",
 
+delete: "Видалити",
 
 
       },
@@ -1834,7 +1841,7 @@ function logout() {
               </button>
 
 <button type="button" onClick={bulkDelete} disabled={selectedCount === 0 || bulkBusy}>
-  🗑 {bulkBusy ? t.loading : "Löschen"}
+  🗑 {bulkBusy ? t.loading : t.delete}
 </button>
 
 
