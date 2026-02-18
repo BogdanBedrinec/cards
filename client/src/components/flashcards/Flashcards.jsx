@@ -1,9 +1,8 @@
-// Flashcards.jsx (fixed)
-// Replace your entire Flashcards.jsx with this file.
-
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Flashcards.css";
+import StatsBar from "./panels/StatsBar.jsx";
+
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const REQ_TIMEOUT_MS = 12000;
@@ -15,40 +14,6 @@ const DEFAULT_DECK_ID = "__DEFAULT__";
 const LS_UI = "fc_ui_lang"; // interface language
 const LS_L1 = "fc_native_lang"; // native language
 const LS_L2 = "fc_learning_lang"; // learning language
-
-function getToken() {
-  const t = localStorage.getItem("token");
-  if (!t || t === "undefined" || t === "null") return null;
-  return t;
-}
-
-function normalizeLang(code, fallback = "de") {
-  const allowed = new Set(["de", "en", "uk"]);
-  return allowed.has(code) ? code : fallback;
-}
-
-function withTimeout(signal, ms = REQ_TIMEOUT_MS) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), ms);
-
-  const onAbort = () => controller.abort();
-  if (signal) signal.addEventListener("abort", onAbort);
-
-  return {
-    signal: controller.signal,
-    cleanup: () => {
-      clearTimeout(timer);
-      if (signal) signal.removeEventListener("abort", onAbort);
-    },
-  };
-}
-
-function humanFetchError(err) {
-  if (!err) return "Unknown error";
-  if (err.name === "AbortError") return "Request timed out";
-  if (err instanceof TypeError) return "Network error (server not reachable)";
-  return "Unexpected error";
-}
 
 export default function Flashcards() {
   const navigate = useNavigate();
@@ -141,310 +106,11 @@ export default function Flashcards() {
 
   const abortRef = useRef(null);
 
-  // --- i18n dictionary (minimal) ---
-  const T = useMemo(
-    () => ({
-      de: {
-        review: "⚡ Wiederholen",
-        library: "📖 Bibliothek",
-        add: "➕ Hinzufügen",
-        refresh: "Aktualisieren",
-        deckFilter: "Thema",
-        allDecks: "Alle",
-        showTranslation: "Übersetzung anzeigen",
-        know: "Weiß ich ✅",
-        dontKnow: "Weiß ich nicht ❌",
-        noCards: "Keine Karten zum Wiederholen 🎉",
-        addCard: "Karte hinzufügen",
-        addDeck: "Thema hinzufügen",
-        newDeck: "➕ Neues Thema (optional)",
-        exampleOpt: "📘 Beispiel (optional)",
-        wordPlaceholder: "Wort",
-        translationPlaceholder: "Übersetzung",
-        tipAfterAdd: "Tipp: Danach zu ⚡ Wiederholen wechseln.",
-        loading: "Laden…",
-        retry: "Erneut versuchen",
-        offlineHint: "Server nicht erreichbar. Läuft das Backend?",
-        searchPlaceholder: "Suche (Wort / Übersetzung / Thema / Beispiel)…",
-        reload: "Neu laden",
-        noFound: "Keine Karten gefunden.",
-        edit: "Bearbeiten",
-        del: "Löschen",
-        cancel: "Abbrechen",
-        save: "Speichern",
-        editTitle: "Karte bearbeiten",
-
-        // stats
-        total: "Gesamt",
-        dueNow: "Fällig jetzt",
-        accuracy: "Genauigkeit",
-        learned: "Gelernt",
-        remaining: "Verbleibend",
-
-        // sorting
-        sort: "Sortierung",
-        order: "Reihenfolge",
-        az: "A → Z",
-        za: "Z → A",
-
-        // deck manager
-        deckManagerTitle: "🗂 Themen (Deck-Manager)",
-        from: "Von",
-        newName: "Neuer Name (umbenennen)",
-        removeMoveTo: "Entfernen: Karten verschieben nach",
-        renameBtn: "Umbenennen",
-        removeBtn: "Entfernen",
-
-        // bulk
-        selected: "Ausgewählt",
-        selectAll: "Alle auswählen",
-        clear: "Leeren",
-        moveTo: "Verschieben nach",
-        move: "Verschieben",
-        deleteSelected: "Ausgewählte löschen",
-        confirmDeleteN: "Ausgewählte Karten löschen?",
-
-        defaultDeck: "Ohne Thema",
-        cannotRenameDefault: "⚠️ „Ohne Thema“ kann nicht umbenannt werden.",
-        cannotDeleteDefault: "⚠️ „Ohne Thema“ kann nicht gelöscht werden.",
-        confirmRename: (from, to) => `Thema "${from}" → "${to}" umbenennen?`,
-        confirmRemove: (name, to) => `Thema "${name}" entfernen (Karten → "${to}")?`,
-
-        sortByCreatedAt: "🆕 Erstellt",
-sortByWord: "🔤 Wort",
-sortByNextReview: "🕒 Nächste Wiederholung",
-sortByAccuracy: "🎯 Genauigkeit",
-
-timeMin: "Min(uten)",
-timeHour: "Std(unden)",
-timeDay: "Tag(e)",
-timeIn: "In",
-
-reviewCountLabel: "Bewertungen",
-correctCountLabel: "Richtig",
-dueNowLabel: "Fällig jetzt",
-
-delete: "Löschen",
-
-
-
-
-      },
-
-      en: {
-        review: "⚡ Review",
-        library: "📖 Library",
-        add: "➕ Add",
-        refresh: "Refresh",
-        deckFilter: "Topic",
-        allDecks: "All",
-        showTranslation: "Show translation",
-        know: "I know ✅",
-        dontKnow: "I don’t know ❌",
-        noCards: "No cards to review 🎉",
-        addCard: "Add card",
-        addDeck: "Add topic",
-        newDeck: "➕ New topic (optional)",
-        exampleOpt: "📘 Example (optional)",
-        wordPlaceholder: "Word",
-        translationPlaceholder: "Translation",
-        tipAfterAdd: "Tip: Switch to ⚡ Review after adding.",
-        loading: "Loading…",
-        retry: "Retry",
-        offlineHint: "Server not reachable. Did you start backend?",
-        searchPlaceholder: "Search (word / translation / topic / example)…",
-        reload: "Reload",
-        noFound: "No cards found.",
-        edit: "Edit",
-        del: "Delete",
-        cancel: "Cancel",
-        save: "Save",
-        editTitle: "Edit card",
-
-        // stats
-        total: "Total",
-        dueNow: "Due now",
-        accuracy: "Accuracy",
-        learned: "Learned",
-        remaining: "Remaining",
-
-        // sorting
-        sort: "Sorting",
-        order: "Order",
-        az: "A → Z",
-        za: "Z → A",
-
-        // deck manager
-        deckManagerTitle: "🗂 Topics (Deck manager)",
-        from: "From",
-        newName: "New name (rename)",
-        removeMoveTo: "Remove: move cards to",
-        renameBtn: "Rename",
-        removeBtn: "Remove",
-
-        // bulk
-        selected: "Selected",
-        selectAll: "Select all",
-        clear: "Clear",
-        moveTo: "Move to",
-        move: "Move",
-        deleteSelected: "Delete selected",
-        confirmDeleteN: "Delete selected cards?",
-
-        defaultDeck: "No topic",
-        cannotRenameDefault: "⚠️ “No topic” cannot be renamed.",
-        cannotDeleteDefault: "⚠️ “No topic” cannot be deleted.",
-        confirmRename: (from, to) => `Rename topic "${from}" → "${to}"?`,
-        confirmRemove: (name, to) => `Remove topic "${name}" (move cards → "${to}")?`,
-
-        sortByCreatedAt: "🆕 Created",
-sortByWord: "🔤 Word",
-sortByNextReview: "🕒 Next review",
-sortByAccuracy: "🎯 Accuracy",
-
-timeMin: "min(s)",
-timeHour: "h",
-timeDay: "day(s)",
-timeIn: "In",
-
-reviewCountLabel: "Reviews",
-correctCountLabel: "Correct",
-dueNowLabel: "Due now",
-
-delete: "Delete",
-
-
-
-
-      },
-
-      uk: {
-        review: "⚡ Повторення",
-        library: "📖 Бібліотека",
-        add: "➕ Додати",
-        refresh: "Оновити",
-        deckFilter: "Тема",
-        allDecks: "Усі",
-        showTranslation: "Показати переклад",
-        know: "Знаю ✅",
-        dontKnow: "Не знаю ❌",
-        noCards: "Немає карток для повторення 🎉",
-        addCard: "Додати картку",
-        addDeck: "Додати тему",
-        newDeck: "➕ Нова тема (опційно)",
-        exampleOpt: "📘 Приклад (необов'язково)",
-        wordPlaceholder: "Слово",
-        translationPlaceholder: "Переклад",
-        tipAfterAdd: "Порада: після додавання переходь у ⚡ Повторення.",
-        loading: "Завантаження…",
-        retry: "Повторити",
-        offlineHint: "Сервер недоступний. Ти запустив бекенд?",
-        searchPlaceholder: "Пошук (слово / переклад / тема / приклад)…",
-        reload: "Оновити список",
-        noFound: "Нічого не знайдено.",
-        edit: "Редагувати",
-        del: "Видалити",
-        cancel: "Скасувати",
-        save: "Зберегти",
-        editTitle: "Редагування картки",
-
-        // stats
-        total: "Усього",
-        dueNow: "До повтору зараз",
-        accuracy: "Точність",
-        learned: "Вивчено",
-        remaining: "Залишилось",
-
-        // sorting
-        sort: "Сортування",
-        order: "Порядок",
-        az: "А → Я",
-        za: "Я → А",
-
-        // deck manager
-        deckManagerTitle: "🗂 Теми (керування)",
-        from: "Звідки",
-        newName: "Нова назва (перейменувати)",
-        removeMoveTo: "Видалити: перемістити картки в",
-        renameBtn: "Перейменувати",
-        removeBtn: "Видалити",
-
-        // bulk
-        selected: "Вибрано",
-        selectAll: "Вибрати все",
-        clear: "Очистити",
-        moveTo: "Перемістити в",
-        move: "Перемістити",
-        deleteSelected: "Видалити вибрані",
-        confirmDeleteN: "Видалити вибрані картки?",
-
-        defaultDeck: "Без теми",
-        cannotRenameDefault: "⚠️ «Без теми» не можна перейменувати.",
-        cannotDeleteDefault: "⚠️ «Без теми» не можна видалити.",
-        confirmRename: (from, to) => `Перейменувати тему "${from}" → "${to}"?`,
-        confirmRemove: (name, to) => `Видалити тему "${name}" (перемістити картки → "${to}")?`,
-
-        sortByCreatedAt: "🆕 Дата додавання",
-sortByWord: "🔤 Слово",
-sortByNextReview: "🕒 Наступний повтор",
-sortByAccuracy: "🎯 Точність",
-
-timeMin: "хв(илин)",
-timeHour: "год(ин)",
-timeDay: "день(дні)",
-timeIn: "Через",
-
-reviewCountLabel: "Повторів",
-correctCountLabel: "Правильно",
-dueNowLabel: "До повтору зараз",
-
-delete: "Видалити",
-
-
-      },
-    }),
-    []
-  );
-
-  const t = T[normalizeLang(interfaceLang, "de")] || T.de;
-
-async function wakeBackend() {
-  try {
-    const { signal, cleanup } = withTimeout(null, 12000);
-    await fetch(`${API}/api/health`, { cache: "no-store", signal }).finally(cleanup);
-  } catch {
-    // якщо впало — retry нижче все одно спробує ще раз
-  }
-}
-
-async function retry(fn, tries = 4, delayMs = 1200) {
-  let lastErr = null;
-  for (let i = 0; i < tries; i++) {
-    try {
-      return await fn();
-    } catch (e) {
-      lastErr = e;
-      await new Promise((r) => setTimeout(r, delayMs));
-    }
-  }
-  throw lastErr;
-}
-
 
   // label helper (MUST be inside component because it depends on `t`)
   const deckLabel = (name) => (name === DEFAULT_DECK_ID ? t.defaultDeck : name);
 
-  function langLabel(code) {
-    if (code === "de") return "DE";
-    if (code === "en") return "EN";
-    return "UK";
-  }
-
   // --- Auth guard ---
-  useEffect(() => {
-    const token = getToken();
-    if (!token) navigate("/login", { replace: true });
-  }, [navigate]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -517,12 +183,6 @@ const res = await fetch(`${API}/api/users/me`, {
     localStorage.removeItem("token");
     localStorage.removeItem("userId");
     navigate("/login", { replace: true });
-  }
-
-  function setFriendlyError(prefix, err, serverMsg) {
-    const human = humanFetchError(err);
-    const hint = human.includes("Network error") ? ` — ${t.offlineHint}` : "";
-    setMessage(`${prefix}: ${serverMsg || human}${hint}`);
   }
 
   // ✅ Reset session progress when user changes queue parameters (review only)
@@ -1383,33 +1043,6 @@ headers: {
     setShowImportExport(false);
   }
 
-function formatTimeUntil(dateStr) {
-  const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) return null;
-
-  const diffMs = d.getTime() - Date.now();
-  const diffMin = Math.ceil(diffMs / 60000);
-
-  if (diffMin <= 0) return null;
-
-  // < 1 години → хвилини
-  if (diffMin < 60) {
-    return `${t.timeIn} ${diffMin} ${t.timeMin}`;
-  }
-
-  const diffHours = diffMin / 60;
-
-  // < 1 дня → години
-  if (diffHours < 24) {
-    return `${t.timeIn} ${Math.ceil(diffHours)} ${t.timeHour}`;
-  }
-
-  // ≥ 1 дня → дні
-  const diffDays = diffHours / 24;
-  return `${t.timeIn} ${Math.ceil(diffDays)} ${t.timeDay}`;
-}
-
-
 
 function logout() {
   localStorage.removeItem("token");
@@ -1451,31 +1084,12 @@ function logout() {
               {message ? message : ""}
             </span>
           </div>
+<StatsBar stats={stats} t={t} />
 
           <div className="top-banner-right">
             <button type="button" className="banner-btn" onClick={retryNow} disabled={anyLoading}>
               {t.retry}
             </button>
-          </div>
-        </div>
-      )}
-
-      {stats && (
-        <div className="stats">
-          <div>
-            <b>{t.total}:</b> {stats.totalCards}
-          </div>
-          <div>
-            <b>{t.dueNow}:</b> {stats.dueNow}
-          </div>
-          <div>
-            <b>{t.accuracy}:</b> {Math.min(100, Math.max(0, Number(stats.accuracy) || 0))}%
-          </div>
-          <div>
-            <b>{t.learned}:</b> {stats.learned ?? 0}
-          </div>
-          <div>
-            <b>{t.remaining}:</b> {stats.remaining ?? 0}
           </div>
         </div>
       )}
