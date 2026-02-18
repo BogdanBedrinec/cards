@@ -1,7 +1,7 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import StartMenu from "./components/StartMenu.jsx";
-import Flashcards from "./components/Flashcards.jsx";
+import Flashcards from "./components/flashcards/Flashcards.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
 export default function App() {
