@@ -2,6 +2,23 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Flashcards.css";
 import StatsBar from "./panels/StatsBar.jsx";
+import Toolbar from "./panels/Toolbar.jsx";
+import ReviewPanel from "./panels/ReviewPanel.jsx";
+import LibraryPanel from "./panels/LibraryPanel.jsx";
+import AddCardPanel from "./panels/AddCardPanel.jsx";
+import { getT } from "./i18n/dictionary.js";
+
+// якщо є модалка
+import EditCardModal from "./modals/EditCardModal.jsx";
+
+// хуки
+import useApi from "./hooks/useApi.js";
+import useAuthGuard from "./hooks/useAuthGuard.js";
+
+import { getT } from "./i18n/dictionary.js";
+
+const t = useMemo(() => getT(interfaceLang), [interfaceLang]);
+
 
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
