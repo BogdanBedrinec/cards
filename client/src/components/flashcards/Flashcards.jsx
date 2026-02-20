@@ -1544,68 +1544,23 @@ function logout() {
           </div>
 
           {/* Edit modal */}
-          {editOpen && (
-            <div
-              role="dialog"
-              aria-modal="true"
-              style={{
-                position: "fixed",
-                inset: 0,
-                background: "rgba(0,0,0,0.45)",
-                display: "grid",
-                placeItems: "center",
-                padding: 16,
-                zIndex: 50,
-              }}
-              onMouseDown={() => setEditOpen(false)}
-            >
-              <div className="panel" style={{ width: "min(720px, 100%)", padding: 14 }} onMouseDown={(e) => e.stopPropagation()}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                  <b>{t.editTitle}</b>
-                  <button type="button" onClick={() => setEditOpen(false)}>
-                    ✖
-                  </button>
-                </div>
-
-                <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
-                  <input type="text" value={editWord} onChange={(e) => setEditWord(e.target.value)} placeholder="word" />
-                  <input
-                    type="text"
-                    value={editTranslation}
-                    onChange={(e) => setEditTranslation(e.target.value)}
-                    placeholder="translation"
-                  />
-                  <input
-                    type="text"
-                    value={editExample}
-                    onChange={(e) => setEditExample(e.target.value)}
-                    placeholder="Example (optional)"
-                  />
-
-                  <select value={editDeck} onChange={(e) => setEditDeck(e.target.value)}>
-                    {decks.length === 0 ? (
-                      <option value={DEFAULT_DECK_ID}>{t.defaultDeck}</option>
-                    ) : (
-                      decks.map((d) => (
-                        <option key={d} value={d}>
-                          {deckLabel(d)}
-                        </option>
-                      ))
-                    )}
-                  </select>
-
-                  <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                    <button type="button" onClick={() => setEditOpen(false)}>
-                      {t.cancel}
-                    </button>
-                    <button type="button" onClick={saveEdit}>
-                      {t.save}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+<EditCardModal
+  open={editOpen}
+  t={t}
+  decks={decks}
+  deckLabel={deckLabel}
+  DEFAULT_DECK_ID={DEFAULT_DECK_ID}
+  editWord={editWord}
+  setEditWord={setEditWord}
+  editTranslation={editTranslation}
+  setEditTranslation={setEditTranslation}
+  editExample={editExample}
+  setEditExample={setEditExample}
+  editDeck={editDeck}
+  setEditDeck={setEditDeck}
+  onClose={() => setEditOpen(false)}
+  onSave={saveEdit}
+/>
         </div>
       )}
     </div>
