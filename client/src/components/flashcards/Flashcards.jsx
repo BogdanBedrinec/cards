@@ -7,6 +7,8 @@ import ReviewPanel from "./panels/ReviewPanel.jsx";
 import LibraryPanel from "./panels/LibraryPanel.jsx";
 import AddCardPanel from "./panels/AddCardPanel.jsx";
 import { getT } from "./i18n/dictionary.js";
+import { DICT } from "./i18n/dictionary.js";
+
 
 // якщо є модалка
 import EditCardModal from "./modals/EditCardModal.jsx";
@@ -117,8 +119,7 @@ export default function Flashcards() {
 
   const abortRef = useRef(null);
 
-const t = useMemo(() => getT(interfaceLang), [interfaceLang]);
-
+const t = useMemo(() => DICT[interfaceLang] || DICT.en, [interfaceLang]);
   // label helper (MUST be inside component because it depends on `t`)
   const deckLabel = (name) => (name === DEFAULT_DECK_ID ? t.defaultDeck : name);
 
@@ -225,7 +226,6 @@ async function refreshAll() {
     retry(fetchStats, 4),
   ]);
 }
-
 
 
 useEffect(() => {
@@ -466,7 +466,6 @@ headers: {
 
   // selection helpers
   const selectedCount = selectedIds.size;
-
   function toggleSelect(id) {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -622,7 +621,6 @@ headers: {
       setDeckManageBusy(false);
     }
   }
-
   async function removeDeckMoveCards() {
     const token = getToken();
     if (!token) return handle401();
@@ -872,7 +870,6 @@ headers: {
       return false;
     }
   }
-
   // ----- Review helpers -----
   const reviewCards = useMemo(() => cards, [cards]);
 
@@ -1097,7 +1094,6 @@ function logout() {
             </span>
           </div>
 <StatsBar stats={stats} t={t} />
-
           <div className="top-banner-right">
             <button type="button" className="banner-btn" onClick={retryNow} disabled={anyLoading}>
               {t.retry}
