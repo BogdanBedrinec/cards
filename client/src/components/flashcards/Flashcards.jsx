@@ -15,8 +15,6 @@ import EditCardModal from "./modals/EditCardModal.jsx";
 import useApi from "./hooks/useApi.js";
 import useAuthGuard from "./hooks/useAuthGuard.js";
 
-import { getT } from "./i18n/dictionary.js";
-
 const t = useMemo(() => getT(interfaceLang), [interfaceLang]);
 
 
