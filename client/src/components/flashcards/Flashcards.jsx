@@ -15,10 +15,6 @@ import EditCardModal from "./modals/EditCardModal.jsx";
 import useApi from "./hooks/useApi.js";
 import useAuthGuard from "./hooks/useAuthGuard.js";
 
-const t = useMemo(() => getT(interfaceLang), [interfaceLang]);
-
-
-
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const REQ_TIMEOUT_MS = 12000;
 
@@ -121,6 +117,7 @@ export default function Flashcards() {
 
   const abortRef = useRef(null);
 
+const t = useMemo(() => getT(interfaceLang), [interfaceLang]);
 
   // label helper (MUST be inside component because it depends on `t`)
   const deckLabel = (name) => (name === DEFAULT_DECK_ID ? t.defaultDeck : name);
