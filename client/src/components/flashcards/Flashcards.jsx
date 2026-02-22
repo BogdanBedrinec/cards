@@ -104,12 +104,6 @@ export default function Flashcards() {
     navigate("/login", { replace: true });
   }
 
-  function setFriendlyError(prefix, err, serverMsg) {
-    const human = humanFetchError(err);
-    const hint = human.includes("Network error") ? ` — ${t.offlineHint}` : "";
-    setMessage(`${prefix}: ${serverMsg || human}${hint}`);
-  }
-
   const deckLabel = (name) => (name === DEFAULT_DECK_ID ? t.defaultDeck : name);
 
   function logout() {
