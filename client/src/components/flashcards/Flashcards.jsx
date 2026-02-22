@@ -1,6 +1,6 @@
 // src/components/flashcards/Flashcards.jsx
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Flashcards.css";
 
@@ -17,14 +17,14 @@ import EditCardModal from "./modals/EditCardModal.jsx";
 // i18n
 import { getT } from "./i18n/dictionary.js";
 
-// ✅ extracted utils
+// utils
 import { API, DEFAULT_DECK_ID, LS_UI, LS_L1, LS_L2, LS_THEME } from "./utils/constants.js";
 import { getToken, clearAuth } from "./utils/auth.js";
-import { withTimeout, humanFetchError } from "./utils/http.js";
+import { withTimeout } from "./utils/http.js";
 import { normalizeLang, langLabel, formatTimeUntil } from "./utils/format.js";
 
+// hooks
 import { useReviewShortcuts } from "./hooks/useReviewShortcuts";
-
 import { useFlashcardsData } from "./hooks/useFlashcardsData";
 
 export default function Flashcards() {
@@ -38,12 +38,12 @@ export default function Flashcards() {
   const [translation, setTranslation] = useState("");
   const [example, setExample] = useState("");
 
-  // decks
+  // decks (UI selections only)
   const [deckFilter, setDeckFilter] = useState("ALL");
   const [deckForNewCard, setDeckForNewCard] = useState(DEFAULT_DECK_ID);
   const [newDeckName, setNewDeckName] = useState("");
 
-  // review queue
+  // review queue UI
   const [reviewIndex, setReviewIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [isReviewing, setIsReviewing] = useState(false);
@@ -81,7 +81,7 @@ export default function Flashcards() {
   const [importText, setImportText] = useState("");
   const [importFormat, setImportFormat] = useState("json");
 
-  // stats + UI
+  // UI message
   const [message, setMessage] = useState("");
 
   // theme
@@ -95,7 +95,7 @@ export default function Flashcards() {
   const [nativeLang, setNativeLang] = useState(() => localStorage.getItem(LS_L1) || "uk");
   const [learningLang, setLearningLang] = useState(() => localStorage.getItem(LS_L2) || "en");
 
-  // ✅ i18n: ONLY HERE (inside component)
+  // ✅ i18n
   const t = useMemo(() => getT(interfaceLang), [interfaceLang]);
 
   // -------- helpers --------
@@ -111,44 +111,41 @@ export default function Flashcards() {
     navigate("/", { replace: true });
   }
 
-
-  const {
-  // data
-  decks,
-  cards,
-  stats,
-  libraryCards,
-
-  // loading
-  libraryLoading,
-  isBootLoading,
-  isRefreshing,
-  isCardsLoading,
-  isDecksLoading,
-  isStatsLoading,
-  anyLoading,
-
-  // functions
-  fetchDecks,
-  fetchStats,
-  fetchCardsDue,
-  fetchLibraryCardsAll,
-  refreshAll,
-  retryNow,
-  setFriendlyError,
-} = useFlashcardsData({
-  t,
-  view,
-  deckFilter,
-  librarySortBy,
-  librarySortOrder,
-  setMessage,
-  handle401,
-});
   // wrapper with t injected
   function formatTimeUntilLocal(dateStr) {
     return formatTimeUntil(t, dateStr);
   }
+
+  // -------- data hook (ETAP 3) --------
+  const {
+    // data
+    decks,
+    cards,
+    stats,
+    libraryCards,
+
+    // loading
+    libraryLoading,
+    anyLoading,
+    isCardsLoading,
+
+    // functions
+    fetchDecks,
+    fetchStats,
+    fetchCardsDue,
+    fetchLibraryCardsAll,
+    refreshAll,
+    retryNow,
+    setFriendlyError,
+  } = useFlashcardsData({
+    t,
+    view,
+    deckFilter,
+    librarySortBy,
+    librarySortOrder,
+    setMessage,
+    handle401,
+  });
 
   // -------- guards / persist --------
   useEffect(() => {
@@ -168,31 +165,16 @@ export default function Flashcards() {
     localStorage.setItem(LS_UI, interfaceLang);
   }, [interfaceLang]);
 
+  // ✅ КРОК 6: якщо деки змінилися — підчистити вибрані значення
   useEffect(() => {
-  if (!Array.isArray(decks) || decks.length === 0) return;
+    if (!Array.isArray(decks) || decks.length === 0) return;
 
-  // Add panel
-  if (deckForNewCard && !decks.includes(deckForNewCard)) {
-    setDeckForNewCard(DEFAULT_DECK_ID);
-  }
-
-  // Library bulk move
-  if (bulkDeck && !decks.includes(bulkDeck)) {
-    setBulkDeck(DEFAULT_DECK_ID);
-  }
-
-  // Deck manager (rename/remove source)
-  if (deckManageFrom && !decks.includes(deckManageFrom)) {
-    setDeckManageFrom(DEFAULT_DECK_ID);
-  }
-
-  // Deck manager (remove target)
-  if (deckRemoveTo && !decks.includes(deckRemoveTo)) {
-    setDeckRemoveTo(DEFAULT_DECK_ID);
-  }
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [decks]);
+    if (deckForNewCard && !decks.includes(deckForNewCard)) setDeckForNewCard(DEFAULT_DECK_ID);
+    if (bulkDeck && !decks.includes(bulkDeck)) setBulkDeck(DEFAULT_DECK_ID);
+    if (deckManageFrom && !decks.includes(deckManageFrom)) setDeckManageFrom(DEFAULT_DECK_ID);
+    if (deckRemoveTo && !decks.includes(deckRemoveTo)) setDeckRemoveTo(DEFAULT_DECK_ID);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [decks]);
 
   // one-time: load profile langs (optional, safe)
   useEffect(() => {
@@ -252,20 +234,6 @@ export default function Flashcards() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, deckFilter]);
 
-useReviewShortcuts({
-  view,
-  showAnswer,
-  setShowAnswer,
-  cardsLength: cards.length,
-  setReviewIndex,
-  reviewAnswer,
-  showImportExport,
-  setShowImportExport,
-  editOpen,
-  setEditOpen,
-  isReviewing,
-});
-
   // -------- derived --------
   const filteredLibraryCards = useMemo(() => {
     const q = librarySearch.trim().toLowerCase();
@@ -303,9 +271,9 @@ useReviewShortcuts({
   function handleCreateDeckLocal() {
     const name = newDeckName.trim();
     if (!name) return;
-    if (!decks.includes(name)) {
-      setDecks((prev) => [...prev, name].sort((a, b) => a.localeCompare(b)));
-    }
+
+    // Нема setDecks тут: decks приходять із сервера.
+    // Просто вибираємо назву — вона реально з’явиться у списку після створення першої картки в цій деці.
     setDeckForNewCard(name);
     setNewDeckName("");
   }
@@ -416,11 +384,26 @@ useReviewShortcuts({
       setShowAnswer(false);
       setReviewIndex(0);
 
-      await Promise.all([fetchCards(), fetchStats(), fetchDecks()]);
+      await Promise.all([fetchCardsDue(), fetchStats(), fetchDecks()]);
     } finally {
       setIsReviewing(false);
     }
   }
+
+  // ✅ review shortcuts (after reviewAnswer exists)
+  useReviewShortcuts({
+    view,
+    showAnswer,
+    setShowAnswer,
+    cardsLength: cards.length,
+    setReviewIndex,
+    reviewAnswer,
+    showImportExport,
+    setShowImportExport,
+    editOpen,
+    setEditOpen,
+    isReviewing,
+  });
 
   async function handleExport(format) {
     const token = getToken();
@@ -500,7 +483,7 @@ useReviewShortcuts({
       setSessionTotal(0);
 
       await refreshAll();
-      if (view === "library") await fetchLibraryCards();
+      if (view === "library") await fetchLibraryCardsAll();
     } catch (err) {
       setFriendlyError("❌ Import", err, "Invalid JSON or import error");
     }
@@ -542,7 +525,7 @@ useReviewShortcuts({
 
       setMessage(`✅ ${data?.message || "Bulk move ok"}`);
       clearSelection();
-      await Promise.all([fetchLibraryCards(), fetchDecks(), fetchCards(), fetchStats()]);
+      await Promise.all([fetchLibraryCardsAll(), fetchDecks(), fetchCardsDue(), fetchStats()]);
     } catch (err) {
       setFriendlyError("❌ Bulk move", err);
     } finally {
@@ -585,7 +568,7 @@ useReviewShortcuts({
 
       setMessage(`✅ ${data?.message || "Bulk delete ok"}`);
       clearSelection();
-      await Promise.all([fetchLibraryCards(), fetchDecks(), fetchCards(), fetchStats()]);
+      await Promise.all([fetchLibraryCardsAll(), fetchDecks(), fetchCardsDue(), fetchStats()]);
     } catch (err) {
       setFriendlyError("❌ Bulk delete", err);
     } finally {
@@ -638,7 +621,7 @@ useReviewShortcuts({
 
       if (deckFilter === from) setDeckFilter("ALL");
 
-      await Promise.all([fetchDecks(), fetchLibraryCards(), fetchCards(), fetchStats()]);
+      await Promise.all([fetchDecks(), fetchLibraryCardsAll(), fetchCardsDue(), fetchStats()]);
     } catch (err) {
       setFriendlyError("❌ Rename deck", err);
     } finally {
@@ -687,7 +670,7 @@ useReviewShortcuts({
       setMessage(`✅ ${data?.message || "Deck removed"}`);
       if (deckFilter === name) setDeckFilter("ALL");
 
-      await Promise.all([fetchDecks(), fetchLibraryCards(), fetchCards(), fetchStats()]);
+      await Promise.all([fetchDecks(), fetchLibraryCardsAll(), fetchCardsDue(), fetchStats()]);
     } catch (err) {
       setFriendlyError("❌ Remove deck", err);
     } finally {
@@ -717,7 +700,7 @@ useReviewShortcuts({
         return;
       }
 
-      await Promise.all([fetchLibraryCards(), fetchStats(), fetchDecks(), fetchCards()]);
+      await Promise.all([fetchLibraryCardsAll(), fetchStats(), fetchDecks(), fetchCardsDue()]);
     } catch (err) {
       setFriendlyError("❌ Delete", err);
     }
@@ -773,7 +756,7 @@ useReviewShortcuts({
 
       setEditOpen(false);
       setEditCard(null);
-      await Promise.all([fetchLibraryCards(), fetchStats(), fetchDecks(), fetchCards()]);
+      await Promise.all([fetchLibraryCardsAll(), fetchStats(), fetchDecks(), fetchCardsDue()]);
     } catch (err) {
       setFriendlyError("❌ Update", err);
     }
@@ -784,8 +767,7 @@ useReviewShortcuts({
   const progressIndex = Math.min(sessionDone + 1, progressTotal || 0);
 
   const isDefaultFrom = String(deckManageFrom || "").trim() === DEFAULT_DECK_ID;
-  const isSameRemoveTarget =
-    String(deckRemoveTo || "").trim() === String(deckManageFrom || "").trim();
+  const isSameRemoveTarget = String(deckRemoveTo || "").trim() === String(deckManageFrom || "").trim();
 
   // -------- render --------
   return (
@@ -906,7 +888,7 @@ useReviewShortcuts({
           t={t}
           librarySearch={librarySearch}
           setLibrarySearch={setLibrarySearch}
-          fetchLibraryCards={fetchLibraryCards}
+          fetchLibraryCards={fetchLibraryCardsAll}
           libraryLoading={libraryLoading}
           bulkBusy={bulkBusy}
           filteredLibraryCards={filteredLibraryCards}
