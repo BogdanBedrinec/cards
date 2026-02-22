@@ -23,6 +23,8 @@ import { getToken, clearAuth } from "./utils/auth.js";
 import { withTimeout, humanFetchError } from "./utils/http.js";
 import { normalizeLang, langLabel, formatTimeUntil } from "./utils/format.js";
 
+import { useReviewShortcuts } from "./hooks/useReviewShortcuts";
+
 export default function Flashcards() {
   const navigate = useNavigate();
   const abortRef = useRef(null);
@@ -420,6 +422,20 @@ export default function Flashcards() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, deckFilter, librarySortBy, librarySortOrder]);
 
+useReviewShortcuts({
+  view,
+  showAnswer,
+  setShowAnswer,
+  cardsLength: cards.length,
+  setReviewIndex,
+  reviewAnswer,
+  showImportExport,
+  setShowImportExport,
+  editOpen,
+  setEditOpen,
+  isReviewing,
+});
+
   function retryNow() {
     setMessage("");
     setIsRefreshing(true);
@@ -587,55 +603,6 @@ export default function Flashcards() {
       setIsReviewing(false);
     }
   }
-
-  // keyboard shortcuts in review (ETAP 2 will extract)
-  useEffect(() => {
-    function onKeyDown(e) {
-      const tag = (e.target?.tagName || "").toLowerCase();
-      if (tag === "input" || tag === "textarea" || tag === "select") return;
-
-      if (e.key === "Escape") {
-        if (showImportExport) setShowImportExport(false);
-        if (editOpen) setEditOpen(false);
-        return;
-      }
-
-      if (view !== "review") return;
-
-      if (e.key === " " || e.key === "Enter") {
-        e.preventDefault();
-        if (!showAnswer) setShowAnswer(true);
-        return;
-      }
-
-      if (e.key === "1") {
-        e.preventDefault();
-        reviewAnswer(true);
-        return;
-      }
-      if (e.key === "2") {
-        e.preventDefault();
-        reviewAnswer(false);
-        return;
-      }
-
-      if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        setReviewIndex((i) => Math.max(0, i - 1));
-        setShowAnswer(false);
-        return;
-      }
-      if (e.key === "ArrowRight") {
-        e.preventDefault();
-        setReviewIndex((i) => Math.min(cards.length - 1, i + 1));
-        setShowAnswer(false);
-      }
-    }
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, showAnswer, cards.length, showImportExport, isReviewing, editOpen]);
 
   async function handleExport(format) {
     const token = getToken();
