@@ -20,12 +20,12 @@ import { getT } from "./i18n/dictionary.js";
 // utils
 import { API, DEFAULT_DECK_ID, LS_UI, LS_L1, LS_L2, LS_THEME } from "./utils/constants.js";
 import { getToken, clearAuth } from "./utils/auth.js";
-import { withTimeout } from "./utils/http.js";
 import { normalizeLang, langLabel, formatTimeUntil } from "./utils/format.js";
 
 // hooks
 import { useReviewShortcuts } from "./hooks/useReviewShortcuts";
 import { useFlashcardsData } from "./hooks/useFlashcardsData";
+import { useFlashcardsActions } from "./hooks/useFlashcardsActions";
 
 export default function Flashcards() {
   const navigate = useNavigate();
@@ -111,25 +111,21 @@ export default function Flashcards() {
     navigate("/", { replace: true });
   }
 
-  // wrapper with t injected
   function formatTimeUntilLocal(dateStr) {
     return formatTimeUntil(t, dateStr);
   }
 
   // -------- data hook (ETAP 3) --------
   const {
-    // data
     decks,
     cards,
     stats,
     libraryCards,
 
-    // loading
     libraryLoading,
     anyLoading,
     isCardsLoading,
 
-    // functions
     fetchDecks,
     fetchStats,
     fetchCardsDue,
@@ -165,7 +161,7 @@ export default function Flashcards() {
     localStorage.setItem(LS_UI, interfaceLang);
   }, [interfaceLang]);
 
-  // ✅ КРОК 6: якщо деки змінилися — підчистити вибрані значення
+  // ✅ if decks change — validate selections
   useEffect(() => {
     if (!Array.isArray(decks) || decks.length === 0) return;
 
@@ -176,7 +172,7 @@ export default function Flashcards() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [decks]);
 
-  // one-time: load profile langs (optional, safe)
+  // one-time: load profile langs
   useEffect(() => {
     async function fetchProfileLangs() {
       const token = getToken();
@@ -267,500 +263,95 @@ export default function Flashcards() {
     setSelectedIds(new Set());
   }
 
-  // -------- actions --------
-  function handleCreateDeckLocal() {
-    const name = newDeckName.trim();
-    if (!name) return;
-
-    // Нема setDecks тут: decks приходять із сервера.
-    // Просто вибираємо назву — вона реально з’явиться у списку після створення першої картки в цій деці.
-    setDeckForNewCard(name);
-    setNewDeckName("");
-  }
-
-  async function handleAddCard(e) {
-    e.preventDefault();
-    setMessage("");
-
-    if (!word.trim() || !translation.trim()) {
-      setMessage("⚠️ Please fill at least word and translation");
-      return;
-    }
-
-    const token = getToken();
-    if (!token) return handle401();
-
-    try {
-      const payload = {
-        word: word.trim(),
-        translation: translation.trim(),
-        example: example.trim(),
-        deck: (deckForNewCard || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID,
-      };
-
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Cache-Control": "no-cache",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-        signal,
-      }).finally(cleanup);
-
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setFriendlyError("❌ Add", null, data?.message || data?.error);
-        return;
-      }
-
-      setWord("");
-      setTranslation("");
-      setExample("");
-
-      setMessage("✅ Added!");
-      setSessionDone(0);
-      setSessionTotal(0);
-
-      await refreshAll();
-      setView("review");
-    } catch (err) {
-      setFriendlyError("❌ Add", err);
-    }
-  }
-
-  async function sendReview(id, known) {
-    const token = getToken();
-    if (!token) return handle401();
-
-    try {
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards/${id}/review`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Cache-Control": "no-cache",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ known }),
-        signal,
-      }).finally(cleanup);
-
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setFriendlyError("❌ Review", null, data?.message || data?.error);
-        return false;
-      }
-      return true;
-    } catch (err) {
-      setFriendlyError("❌ Review", err);
-      return false;
-    }
-  }
-
   const currentReviewCard = cards.length > 0 ? cards[Math.min(reviewIndex, cards.length - 1)] : null;
 
-  async function reviewAnswer(known) {
-    if (!currentReviewCard) return;
-    if (isReviewing) return;
+  // -------- actions hook (ETAP 4) --------
+  const actions = useFlashcardsActions({
+    t,
+    view,
+    setView,
 
-    setIsReviewing(true);
-    try {
-      if (!showAnswer) {
-        setShowAnswer(true);
-        await new Promise((r) => setTimeout(r, 250));
-      }
+    word,
+    setWord,
+    translation,
+    setTranslation,
+    example,
+    setExample,
 
-      const ok = await sendReview(currentReviewCard._id, known);
-      if (!ok) return;
+    decks,
+    deckFilter,
+    setDeckFilter,
+    deckForNewCard,
+    setDeckForNewCard,
+    newDeckName,
+    setNewDeckName,
 
-      setSessionDone((d) => d + 1);
-      setShowAnswer(false);
-      setReviewIndex(0);
+    cards,
+    currentReviewCard,
+    showAnswer,
+    setShowAnswer,
+    isReviewing,
+    setIsReviewing,
+    setReviewIndex,
+    setSessionDone,
+    setSessionTotal,
 
-      await Promise.all([fetchCardsDue(), fetchStats(), fetchDecks()]);
-    } finally {
-      setIsReviewing(false);
-    }
-  }
+    selectedIds,
+    clearSelection,
+    bulkDeck,
+    bulkBusy,
+    setBulkBusy,
 
-  // ✅ review shortcuts (after reviewAnswer exists)
+    deckManageFrom,
+    deckManageTo,
+    setDeckManageTo,
+    deckRemoveTo,
+    deckManageBusy,
+    setDeckManageBusy,
+    deckLabel,
+
+    setEditOpen,
+    setEditCard,
+    editCard,
+    editWord,
+    setEditWord,
+    editTranslation,
+    setEditTranslation,
+    editExample,
+    setEditExample,
+    editDeck,
+    setEditDeck,
+
+    importText,
+    setImportText,
+    importFormat,
+    setShowImportExport,
+
+    setMessage,
+    handle401,
+    setFriendlyError,
+
+    refreshAll,
+    fetchDecks,
+    fetchStats,
+    fetchCardsDue,
+    fetchLibraryCardsAll,
+  });
+
+  // ✅ review shortcuts
   useReviewShortcuts({
     view,
     showAnswer,
     setShowAnswer,
     cardsLength: cards.length,
     setReviewIndex,
-    reviewAnswer,
+    reviewAnswer: actions.reviewAnswer,
     showImportExport,
     setShowImportExport,
     editOpen,
     setEditOpen,
     isReviewing,
   });
-
-  async function handleExport(format) {
-    const token = getToken();
-    if (!token) return handle401();
-
-    try {
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards/export?format=${format}`, {
-        headers: { Authorization: `Bearer ${token}`, "Cache-Control": "no-cache" },
-        signal,
-        cache: "no-store",
-      }).finally(cleanup);
-
-      if (res.status === 401) return handle401();
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        setFriendlyError("❌ Export", null, data?.message || data?.error);
-        return;
-      }
-
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = format === "csv" ? "cards.csv" : "cards.json";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      setFriendlyError("❌ Export", err);
-    }
-  }
-
-  async function handleImport() {
-    const token = getToken();
-    if (!token) return handle401();
-
-    if (!importText.trim()) {
-      setMessage("⚠️ Paste data for import");
-      return;
-    }
-
-    try {
-      let dataPayload;
-      if (importFormat === "csv") dataPayload = importText;
-      else dataPayload = JSON.parse(importText);
-
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards/import`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Cache-Control": "no-cache",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ format: importFormat, data: dataPayload }),
-        signal,
-      }).finally(cleanup);
-
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setFriendlyError("❌ Import", null, data?.message || data?.error);
-        return;
-      }
-
-      setMessage(
-        `✅ ${data.message} | received=${data.received}, inserted=${data.inserted}, skipped=${data.skippedAsDuplicates}`
-      );
-      setImportText("");
-      setSessionDone(0);
-      setSessionTotal(0);
-
-      await refreshAll();
-      if (view === "library") await fetchLibraryCardsAll();
-    } catch (err) {
-      setFriendlyError("❌ Import", err, "Invalid JSON or import error");
-    }
-
-    setShowImportExport(false);
-  }
-
-  async function bulkMove() {
-    const token = getToken();
-    if (!token) return handle401();
-
-    const ids = Array.from(selectedIds);
-    if (ids.length === 0) return;
-
-    const deck = (bulkDeck || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID;
-
-    setBulkBusy(true);
-    setMessage("");
-    try {
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards/bulk-move`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          "Cache-Control": "no-cache",
-        },
-        body: JSON.stringify({ ids, deck }),
-        signal,
-      }).finally(cleanup);
-
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setFriendlyError("❌ Bulk move", null, data?.message || data?.error);
-        return;
-      }
-
-      setMessage(`✅ ${data?.message || "Bulk move ok"}`);
-      clearSelection();
-      await Promise.all([fetchLibraryCardsAll(), fetchDecks(), fetchCardsDue(), fetchStats()]);
-    } catch (err) {
-      setFriendlyError("❌ Bulk move", err);
-    } finally {
-      setBulkBusy(false);
-    }
-  }
-
-  async function bulkDelete() {
-    const token = getToken();
-    if (!token) return handle401();
-
-    const ids = Array.from(selectedIds);
-    if (ids.length === 0) return;
-
-    const ok = window.confirm(`${t.confirmDeleteN} (${ids.length})`);
-    if (!ok) return;
-
-    setBulkBusy(true);
-    setMessage("");
-    try {
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards/bulk-delete`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Cache-Control": "no-cache",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ids }),
-        signal,
-      }).finally(cleanup);
-
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setFriendlyError("❌ Bulk delete", null, data?.message || data?.error);
-        return;
-      }
-
-      setMessage(`✅ ${data?.message || "Bulk delete ok"}`);
-      clearSelection();
-      await Promise.all([fetchLibraryCardsAll(), fetchDecks(), fetchCardsDue(), fetchStats()]);
-    } catch (err) {
-      setFriendlyError("❌ Bulk delete", err);
-    } finally {
-      setBulkBusy(false);
-    }
-  }
-
-  async function renameDeck() {
-    const token = getToken();
-    if (!token) return handle401();
-
-    const from = String(deckManageFrom || "").trim();
-    const to = String(deckManageTo || "").trim();
-    if (!from || !to) return;
-
-    if (from === DEFAULT_DECK_ID) {
-      setMessage(t.cannotRenameDefault);
-      return;
-    }
-
-    const ok = window.confirm(t.confirmRename(deckLabel(from), to));
-    if (!ok) return;
-
-    setDeckManageBusy(true);
-    setMessage("");
-
-    try {
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards/decks/rename`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Cache-Control": "no-cache",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ from, to }),
-        signal,
-      }).finally(cleanup);
-
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setFriendlyError("❌ Rename deck", null, data?.message || data?.error);
-        return;
-      }
-
-      setMessage(`✅ ${data?.message || "Deck renamed"}`);
-      setDeckManageTo("");
-
-      if (deckFilter === from) setDeckFilter("ALL");
-
-      await Promise.all([fetchDecks(), fetchLibraryCardsAll(), fetchCardsDue(), fetchStats()]);
-    } catch (err) {
-      setFriendlyError("❌ Rename deck", err);
-    } finally {
-      setDeckManageBusy(false);
-    }
-  }
-
-  async function removeDeckMoveCards() {
-    const token = getToken();
-    if (!token) return handle401();
-
-    const name = String(deckManageFrom || "").trim();
-    const to = String(deckRemoveTo || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID;
-    if (!name) return;
-
-    if (name === DEFAULT_DECK_ID) {
-      setMessage(t.cannotDeleteDefault);
-      return;
-    }
-
-    const ok = window.confirm(t.confirmRemove(deckLabel(name), deckLabel(to)));
-    if (!ok) return;
-
-    setDeckManageBusy(true);
-    setMessage("");
-
-    try {
-      const { signal, cleanup } = withTimeout();
-      const url = `${API}/api/cards/decks/${encodeURIComponent(name)}?mode=move&to=${encodeURIComponent(to)}`;
-
-      const res = await fetch(url, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}`, "Cache-Control": "no-cache" },
-        cache: "no-store",
-        signal,
-      }).finally(cleanup);
-
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setFriendlyError("❌ Remove deck", null, data?.message || data?.error);
-        return;
-      }
-
-      setMessage(`✅ ${data?.message || "Deck removed"}`);
-      if (deckFilter === name) setDeckFilter("ALL");
-
-      await Promise.all([fetchDecks(), fetchLibraryCardsAll(), fetchCardsDue(), fetchStats()]);
-    } catch (err) {
-      setFriendlyError("❌ Remove deck", err);
-    } finally {
-      setDeckManageBusy(false);
-    }
-  }
-
-  async function handleDeleteCard(id) {
-    const token = getToken();
-    if (!token) return handle401();
-
-    if (!window.confirm("Delete this card?")) return;
-
-    try {
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}`, "Cache-Control": "no-cache" },
-        signal,
-      }).finally(cleanup);
-
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setFriendlyError("❌ Delete", null, data?.message || data?.error);
-        return;
-      }
-
-      await Promise.all([fetchLibraryCardsAll(), fetchStats(), fetchDecks(), fetchCardsDue()]);
-    } catch (err) {
-      setFriendlyError("❌ Delete", err);
-    }
-  }
-
-  function openEdit(c) {
-    setEditCard(c);
-    setEditWord(c.word || "");
-    setEditTranslation(c.translation || "");
-    setEditExample(c.example || "");
-    setEditDeck(c.deck || DEFAULT_DECK_ID);
-    setEditOpen(true);
-  }
-
-  async function saveEdit() {
-    if (!editCard?._id) return;
-
-    const token = getToken();
-    if (!token) return handle401();
-
-    const payload = {
-      word: editWord.trim(),
-      translation: editTranslation.trim(),
-      example: editExample.trim(),
-      deck: (editDeck || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID,
-    };
-
-    if (!payload.word || !payload.translation) {
-      setMessage("⚠️ word + translation required");
-      return;
-    }
-
-    try {
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards/${editCard._id}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Cache-Control": "no-cache",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-        signal,
-      }).finally(cleanup);
-
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setFriendlyError("❌ Update", null, data?.message || data?.error);
-        return;
-      }
-
-      setEditOpen(false);
-      setEditCard(null);
-      await Promise.all([fetchLibraryCardsAll(), fetchStats(), fetchDecks(), fetchCardsDue()]);
-    } catch (err) {
-      setFriendlyError("❌ Update", err);
-    }
-  }
 
   // -------- progress numbers --------
   const progressTotal = sessionTotal || cards.length;
@@ -817,10 +408,10 @@ export default function Flashcards() {
       {showImportExport && (
         <div className="panel" style={{ marginTop: 12, padding: 12 }}>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
-            <button type="button" onClick={() => handleExport("json")}>
+            <button type="button" onClick={() => actions.handleExport("json")}>
               ⬇️ Export JSON
             </button>
-            <button type="button" onClick={() => handleExport("csv")}>
+            <button type="button" onClick={() => actions.handleExport("csv")}>
               ⬇️ Export CSV
             </button>
 
@@ -842,7 +433,7 @@ export default function Flashcards() {
             style={{ width: "100%", marginBottom: 8 }}
           />
 
-          <button type="button" onClick={handleImport}>
+          <button type="button" onClick={actions.handleImport}>
             ⬆️ Import
           </button>
         </div>
@@ -856,7 +447,7 @@ export default function Flashcards() {
           currentReviewCard={currentReviewCard}
           showAnswer={showAnswer}
           setShowAnswer={setShowAnswer}
-          reviewAnswer={reviewAnswer}
+          reviewAnswer={actions.reviewAnswer}
           isReviewing={isReviewing}
           progressIndex={progressIndex}
           progressTotal={progressTotal}
@@ -873,13 +464,13 @@ export default function Flashcards() {
           setTranslation={setTranslation}
           example={example}
           setExample={setExample}
-          handleAddCard={handleAddCard}
+          handleAddCard={actions.handleAddCard}
           decks={decks}
           deckForNewCard={deckForNewCard}
           setDeckForNewCard={setDeckForNewCard}
           newDeckName={newDeckName}
           setNewDeckName={setNewDeckName}
-          handleCreateDeckLocal={handleCreateDeckLocal}
+          handleCreateDeckLocal={actions.handleCreateDeckLocal}
           deckLabel={deckLabel}
           DEFAULT_DECK_ID={DEFAULT_DECK_ID}
         />
@@ -898,15 +489,15 @@ export default function Flashcards() {
           clearSelection={clearSelection}
           bulkDeck={bulkDeck}
           setBulkDeck={setBulkDeck}
-          bulkMove={bulkMove}
-          bulkDelete={bulkDelete}
+          bulkMove={actions.bulkMove}
+          bulkDelete={actions.bulkDelete}
           decks={decks}
           deckLabel={deckLabel}
           DEFAULT_DECK_ID={DEFAULT_DECK_ID}
           toggleSelect={toggleSelect}
           selectedIds={selectedIds}
-          openEdit={openEdit}
-          handleDeleteCard={handleDeleteCard}
+          openEdit={actions.openEdit}
+          handleDeleteCard={actions.handleDeleteCard}
           learningLang={learningLang}
           nativeLang={nativeLang}
           langLabel={langLabel}
@@ -919,8 +510,8 @@ export default function Flashcards() {
           deckRemoveTo={deckRemoveTo}
           setDeckRemoveTo={setDeckRemoveTo}
           deckManageBusy={deckManageBusy}
-          renameDeck={renameDeck}
-          removeDeckMoveCards={removeDeckMoveCards}
+          renameDeck={actions.renameDeck}
+          removeDeckMoveCards={actions.removeDeckMoveCards}
           isDefaultFrom={isDefaultFrom}
           isSameRemoveTarget={isSameRemoveTarget}
         />
@@ -941,7 +532,7 @@ export default function Flashcards() {
           editDeck={editDeck}
           setEditDeck={setEditDeck}
           onClose={() => setEditOpen(false)}
-          onSave={saveEdit}
+          onSave={actions.saveEdit}
         />
       )}
     </div>
