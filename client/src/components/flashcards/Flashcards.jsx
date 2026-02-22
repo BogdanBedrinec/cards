@@ -17,50 +17,11 @@ import EditCardModal from "./modals/EditCardModal.jsx";
 // i18n
 import { getT } from "./i18n/dictionary.js";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
-const REQ_TIMEOUT_MS = 12000;
-
-// IMPORTANT: stable ID for default deck (language-independent)
-const DEFAULT_DECK_ID = "__DEFAULT__";
-
-// localStorage keys
-const LS_UI = "fc_ui_lang";
-const LS_L1 = "fc_native_lang";
-const LS_L2 = "fc_learning_lang";
-
-function getToken() {
-  const t = localStorage.getItem("token");
-  if (!t || t === "undefined" || t === "null") return null;
-  return t;
-}
-
-function normalizeLang(code, fallback = "en") {
-  const allowed = new Set(["de", "en", "uk"]);
-  return allowed.has(code) ? code : fallback;
-}
-
-function withTimeout(signal, ms = REQ_TIMEOUT_MS) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), ms);
-
-  const onAbort = () => controller.abort();
-  if (signal) signal.addEventListener("abort", onAbort);
-
-  return {
-    signal: controller.signal,
-    cleanup: () => {
-      clearTimeout(timer);
-      if (signal) signal.removeEventListener("abort", onAbort);
-    },
-  };
-}
-
-function humanFetchError(err) {
-  if (!err) return "Unknown error";
-  if (err.name === "AbortError") return "Request timed out";
-  if (err instanceof TypeError) return "Network error (server not reachable)";
-  return "Unexpected error";
-}
+// ✅ extracted utils
+import { API, DEFAULT_DECK_ID, LS_UI, LS_L1, LS_L2, LS_THEME } from "./utils/constants.js";
+import { getToken, clearAuth } from "./utils/auth.js";
+import { withTimeout, humanFetchError } from "./utils/http.js";
+import { normalizeLang, langLabel, formatTimeUntil } from "./utils/format.js";
 
 export default function Flashcards() {
   const navigate = useNavigate();
@@ -127,7 +88,7 @@ export default function Flashcards() {
 
   // theme
   const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem("flashcardsTheme");
+    const saved = localStorage.getItem(LS_THEME);
     return saved === "dark" ? "dark" : "light";
   });
 
@@ -150,8 +111,7 @@ export default function Flashcards() {
 
   // -------- helpers --------
   function handle401() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
+    clearAuth();
     navigate("/login", { replace: true });
   }
 
@@ -163,33 +123,14 @@ export default function Flashcards() {
 
   const deckLabel = (name) => (name === DEFAULT_DECK_ID ? t.defaultDeck : name);
 
-  function langLabel(code) {
-    if (code === "de") return "DE";
-    if (code === "en") return "EN";
-    return "UK";
-  }
-
   function logout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
+    clearAuth();
     navigate("/", { replace: true });
   }
 
-  function formatTimeUntil(dateStr) {
-    const d = new Date(dateStr);
-    if (Number.isNaN(d.getTime())) return null;
-
-    const diffMs = d.getTime() - Date.now();
-    const diffMin = Math.ceil(diffMs / 60000);
-    if (diffMin <= 0) return null;
-
-    if (diffMin < 60) return `${t.timeIn} ${diffMin} ${t.timeMin}`;
-
-    const diffHours = diffMin / 60;
-    if (diffHours < 24) return `${t.timeIn} ${Math.ceil(diffHours)} ${t.timeHour}`;
-
-    const diffDays = diffHours / 24;
-    return `${t.timeIn} ${Math.ceil(diffDays)} ${t.timeDay}`;
+  // wrapper with t injected
+  function formatTimeUntilLocal(dateStr) {
+    return formatTimeUntil(t, dateStr);
   }
 
   // -------- guards / persist --------
@@ -199,7 +140,7 @@ export default function Flashcards() {
   }, [navigate]);
 
   useEffect(() => {
-    localStorage.setItem("flashcardsTheme", theme);
+    localStorage.setItem(LS_THEME, theme);
     document.body.dataset.theme = theme;
     return () => {
       delete document.body.dataset.theme;
@@ -621,8 +562,7 @@ export default function Flashcards() {
     }
   }
 
-  const currentReviewCard =
-    cards.length > 0 ? cards[Math.min(reviewIndex, cards.length - 1)] : null;
+  const currentReviewCard = cards.length > 0 ? cards[Math.min(reviewIndex, cards.length - 1)] : null;
 
   async function reviewAnswer(known) {
     if (!currentReviewCard) return;
@@ -648,7 +588,7 @@ export default function Flashcards() {
     }
   }
 
-  // keyboard shortcuts in review
+  // keyboard shortcuts in review (ETAP 2 will extract)
   useEffect(() => {
     function onKeyDown(e) {
       const tag = (e.target?.tagName || "").toLowerCase();
@@ -1059,7 +999,8 @@ export default function Flashcards() {
   const progressIndex = Math.min(sessionDone + 1, progressTotal || 0);
 
   const isDefaultFrom = String(deckManageFrom || "").trim() === DEFAULT_DECK_ID;
-  const isSameRemoveTarget = String(deckRemoveTo || "").trim() === String(deckManageFrom || "").trim();
+  const isSameRemoveTarget =
+    String(deckRemoveTo || "").trim() === String(deckManageFrom || "").trim();
 
   // -------- render --------
   return (
@@ -1154,7 +1095,7 @@ export default function Flashcards() {
           progressTotal={progressTotal}
           deckLabel={deckLabel}
           DEFAULT_DECK_ID={DEFAULT_DECK_ID}
-          formatTimeUntil={formatTimeUntil}
+          formatTimeUntil={formatTimeUntilLocal}
         />
       ) : view === "add" ? (
         <AddCardPanel
@@ -1202,7 +1143,7 @@ export default function Flashcards() {
           learningLang={learningLang}
           nativeLang={nativeLang}
           langLabel={langLabel}
-          formatTimeUntil={formatTimeUntil}
+          formatTimeUntil={formatTimeUntilLocal}
           // deck manager
           deckManageFrom={deckManageFrom}
           setDeckManageFrom={setDeckManageFrom}
