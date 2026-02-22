@@ -25,9 +25,10 @@ import { normalizeLang, langLabel, formatTimeUntil } from "./utils/format.js";
 
 import { useReviewShortcuts } from "./hooks/useReviewShortcuts";
 
+import { useFlashcardsData } from "./hooks/useFlashcardsData";
+
 export default function Flashcards() {
   const navigate = useNavigate();
-  const abortRef = useRef(null);
 
   // -------- state --------
   const [view, setView] = useState("review"); // review | library | add
@@ -38,13 +39,11 @@ export default function Flashcards() {
   const [example, setExample] = useState("");
 
   // decks
-  const [decks, setDecks] = useState([]);
   const [deckFilter, setDeckFilter] = useState("ALL");
   const [deckForNewCard, setDeckForNewCard] = useState(DEFAULT_DECK_ID);
   const [newDeckName, setNewDeckName] = useState("");
 
   // review queue
-  const [cards, setCards] = useState([]);
   const [reviewIndex, setReviewIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [isReviewing, setIsReviewing] = useState(false);
@@ -54,8 +53,6 @@ export default function Flashcards() {
   const [sessionDone, setSessionDone] = useState(0);
 
   // library
-  const [libraryCards, setLibraryCards] = useState([]);
-  const [libraryLoading, setLibraryLoading] = useState(false);
   const [librarySearch, setLibrarySearch] = useState("");
   const [librarySortBy, setLibrarySortBy] = useState("createdAt");
   const [librarySortOrder, setLibrarySortOrder] = useState("desc");
@@ -85,7 +82,6 @@ export default function Flashcards() {
   const [importFormat, setImportFormat] = useState("json");
 
   // stats + UI
-  const [stats, setStats] = useState(null);
   const [message, setMessage] = useState("");
 
   // theme
@@ -98,15 +94,6 @@ export default function Flashcards() {
   const [interfaceLang, setInterfaceLang] = useState(() => localStorage.getItem(LS_UI) || "en");
   const [nativeLang, setNativeLang] = useState(() => localStorage.getItem(LS_L1) || "uk");
   const [learningLang, setLearningLang] = useState(() => localStorage.getItem(LS_L2) || "en");
-
-  // loading flags
-  const [isBootLoading, setIsBootLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isCardsLoading, setIsCardsLoading] = useState(false);
-  const [isDecksLoading, setIsDecksLoading] = useState(false);
-  const [isStatsLoading, setIsStatsLoading] = useState(false);
-
-  const anyLoading = isBootLoading || isRefreshing || isCardsLoading || isStatsLoading || isDecksLoading;
 
   // ✅ i18n: ONLY HERE (inside component)
   const t = useMemo(() => getT(interfaceLang), [interfaceLang]);
@@ -130,6 +117,40 @@ export default function Flashcards() {
     navigate("/", { replace: true });
   }
 
+
+  const {
+  // data
+  decks,
+  cards,
+  stats,
+  libraryCards,
+
+  // loading
+  libraryLoading,
+  isBootLoading,
+  isRefreshing,
+  isCardsLoading,
+  isDecksLoading,
+  isStatsLoading,
+  anyLoading,
+
+  // functions
+  fetchDecks,
+  fetchStats,
+  fetchCardsDue,
+  fetchLibraryCardsAll,
+  refreshAll,
+  retryNow,
+  setFriendlyError,
+} = useFlashcardsData({
+  t,
+  view,
+  deckFilter,
+  librarySortBy,
+  librarySortOrder,
+  setMessage,
+  handle401,
+});
   // wrapper with t injected
   function formatTimeUntilLocal(dateStr) {
     return formatTimeUntil(t, dateStr);
@@ -152,6 +173,32 @@ export default function Flashcards() {
   useEffect(() => {
     localStorage.setItem(LS_UI, interfaceLang);
   }, [interfaceLang]);
+
+  useEffect(() => {
+  if (!Array.isArray(decks) || decks.length === 0) return;
+
+  // Add panel
+  if (deckForNewCard && !decks.includes(deckForNewCard)) {
+    setDeckForNewCard(DEFAULT_DECK_ID);
+  }
+
+  // Library bulk move
+  if (bulkDeck && !decks.includes(bulkDeck)) {
+    setBulkDeck(DEFAULT_DECK_ID);
+  }
+
+  // Deck manager (rename/remove source)
+  if (deckManageFrom && !decks.includes(deckManageFrom)) {
+    setDeckManageFrom(DEFAULT_DECK_ID);
+  }
+
+  // Deck manager (remove target)
+  if (deckRemoveTo && !decks.includes(deckRemoveTo)) {
+    setDeckRemoveTo(DEFAULT_DECK_ID);
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [decks]);
 
   // one-time: load profile langs (optional, safe)
   useEffect(() => {
@@ -211,217 +258,6 @@ export default function Flashcards() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, deckFilter]);
 
-  // -------- API calls --------
-  async function wakeBackend() {
-    try {
-      const { signal, cleanup } = withTimeout(null, 12000);
-      await fetch(`${API}/api/health`, { cache: "no-store", signal }).finally(cleanup);
-    } catch {
-      // ignore
-    }
-  }
-
-  async function retry(fn, tries = 4, delayMs = 1200) {
-    let lastErr = null;
-    for (let i = 0; i < tries; i++) {
-      try {
-        return await fn();
-      } catch (e) {
-        lastErr = e;
-        await new Promise((r) => setTimeout(r, delayMs));
-      }
-    }
-    throw lastErr;
-  }
-
-  async function fetchDecks() {
-    const token = getToken();
-    if (!token) return handle401();
-
-    setIsDecksLoading(true);
-    try {
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards/decks`, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token}`, "Cache-Control": "no-cache" },
-        cache: "no-store",
-        signal,
-      }).finally(cleanup);
-
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => []);
-      if (!res.ok) {
-        setFriendlyError("❌ Decks", null, data?.message || data?.error);
-        throw new Error(data?.message || data?.error || "Decks failed");
-      }
-
-      const list = Array.isArray(data) ? data : [];
-      const withDefault = list.includes(DEFAULT_DECK_ID) ? list : [DEFAULT_DECK_ID, ...list];
-      setDecks(withDefault);
-
-      if (deckForNewCard && !withDefault.includes(deckForNewCard)) setDeckForNewCard(DEFAULT_DECK_ID);
-      if (bulkDeck && !withDefault.includes(bulkDeck)) setBulkDeck(DEFAULT_DECK_ID);
-      if (deckManageFrom && !withDefault.includes(deckManageFrom)) setDeckManageFrom(DEFAULT_DECK_ID);
-      if (deckRemoveTo && !withDefault.includes(deckRemoveTo)) setDeckRemoveTo(DEFAULT_DECK_ID);
-    } finally {
-      setIsDecksLoading(false);
-    }
-  }
-
-  async function fetchStats() {
-    const token = getToken();
-    if (!token) return handle401();
-
-    setIsStatsLoading(true);
-    try {
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards/stats`, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token}`, "Cache-Control": "no-cache" },
-        cache: "no-store",
-        signal,
-      }).finally(cleanup);
-
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setFriendlyError("❌ Stats", null, data?.message || data?.error);
-        throw new Error(data?.message || data?.error || "Stats failed");
-      }
-
-      setStats(data);
-    } catch (err) {
-      if (err?.name !== "AbortError") setFriendlyError("❌ Stats", err);
-    } finally {
-      setIsStatsLoading(false);
-    }
-  }
-
-  async function fetchCards() {
-    const token = getToken();
-    if (!token) return handle401();
-
-    if (abortRef.current) abortRef.current.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    setIsCardsLoading(true);
-    try {
-      const params = new URLSearchParams();
-      params.set("mode", "due");
-      params.set("sort", "nextReview");
-      params.set("order", "asc");
-      if (deckFilter !== "ALL") params.set("deck", deckFilter);
-
-      const url = `${API}/api/cards?${params.toString()}`;
-
-      const { signal, cleanup } = withTimeout(controller.signal);
-      const res = await fetch(url, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token}`, "Cache-Control": "no-cache" },
-        cache: "no-store",
-        signal,
-      }).finally(cleanup);
-
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setFriendlyError("❌ Cards", null, data?.message || data?.error);
-        throw new Error(data?.message || data?.error || "Cards failed");
-      }
-
-      const list = Array.isArray(data) ? data : [];
-      setCards(list);
-      setMessage("");
-
-      if (view === "review" && sessionTotal === 0 && sessionDone === 0) {
-        setSessionTotal(list.length);
-      }
-    } catch (err) {
-      if (err?.name !== "AbortError") setFriendlyError("❌ Cards", err);
-    } finally {
-      setIsCardsLoading(false);
-    }
-  }
-
-  async function fetchLibraryCards() {
-    const token = getToken();
-    if (!token) return handle401();
-
-    setLibraryLoading(true);
-    try {
-      const params = new URLSearchParams();
-      params.set("mode", "all");
-      params.set("sort", librarySortBy);
-      params.set("order", librarySortOrder);
-      if (deckFilter !== "ALL") params.set("deck", deckFilter);
-
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}`, "Cache-Control": "no-cache" },
-        cache: "no-store",
-        signal,
-      }).finally(cleanup);
-
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => []);
-      if (!res.ok) {
-        setFriendlyError("❌ Library", null, data?.message || data?.error);
-        throw new Error(data?.message || data?.error || "Library failed");
-      }
-
-      setLibraryCards(Array.isArray(data) ? data : []);
-    } catch (err) {
-      if (err?.name !== "AbortError") setFriendlyError("❌ Library", err);
-    } finally {
-      setLibraryLoading(false);
-    }
-  }
-
-  async function refreshAll() {
-    await wakeBackend();
-    await Promise.all([retry(fetchDecks, 4), retry(fetchCards, 4), retry(fetchStats, 4)]);
-  }
-
-  // boot + reload when view / filters change
-  useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      setMessage("");
-      setIsRefreshing(true);
-      try {
-        await wakeBackend();
-
-        if (view === "review") {
-          await refreshAll();
-        } else if (view === "library") {
-          await Promise.all([retry(fetchDecks, 4), retry(fetchStats, 4), retry(fetchLibraryCards, 4)]);
-        } else {
-          await Promise.all([retry(fetchDecks, 4), retry(fetchStats, 4)]);
-        }
-
-        if (!cancelled) setMessage("");
-      } catch (e) {
-        if (!cancelled) setFriendlyError("❌ Load", e);
-      } finally {
-        if (!cancelled) {
-          setIsRefreshing(false);
-          setIsBootLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, deckFilter, librarySortBy, librarySortOrder]);
-
 useReviewShortcuts({
   view,
   showAnswer,
@@ -435,18 +271,6 @@ useReviewShortcuts({
   setEditOpen,
   isReviewing,
 });
-
-  function retryNow() {
-    setMessage("");
-    setIsRefreshing(true);
-    Promise.resolve()
-      .then(() => {
-        if (view === "review") return refreshAll();
-        if (view === "library") return Promise.all([fetchDecks(), fetchStats(), fetchLibraryCards()]);
-        return Promise.all([fetchDecks(), fetchStats()]);
-      })
-      .finally(() => setIsRefreshing(false));
-  }
 
   // -------- derived --------
   const filteredLibraryCards = useMemo(() => {
