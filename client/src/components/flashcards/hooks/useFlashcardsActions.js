@@ -1,7 +1,7 @@
+// src/components/flashcards/hooks/useFlashcardsActions.js
+
 import { useCallback } from "react";
 import { API, DEFAULT_DECK_ID } from "../utils/constants.js";
-import { getToken } from "../utils/auth.js";
-import {  withTimeout } from "../utils/http.js";
 import { apiFetch } from "../utils/apiFetch.js";
 
 /**
@@ -25,7 +25,6 @@ export function useFlashcardsActions({
   deckFilter,
   setDeckFilter,
   deckForNewCard,
-  setDeckForNewCard,
 
   // review state
   currentReviewCard,
@@ -82,16 +81,6 @@ export function useFlashcardsActions({
   fetchCardsDue,
   fetchLibraryCardsAll,
 }) {
-  // --- helpers ---
-  const requireToken = useCallback(() => {
-    const token = getToken();
-    if (!token) {
-      handle401();
-      return null;
-    }
-    return token;
-  }, [handle401]);
-
   // --- add card (apiFetch) ---
   const handleAddCard = useCallback(
     async (e) => {
@@ -103,7 +92,6 @@ export function useFlashcardsActions({
         return;
       }
 
-      // Deck: або вибраний, або default
       const deck = String(deckForNewCard || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID;
 
       try {
@@ -124,7 +112,6 @@ export function useFlashcardsActions({
           return;
         }
 
-        // UI reset
         setWord("");
         setTranslation("");
         setExample("");
@@ -157,39 +144,29 @@ export function useFlashcardsActions({
     ]
   );
 
-  // --- review (поки старий fetch; перенесемо на apiFetch у наступних кроках) ---
+  // --- review (apiFetch) ---
   const sendReview = useCallback(
     async (id, known) => {
-      const token = requireToken();
-      if (!token) return false;
-
       try {
-        const { signal, cleanup } = withTimeout();
-        const res = await fetch(`${API}/api/cards/${id}/review`, {
+        const res = await apiFetch({
+          url: `${API}/api/cards/${id}/review`,
           method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Cache-Control": "no-cache",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ known }),
-          signal,
-        }).finally(cleanup);
+          body: { known },
+          handle401,
+        });
 
-        if (res.status === 401) return handle401();
-
-        const data = await res.json().catch(() => null);
         if (!res.ok) {
-          setFriendlyError("❌ Review", null, data?.message || data?.error);
+          setFriendlyError("❌ Review", null, res.errorMessage);
           return false;
         }
+
         return true;
       } catch (err) {
         setFriendlyError("❌ Review", err);
         return false;
       }
     },
-    [requireToken, handle401, setFriendlyError]
+    [handle401, setFriendlyError]
   );
 
   const reviewAnswer = useCallback(
@@ -231,51 +208,45 @@ export function useFlashcardsActions({
     ]
   );
 
-  // --- export ---
+  // --- export (apiFetch) ---
+  // Needs apiFetch to support: { raw: true } returning { ok, response, errorMessage }
+  // OR support: { expect: "blob" } returning { ok, data: Blob, errorMessage }
   const handleExport = useCallback(
     async (format) => {
-      const token = requireToken();
-      if (!token) return;
-
       try {
-        const { signal, cleanup } = withTimeout();
-        const res = await fetch(`${API}/api/cards/export?format=${format}`, {
-          headers: { Authorization: `Bearer ${token}`, "Cache-Control": "no-cache" },
-          signal,
-          cache: "no-store",
-        }).finally(cleanup);
-
-        if (res.status === 401) return handle401();
+        // Variant A: raw Response
+        const res = await apiFetch({
+          url: `${API}/api/cards/export?format=${format}`,
+          method: "GET",
+          raw: true,
+          handle401,
+        });
 
         if (!res.ok) {
-          const data = await res.json().catch(() => null);
-          setFriendlyError("❌ Export", null, data?.message || data?.error);
+          setFriendlyError("❌ Export", null, res.errorMessage);
           return;
         }
 
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
+        const response = res.response;
+        const blob = await response.blob();
 
+        const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
         a.download = format === "csv" ? "cards.csv" : "cards.json";
         document.body.appendChild(a);
         a.click();
         a.remove();
-
         window.URL.revokeObjectURL(url);
       } catch (err) {
         setFriendlyError("❌ Export", err);
       }
     },
-    [requireToken, handle401, setFriendlyError]
+    [handle401, setFriendlyError]
   );
 
-  // --- import ---
+  // --- import (apiFetch) ---
   const handleImport = useCallback(async () => {
-    const token = requireToken();
-    if (!token) return;
-
     if (!importText.trim()) {
       setMessage("⚠️ Paste data for import");
       return;
@@ -286,29 +257,23 @@ export function useFlashcardsActions({
       if (importFormat === "csv") dataPayload = importText;
       else dataPayload = JSON.parse(importText);
 
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards/import`, {
+      const res = await apiFetch({
+        url: `${API}/api/cards/import`,
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Cache-Control": "no-cache",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ format: importFormat, data: dataPayload }),
-        signal,
-      }).finally(cleanup);
+        body: { format: importFormat, data: dataPayload },
+        handle401,
+      });
 
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => null);
       if (!res.ok) {
-        setFriendlyError("❌ Import", null, data?.message || data?.error);
+        setFriendlyError("❌ Import", null, res.errorMessage);
         return;
       }
 
+      const data = res.data || {};
       setMessage(
-        `✅ ${data.message} | received=${data.received}, inserted=${data.inserted}, skipped=${data.skippedAsDuplicates}`
+        `✅ ${data.message || "Imported"} | received=${data.received}, inserted=${data.inserted}, skipped=${data.skippedAsDuplicates}`
       );
+
       setImportText("");
       setSessionDone(0);
       setSessionTotal(0);
@@ -321,7 +286,6 @@ export function useFlashcardsActions({
 
     setShowImportExport(false);
   }, [
-    requireToken,
     importText,
     importFormat,
     setMessage,
@@ -544,27 +508,23 @@ export function useFlashcardsActions({
     setFriendlyError,
   ]);
 
-  // --- delete card (поки старий fetch; перенесемо на apiFetch далі) ---
+  // --- delete card (apiFetch) ---
   const handleDeleteCard = useCallback(
     async (id) => {
-      const token = requireToken();
-      if (!token) return;
+      const ok = window.confirm("Delete this card?");
+      if (!ok) return;
 
-      if (!window.confirm("Delete this card?")) return;
+      setMessage("");
 
       try {
-        const { signal, cleanup } = withTimeout();
-        const res = await fetch(`${API}/api/cards/${id}`, {
+        const res = await apiFetch({
+          url: `${API}/api/cards/${id}`,
           method: "DELETE",
-          headers: { Authorization: `Bearer ${token}`, "Cache-Control": "no-cache" },
-          signal,
-        }).finally(cleanup);
+          handle401,
+        });
 
-        if (res.status === 401) return handle401();
-
-        const data = await res.json().catch(() => null);
         if (!res.ok) {
-          setFriendlyError("❌ Delete", null, data?.message || data?.error);
+          setFriendlyError("❌ Delete", null, res.errorMessage);
           return;
         }
 
@@ -573,7 +533,7 @@ export function useFlashcardsActions({
         setFriendlyError("❌ Delete", err);
       }
     },
-    [requireToken, handle401, setFriendlyError, fetchLibraryCardsAll, fetchStats, fetchDecks, fetchCardsDue]
+    [setMessage, fetchLibraryCardsAll, fetchStats, fetchDecks, fetchCardsDue, handle401, setFriendlyError]
   );
 
   // --- edit modal open ---
@@ -589,7 +549,7 @@ export function useFlashcardsActions({
     [setEditCard, setEditWord, setEditTranslation, setEditExample, setEditDeck, setEditOpen]
   );
 
-  // --- save edit (через apiFetch) ---
+  // --- save edit (apiFetch) ---
   const saveEdit = useCallback(async () => {
     if (!editCard?._id) return;
 
