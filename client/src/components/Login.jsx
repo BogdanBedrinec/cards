@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
 
+import { apiFetch } from "./flashcards/utils/apiFetch.js";
+
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 // --- helpers ---
@@ -9,25 +11,17 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = 20000) {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    return await fetch(url, { ...options, signal: controller.signal });
-  } finally {
-    clearTimeout(id);
+async function apiFetchWithRetry(params, tries = 2, delayMs = 1500) {
+  let last = null;
+  for (let i = 0; i < tries; i++) {
+    try {
+      return await apiFetch(params);
+    } catch (e) {
+      last = e;
+      if (i < tries - 1) await sleep(delayMs);
+    }
   }
-}
-
-async function fetchWithRetry(url, options = {}, timeoutMs = 20000) {
-  try {
-    return await fetchWithTimeout(url, options, timeoutMs);
-  } catch (e) {
-    // Render Free cold start часто дає "Failed to fetch" або таймаут на першому запиті
-    await sleep(1500);
-    return await fetchWithTimeout(url, options, timeoutMs);
-  }
+  throw last;
 }
 
 export default function Login({ onBack, onGoRegister, theme, onToggleTheme }) {
@@ -68,29 +62,39 @@ export default function Login({ onBack, onGoRegister, theme, onToggleTheme }) {
     setIsSubmitting(true);
 
     try {
-      // 0) optional warm-up (швидкий)
-      // Якщо бек спить — цей запит може "розбудити" його без того, щоб юзер думав що "нічого не працює"
-      // Якщо /api/health у тебе є — супер. Якщо нема, просто закоментуй цей блок.
-      await fetchWithRetry(`${API}/api/health`, {}, 12000).catch(() => {});
-
-      // 1) login
-      const res = await fetchWithRetry(
-        `${API}/api/auth/login`,
+      // 0) warm-up (public)
+      await apiFetchWithRetry(
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
+          url: `${API}/api/health`,
+          method: "GET",
+          auth: false,
+          expect: "text",
+          timeoutMs: 12000,
         },
-        20000
+        2,
+        1200
+      ).catch(() => {});
+
+      // 1) login (public)
+      const res = await apiFetchWithRetry(
+        {
+          url: `${API}/api/auth/login`,
+          method: "POST",
+          auth: false,
+          body: { email, password },
+          expect: "json",
+          timeoutMs: 20000,
+        },
+        2,
+        1500
       );
 
-      const data = await res.json().catch(() => ({}));
-
       if (!res.ok) {
-        setMessage(data.message || data.error || "Login error");
+        setMessage(res.errorMessage || "Login error");
         return;
       }
 
+      const data = res.data || {};
       localStorage.setItem("token", data.token);
       localStorage.setItem("userId", data.userId);
 
@@ -103,12 +107,12 @@ export default function Login({ onBack, onGoRegister, theme, onToggleTheme }) {
     } catch (err) {
       console.error("Login error:", err);
 
-      const msg = String(err?.message || "");
+      const msg = String(err?.message || "").toLowerCase();
       const isTimeout =
         err?.name === "AbortError" ||
-        msg.toLowerCase().includes("aborted") ||
-        msg.toLowerCase().includes("failed to fetch") ||
-        msg.toLowerCase().includes("network");
+        msg.includes("aborted") ||
+        msg.includes("failed to fetch") ||
+        msg.includes("network");
 
       setMessage(
         isTimeout
@@ -170,7 +174,6 @@ export default function Login({ onBack, onGoRegister, theme, onToggleTheme }) {
             {isSubmitting ? "Signing in..." : "Log in"}
           </button>
 
-          {/* маленька підказка саме під cold start */}
           {isSubmitting && (
             <div className="auth-message" style={{ opacity: 0.85 }}>
               Waking server up… first request can take ~30–50s on Render Free.

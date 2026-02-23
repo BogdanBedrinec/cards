@@ -51,14 +51,20 @@ export function useFlashcardsData({
   }
 
   // Keep wakeBackend as plain fetch (health is commonly public; apiFetch requires token)
-  async function wakeBackend() {
-    try {
-      const { signal, cleanup } = withTimeout(null, 12000);
-      await fetch(`${API}/api/health`, { cache: "no-store", signal }).finally(cleanup);
-    } catch {
-      // ignore
-    }
+async function wakeBackend() {
+  try {
+    // health is public -> auth:false
+    await apiFetch({
+      url: `${API}/api/health`,
+      method: "GET",
+      auth: false,
+      expect: "text",
+      timeoutMs: 12000,
+    });
+  } catch {
+    // ignore
   }
+}
 
   async function retry(fn, tries = 4, delayMs = 1200) {
     let lastErr = null;

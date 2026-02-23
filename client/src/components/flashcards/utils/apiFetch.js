@@ -1,13 +1,15 @@
+// src/components/flashcards/utils/apiFetch.js
+
 import { getToken } from "./auth.js";
 import { withTimeout } from "./http.js";
 
 /**
  * apiFetch - unified fetch helper for this project.
  *
- * - adds Authorization header
+ * - optionally adds Authorization header (auth=true)
  * - supports JSON body (object -> JSON.stringify)
  * - uses timeout
- * - calls handle401 on 401
+ * - calls handle401 on 401 (if provided)
  * - can parse json/text/blob
  *
  * Returns:
@@ -22,32 +24,35 @@ export async function apiFetch({
   timeoutMs = undefined,
   handle401,
 
-  // NEW:
-  // - raw=true returns the Response as "response" (you handle parsing yourself)
+  // If false: no token required, no Authorization header
+  auth = true,
+
+  // raw=true returns Response as "response"
   raw = false,
 
-  // NEW:
-  // force response parsing
-  // "json" | "text" | "blob"
+  // force response parsing: "json" | "text" | "blob"
   expect = undefined,
 }) {
-  const token = getToken();
-  if (!token) {
-    handle401?.();
-    return raw
-      ? { ok: false, status: 401, response: null, errorMessage: "No token" }
-      : { ok: false, status: 401, data: null, errorMessage: "No token" };
-  }
-
-  const isJsonBody = body !== undefined && typeof body !== "string" && !(body instanceof FormData);
   const finalHeaders = {
-    Authorization: `Bearer ${token}`,
     "Cache-Control": "no-cache",
     ...headers,
   };
 
+  if (auth) {
+    const token = getToken();
+    if (!token) {
+      handle401?.();
+      return raw
+        ? { ok: false, status: 401, response: null, errorMessage: "No token" }
+        : { ok: false, status: 401, data: null, errorMessage: "No token" };
+    }
+    finalHeaders.Authorization = `Bearer ${token}`;
+  }
+
+  const isJsonBody = body !== undefined && typeof body !== "string" && !(body instanceof FormData);
+
   // Only set JSON content-type if body is a plain object (not string, not FormData)
-  if (body !== undefined && isJsonBody) {
+  if (body !== undefined && isJsonBody && !finalHeaders["Content-Type"]) {
     finalHeaders["Content-Type"] = "application/json";
   }
 
@@ -69,9 +74,8 @@ export async function apiFetch({
         : { ok: false, status: 401, data: null, errorMessage: "Unauthorized" };
     }
 
-    // RAW mode: caller will read res.blob()/res.json()/etc
+    // RAW mode: caller reads res.blob()/res.json()/etc
     if (raw) {
-      // Try to get error message from json if not ok (best effort)
       let errorMessage = !res.ok ? `HTTP ${res.status}` : "";
       if (!res.ok) {
         const ct = res.headers.get("content-type") || "";
@@ -95,11 +99,8 @@ export async function apiFetch({
     } else {
       // auto
       const ct = res.headers.get("content-type") || "";
-      if (ct.includes("application/json")) {
-        data = await res.json().catch(() => null);
-      } else {
-        data = null;
-      }
+      if (ct.includes("application/json")) data = await res.json().catch(() => null);
+      else data = null;
     }
 
     const errorMessage =

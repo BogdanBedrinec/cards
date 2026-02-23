@@ -2,7 +2,27 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Registration.css";
 
+import { apiFetch } from "./flashcards/utils/apiFetch.js";
+
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+// --- helpers ---
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+async function apiFetchWithRetry(params, tries = 2, delayMs = 1500) {
+  let last = null;
+  for (let i = 0; i < tries; i++) {
+    try {
+      return await apiFetch(params);
+    } catch (e) {
+      last = e;
+      if (i < tries - 1) await sleep(delayMs);
+    }
+  }
+  throw last;
+}
 
 export default function Registration({ onBack, onGoLogin, theme, onToggleTheme }) {
   const navigate = useNavigate();
@@ -45,24 +65,44 @@ export default function Registration({ onBack, onGoLogin, theme, onToggleTheme }
     setIsSubmitting(true);
 
     try {
-      const res = await fetch(`${API}/api/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          password,
-          interfaceLang,
-          nativeLang,
-          learningLang,
-        }),
-      });
+      // optional warm-up (public)
+      await apiFetchWithRetry(
+        {
+          url: `${API}/api/health`,
+          method: "GET",
+          auth: false,
+          expect: "text",
+          timeoutMs: 12000,
+        },
+        2,
+        1200
+      ).catch(() => {});
 
-      const data = await res.json().catch(() => ({}));
+      const res = await apiFetchWithRetry(
+        {
+          url: `${API}/api/auth/register`,
+          method: "POST",
+          auth: false,
+          body: {
+            email,
+            password,
+            interfaceLang,
+            nativeLang,
+            learningLang,
+          },
+          expect: "json",
+          timeoutMs: 20000,
+        },
+        2,
+        1500
+      );
 
       if (!res.ok) {
-        setMessage(data.message || data.error || "Registration error");
+        setMessage(res.errorMessage || "Registration error");
         return;
       }
+
+      const data = res.data || {};
 
       if (data?.token) localStorage.setItem("token", data.token);
       if (data?.userId) localStorage.setItem("userId", data.userId);
@@ -78,7 +118,19 @@ export default function Registration({ onBack, onGoLogin, theme, onToggleTheme }
       navigate("/flashcards");
     } catch (err) {
       console.error("Registration error:", err);
-      setMessage("Server is not responding");
+
+      const msg = String(err?.message || "").toLowerCase();
+      const isTimeout =
+        err?.name === "AbortError" ||
+        msg.includes("aborted") ||
+        msg.includes("failed to fetch") ||
+        msg.includes("network");
+
+      setMessage(
+        isTimeout
+          ? "Server is waking up (Render Free). Please try again in 10–20 seconds."
+          : "Server is not responding"
+      );
     } finally {
       setIsSubmitting(false);
     }
