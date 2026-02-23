@@ -81,7 +81,7 @@ export function useFlashcardsActions({
   fetchCardsDue,
   fetchLibraryCardsAll,
 }) {
-  // --- add card (apiFetch) ---
+  // --- add card ---
   const handleAddCard = useCallback(
     async (e) => {
       e.preventDefault();
@@ -144,7 +144,7 @@ export function useFlashcardsActions({
     ]
   );
 
-  // --- review (apiFetch) ---
+  // --- review ---
   const sendReview = useCallback(
     async (id, known) => {
       try {
@@ -208,17 +208,14 @@ export function useFlashcardsActions({
     ]
   );
 
-  // --- export (apiFetch) ---
-  // Needs apiFetch to support: { raw: true } returning { ok, response, errorMessage }
-  // OR support: { expect: "blob" } returning { ok, data: Blob, errorMessage }
+  // --- export ---
   const handleExport = useCallback(
     async (format) => {
       try {
-        // Variant A: raw Response
         const res = await apiFetch({
           url: `${API}/api/cards/export?format=${format}`,
           method: "GET",
-          raw: true,
+          expect: "blob",
           handle401,
         });
 
@@ -227,16 +224,16 @@ export function useFlashcardsActions({
           return;
         }
 
-        const response = res.response;
-        const blob = await response.blob();
-
+        const blob = res.data;
         const url = window.URL.createObjectURL(blob);
+
         const a = document.createElement("a");
         a.href = url;
         a.download = format === "csv" ? "cards.csv" : "cards.json";
         document.body.appendChild(a);
         a.click();
         a.remove();
+
         window.URL.revokeObjectURL(url);
       } catch (err) {
         setFriendlyError("❌ Export", err);
@@ -245,7 +242,7 @@ export function useFlashcardsActions({
     [handle401, setFriendlyError]
   );
 
-  // --- import (apiFetch) ---
+  // --- import ---
   const handleImport = useCallback(async () => {
     if (!importText.trim()) {
       setMessage("⚠️ Paste data for import");
@@ -379,7 +376,7 @@ export function useFlashcardsActions({
     }
   }, [
     selectedIds,
-    t.confirmDeleteN,
+    t,
     setBulkBusy,
     setMessage,
     clearSelection,
@@ -508,7 +505,7 @@ export function useFlashcardsActions({
     setFriendlyError,
   ]);
 
-  // --- delete card (apiFetch) ---
+  // --- delete card ---
   const handleDeleteCard = useCallback(
     async (id) => {
       const ok = window.confirm("Delete this card?");
@@ -549,7 +546,7 @@ export function useFlashcardsActions({
     [setEditCard, setEditWord, setEditTranslation, setEditExample, setEditDeck, setEditOpen]
   );
 
-  // --- save edit (apiFetch) ---
+  // --- save edit ---
   const saveEdit = useCallback(async () => {
     if (!editCard?._id) return;
 
