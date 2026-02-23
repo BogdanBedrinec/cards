@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Flashcards.css";
-import ImportExportPanel from "./panels/ImportExportPanel.jsx";
 
 // panels
 import StatsBar from "./panels/StatsBar.jsx";
@@ -11,6 +10,7 @@ import Toolbar from "./panels/Toolbar.jsx";
 import ReviewPanel from "./panels/ReviewPanel.jsx";
 import LibraryPanel from "./panels/LibraryPanel.jsx";
 import AddCardPanel from "./panels/AddCardPanel.jsx";
+import ImportExportPanel from "./panels/ImportExportPanel.jsx";
 
 // modal
 import EditCardModal from "./modals/EditCardModal.jsx";
@@ -119,7 +119,7 @@ export default function Flashcards() {
 
   // -------- data hook (ETAP 3) --------
   const {
-    decks,
+    decks: serverDecks,
     cards,
     stats,
     libraryCards,
@@ -144,6 +144,39 @@ export default function Flashcards() {
     setMessage,
     handle401,
   });
+
+  // -------- extraDecks (UI-only drafts) --------
+  const [extraDecks, setExtraDecks] = useState([]);
+
+  const decks = useMemo(() => {
+    const arr = [...(Array.isArray(serverDecks) ? serverDecks : [])];
+
+    for (const d of extraDecks) {
+      if (!arr.includes(d)) arr.push(d);
+    }
+
+    const withDefault = arr.includes(DEFAULT_DECK_ID) ? arr : [DEFAULT_DECK_ID, ...arr];
+    const uniq = Array.from(new Set(withDefault));
+
+    const [def, ...rest] = uniq;
+    rest.sort((a, b) => String(a).localeCompare(String(b)));
+
+    return [def, ...rest];
+  }, [serverDecks, extraDecks]);
+
+  useEffect(() => {
+    if (!Array.isArray(serverDecks) || extraDecks.length === 0) return;
+    setExtraDecks((prev) => prev.filter((d) => !serverDecks.includes(d)));
+  }, [serverDecks, extraDecks.length]);
+
+  function handleCreateDeckLocal() {
+    const name = newDeckName.trim();
+    if (!name) return;
+
+    setExtraDecks((prev) => (prev.includes(name) ? prev : [...prev, name]));
+    setDeckForNewCard(name);
+    setNewDeckName("");
+  }
 
   // -------- guards / persist --------
   useEffect(() => {
@@ -237,7 +270,7 @@ export default function Flashcards() {
     const q = librarySearch.trim().toLowerCase();
     if (!q) return libraryCards;
 
-    return libraryCards.filter((c) => {
+    return (Array.isArray(libraryCards) ? libraryCards : []).filter((c) => {
       const w = (c.word || "").toLowerCase();
       const tr = (c.translation || "").toLowerCase();
       const ex = (c.example || "").toLowerCase();
@@ -285,8 +318,6 @@ export default function Flashcards() {
     setDeckFilter,
     deckForNewCard,
     setDeckForNewCard,
-    newDeckName,
-    setNewDeckName,
 
     cards,
     currentReviewCard,
@@ -406,97 +437,96 @@ export default function Flashcards() {
         librarySortOrder={librarySortOrder}
         setLibrarySortOrder={setLibrarySortOrder}
       />
-{showImportExport && (
-  <ImportExportPanel
-    importFormat={importFormat}
-    setImportFormat={setImportFormat}
-    importText={importText}
-    setImportText={setImportText}
-    onExportJson={() => actions.handleExport("json")}
-    onExportCsv={() => actions.handleExport("csv")}
-    onImport={actions.handleImport}
-  />
-)}
 
-<ErrorBoundary>
-  {view === "review" ? (
-    <ReviewPanel
-      t={t}
-      cards={cards}
-      isCardsLoading={isCardsLoading}
-      currentReviewCard={currentReviewCard}
-      showAnswer={showAnswer}
-      setShowAnswer={setShowAnswer}
-      reviewAnswer={actions.reviewAnswer}
-      isReviewing={isReviewing}
-      progressIndex={progressIndex}
-      progressTotal={progressTotal}
-      deckLabel={deckLabel}
-      DEFAULT_DECK_ID={DEFAULT_DECK_ID}
-      formatTimeUntil={formatTimeUntilLocal}
-    />
-  ) : view === "add" ? (
-    <AddCardPanel
-      t={t}
-      word={word}
-      setWord={setWord}
-      translation={translation}
-      setTranslation={setTranslation}
-      example={example}
-      setExample={setExample}
-      handleAddCard={actions.handleAddCard}
-      decks={decks}
-      deckForNewCard={deckForNewCard}
-      setDeckForNewCard={setDeckForNewCard}
-      newDeckName={newDeckName}
-      setNewDeckName={setNewDeckName}
-      handleCreateDeckLocal={actions.handleCreateDeckLocal}
-      deckLabel={deckLabel}
-      DEFAULT_DECK_ID={DEFAULT_DECK_ID}
-    />
-  ) : (
-    <LibraryPanel
-      t={t}
-      librarySearch={librarySearch}
-      setLibrarySearch={setLibrarySearch}
-      fetchLibraryCards={fetchLibraryCardsAll}
-      libraryLoading={libraryLoading}
-      bulkBusy={bulkBusy}
-      filteredLibraryCards={filteredLibraryCards}
-      libraryCards={libraryCards}
-      selectedCount={selectedCount}
-      selectAllFiltered={selectAllFiltered}
-      clearSelection={clearSelection}
-      bulkDeck={bulkDeck}
-      setBulkDeck={setBulkDeck}
-      bulkMove={actions.bulkMove}
-      bulkDelete={actions.bulkDelete}
-      decks={decks}
-      deckLabel={deckLabel}
-      DEFAULT_DECK_ID={DEFAULT_DECK_ID}
-      toggleSelect={toggleSelect}
-      selectedIds={selectedIds}
-      openEdit={actions.openEdit}
-      handleDeleteCard={actions.handleDeleteCard}
-      learningLang={learningLang}
-      nativeLang={nativeLang}
-      langLabel={langLabel}
-      formatTimeUntil={formatTimeUntilLocal}
-      // deck manager
-      deckManageFrom={deckManageFrom}
-      setDeckManageFrom={setDeckManageFrom}
-      deckManageTo={deckManageTo}
-      setDeckManageTo={setDeckManageTo}
-      deckRemoveTo={deckRemoveTo}
-      setDeckRemoveTo={setDeckRemoveTo}
-      deckManageBusy={deckManageBusy}
-      renameDeck={actions.renameDeck}
-      removeDeckMoveCards={actions.removeDeckMoveCards}
-      isDefaultFrom={isDefaultFrom}
-      isSameRemoveTarget={isSameRemoveTarget}
-    />
-  )}
-</ErrorBoundary>
+      {showImportExport && (
+        <ImportExportPanel
+          importFormat={importFormat}
+          setImportFormat={setImportFormat}
+          importText={importText}
+          setImportText={setImportText}
+          onExportJson={() => actions.handleExport("json")}
+          onExportCsv={() => actions.handleExport("csv")}
+          onImport={actions.handleImport}
+        />
+      )}
+
+      <ErrorBoundary>
+        {view === "review" ? (
+          <ReviewPanel
+            t={t}
+            cards={cards}
+            isCardsLoading={isCardsLoading}
+            currentReviewCard={currentReviewCard}
+            showAnswer={showAnswer}
+            setShowAnswer={setShowAnswer}
+            reviewAnswer={actions.reviewAnswer}
+            isReviewing={isReviewing}
+            progressIndex={progressIndex}
+            progressTotal={progressTotal}
+            deckLabel={deckLabel}
+            DEFAULT_DECK_ID={DEFAULT_DECK_ID}
+            formatTimeUntil={formatTimeUntilLocal}
+          />
+        ) : view === "add" ? (
+          <AddCardPanel
+            t={t}
+            word={word}
+            setWord={setWord}
+            translation={translation}
+            setTranslation={setTranslation}
+            example={example}
+            setExample={setExample}
+            handleAddCard={actions.handleAddCard}
+            decks={decks}
+            deckForNewCard={deckForNewCard}
+            setDeckForNewCard={setDeckForNewCard}
+            newDeckName={newDeckName}
+            setNewDeckName={setNewDeckName}
+            handleCreateDeckLocal={handleCreateDeckLocal}
+            deckLabel={deckLabel}
+            DEFAULT_DECK_ID={DEFAULT_DECK_ID}
+          />
+        ) : (
+          <LibraryPanel
+            t={t}
+            librarySearch={librarySearch}
+            setLibrarySearch={setLibrarySearch}
+            fetchLibraryCards={fetchLibraryCardsAll}
+            libraryLoading={libraryLoading}
+            bulkBusy={bulkBusy}
+            filteredLibraryCards={filteredLibraryCards}
+            selectedCount={selectedCount}
+            selectAllFiltered={selectAllFiltered}
+            clearSelection={clearSelection}
+            bulkDeck={bulkDeck}
+            setBulkDeck={setBulkDeck}
+            bulkMove={actions.bulkMove}
+            bulkDelete={actions.bulkDelete}
+            decks={decks}
+            deckLabel={deckLabel}
+            toggleSelect={toggleSelect}
+            selectedIds={selectedIds}
+            openEdit={actions.openEdit}
+            handleDeleteCard={actions.handleDeleteCard}
+            learningLang={learningLang}
+            nativeLang={nativeLang}
+            langLabel={langLabel}
+            formatTimeUntil={formatTimeUntilLocal}
+            // deck manager
+            deckManageFrom={deckManageFrom}
+            setDeckManageFrom={setDeckManageFrom}
+            deckManageTo={deckManageTo}
+            setDeckManageTo={setDeckManageTo}
+            deckRemoveTo={deckRemoveTo}
+            setDeckRemoveTo={setDeckRemoveTo}
+            deckManageBusy={deckManageBusy}
+            renameDeck={actions.renameDeck}
+            removeDeckMoveCards={actions.removeDeckMoveCards}
+            isDefaultFrom={isDefaultFrom}
+            isSameRemoveTarget={isSameRemoveTarget}
+          />
+        )}
+      </ErrorBoundary>
 
       {editOpen && (
         <EditCardModal
