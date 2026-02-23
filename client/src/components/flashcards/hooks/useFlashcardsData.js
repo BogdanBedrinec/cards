@@ -1,7 +1,9 @@
+// src/components/flashcards/hooks/useFlashcardsData.js
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { API, DEFAULT_DECK_ID } from "../utils/constants.js";
-import { getToken } from "../utils/auth.js";
 import { withTimeout, humanFetchError } from "../utils/http.js";
+import { apiFetch } from "../utils/apiFetch.js";
 
 /**
  * Centralized data loading for Flashcards:
@@ -20,7 +22,11 @@ export function useFlashcardsData({
   setMessage,
   handle401,
 }) {
-  const abortRef = useRef(null);
+  // request ids to avoid race updates
+  const cardsReqRef = useRef(0);
+  const libraryReqRef = useRef(0);
+  const decksReqRef = useRef(0);
+  const statsReqRef = useRef(0);
 
   const [decks, setDecks] = useState([]);
   const [cards, setCards] = useState([]);
@@ -44,6 +50,7 @@ export function useFlashcardsData({
     setMessage(`${prefix}: ${serverMsg || human}${hint}`);
   }
 
+  // Keep wakeBackend as plain fetch (health is commonly public; apiFetch requires token)
   async function wakeBackend() {
     try {
       const { signal, cleanup } = withTimeout(null, 12000);
@@ -67,75 +74,65 @@ export function useFlashcardsData({
   }
 
   async function fetchDecks() {
-    const token = getToken();
-    if (!token) return handle401();
+    const reqId = ++decksReqRef.current;
 
     setIsDecksLoading(true);
     try {
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards/decks`, {
+      const res = await apiFetch({
+        url: `${API}/api/cards/decks`,
         method: "GET",
-        headers: { Authorization: `Bearer ${token}`, "Cache-Control": "no-cache" },
-        cache: "no-store",
-        signal,
-      }).finally(cleanup);
+        handle401,
+      });
 
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => []);
       if (!res.ok) {
-        setFriendlyError("❌ Decks", null, data?.message || data?.error);
-        throw new Error(data?.message || data?.error || "Decks failed");
+        setFriendlyError("❌ Decks", null, res.errorMessage);
+        throw new Error(res.errorMessage || "Decks failed");
       }
 
-      const list = Array.isArray(data) ? data : [];
+      const list = Array.isArray(res.data) ? res.data : [];
       const withDefault = list.includes(DEFAULT_DECK_ID) ? list : [DEFAULT_DECK_ID, ...list];
+
+      // ignore outdated responses
+      if (reqId !== decksReqRef.current) return withDefault;
+
       setDecks(withDefault);
       return withDefault;
     } finally {
-      setIsDecksLoading(false);
+      // only stop loading if this is latest
+      if (reqId === decksReqRef.current) setIsDecksLoading(false);
     }
   }
 
   async function fetchStats() {
-    const token = getToken();
-    if (!token) return handle401();
+    const reqId = ++statsReqRef.current;
 
     setIsStatsLoading(true);
     try {
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards/stats`, {
+      const res = await apiFetch({
+        url: `${API}/api/cards/stats`,
         method: "GET",
-        headers: { Authorization: `Bearer ${token}`, "Cache-Control": "no-cache" },
-        cache: "no-store",
-        signal,
-      }).finally(cleanup);
+        handle401,
+      });
 
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => null);
       if (!res.ok) {
-        setFriendlyError("❌ Stats", null, data?.message || data?.error);
-        throw new Error(data?.message || data?.error || "Stats failed");
+        setFriendlyError("❌ Stats", null, res.errorMessage);
+        throw new Error(res.errorMessage || "Stats failed");
       }
 
-      setStats(data);
-      return data;
+      if (reqId !== statsReqRef.current) return res.data;
+
+      setStats(res.data);
+      return res.data;
     } catch (err) {
       if (err?.name !== "AbortError") setFriendlyError("❌ Stats", err);
       throw err;
     } finally {
-      setIsStatsLoading(false);
+      if (reqId === statsReqRef.current) setIsStatsLoading(false);
     }
   }
 
   async function fetchCardsDue() {
-    const token = getToken();
-    if (!token) return handle401();
-
-    if (abortRef.current) abortRef.current.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
+    const reqId = ++cardsReqRef.current;
 
     setIsCardsLoading(true);
     try {
@@ -145,36 +142,33 @@ export function useFlashcardsData({
       params.set("order", "asc");
       if (deckFilter !== "ALL") params.set("deck", deckFilter);
 
-      const { signal, cleanup } = withTimeout(controller.signal);
-      const res = await fetch(`${API}/api/cards?${params.toString()}`, {
+      const res = await apiFetch({
+        url: `${API}/api/cards?${params.toString()}`,
         method: "GET",
-        headers: { Authorization: `Bearer ${token}`, "Cache-Control": "no-cache" },
-        cache: "no-store",
-        signal,
-      }).finally(cleanup);
+        handle401,
+      });
 
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => null);
       if (!res.ok) {
-        setFriendlyError("❌ Cards", null, data?.message || data?.error);
-        throw new Error(data?.message || data?.error || "Cards failed");
+        setFriendlyError("❌ Cards", null, res.errorMessage);
+        throw new Error(res.errorMessage || "Cards failed");
       }
 
-      const list = Array.isArray(data) ? data : [];
+      const list = Array.isArray(res.data) ? res.data : [];
+
+      if (reqId !== cardsReqRef.current) return list;
+
       setCards(list);
       return list;
     } catch (err) {
       if (err?.name !== "AbortError") setFriendlyError("❌ Cards", err);
       throw err;
     } finally {
-      setIsCardsLoading(false);
+      if (reqId === cardsReqRef.current) setIsCardsLoading(false);
     }
   }
 
   async function fetchLibraryCardsAll() {
-    const token = getToken();
-    if (!token) return handle401();
+    const reqId = ++libraryReqRef.current;
 
     setLibraryLoading(true);
     try {
@@ -184,29 +178,28 @@ export function useFlashcardsData({
       params.set("order", librarySortOrder);
       if (deckFilter !== "ALL") params.set("deck", deckFilter);
 
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}`, "Cache-Control": "no-cache" },
-        cache: "no-store",
-        signal,
-      }).finally(cleanup);
+      const res = await apiFetch({
+        url: `${API}/api/cards?${params.toString()}`,
+        method: "GET",
+        handle401,
+      });
 
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => []);
       if (!res.ok) {
-        setFriendlyError("❌ Library", null, data?.message || data?.error);
-        throw new Error(data?.message || data?.error || "Library failed");
+        setFriendlyError("❌ Library", null, res.errorMessage);
+        throw new Error(res.errorMessage || "Library failed");
       }
 
-      const list = Array.isArray(data) ? data : [];
+      const list = Array.isArray(res.data) ? res.data : [];
+
+      if (reqId !== libraryReqRef.current) return list;
+
       setLibraryCards(list);
       return list;
     } catch (err) {
       if (err?.name !== "AbortError") setFriendlyError("❌ Library", err);
       throw err;
     } finally {
-      setLibraryLoading(false);
+      if (reqId === libraryReqRef.current) setLibraryLoading(false);
     }
   }
 
@@ -241,7 +234,11 @@ export function useFlashcardsData({
         if (view === "review") {
           await refreshAll();
         } else if (view === "library") {
-          await Promise.all([retry(fetchDecks, 4), retry(fetchStats, 4), retry(fetchLibraryCardsAll, 4)]);
+          await Promise.all([
+            retry(fetchDecks, 4),
+            retry(fetchStats, 4),
+            retry(fetchLibraryCardsAll, 4),
+          ]);
         } else {
           await Promise.all([retry(fetchDecks, 4), retry(fetchStats, 4)]);
         }
