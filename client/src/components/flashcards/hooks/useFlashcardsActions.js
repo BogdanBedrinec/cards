@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { API, DEFAULT_DECK_ID } from "../utils/constants.js";
 import { getToken } from "../utils/auth.js";
 import { withTimeout } from "../utils/http.js";
+import { apiFetch } from "../utils/apiFetch.js";
 
 /**
  * Actions hook: all mutations / commands for Flashcards.
@@ -363,60 +364,49 @@ export function useFlashcardsActions({
   ]);
 
   // --- bulk move ---
-  const bulkMove = useCallback(async () => {
-    const token = requireToken();
-    if (!token) return;
+const bulkMove = useCallback(async () => {
+  const ids = Array.from(selectedIds);
+  if (ids.length === 0) return;
 
-    const ids = Array.from(selectedIds);
-    if (ids.length === 0) return;
+  const deck = String(bulkDeck || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID;
 
-    const deck = (bulkDeck || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID;
+  setBulkBusy(true);
+  setMessage("");
 
-    setBulkBusy(true);
-    setMessage("");
-    try {
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards/bulk-move`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          "Cache-Control": "no-cache",
-        },
-        body: JSON.stringify({ ids, deck }),
-        signal,
-      }).finally(cleanup);
+  try {
+    const res = await apiFetch({
+      url: `${API}/api/cards/bulk-move`,
+      method: "POST",
+      body: { ids, deck },
+      handle401,
+    });
 
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setFriendlyError("❌ Bulk move", null, data?.message || data?.error);
-        return;
-      }
-
-      setMessage(`✅ ${data?.message || "Bulk move ok"}`);
-      clearSelection();
-      await Promise.all([fetchLibraryCardsAll(), fetchDecks(), fetchCardsDue(), fetchStats()]);
-    } catch (err) {
-      setFriendlyError("❌ Bulk move", err);
-    } finally {
-      setBulkBusy(false);
+    if (!res.ok) {
+      setFriendlyError("❌ Bulk move", null, res.errorMessage);
+      return;
     }
-  }, [
-    requireToken,
-    selectedIds,
-    bulkDeck,
-    setBulkBusy,
-    setMessage,
-    clearSelection,
-    fetchLibraryCardsAll,
-    fetchDecks,
-    fetchCardsDue,
-    fetchStats,
-    handle401,
-    setFriendlyError,
-  ]);
+
+    setMessage(`✅ ${res.data?.message || "Bulk move ok"}`);
+    clearSelection();
+    await Promise.all([fetchLibraryCardsAll(), fetchDecks(), fetchCardsDue(), fetchStats()]);
+  } catch (err) {
+    setFriendlyError("❌ Bulk move", err);
+  } finally {
+    setBulkBusy(false);
+  }
+}, [
+  selectedIds,
+  bulkDeck,
+  setBulkBusy,
+  setMessage,
+  clearSelection,
+  fetchLibraryCardsAll,
+  fetchDecks,
+  fetchCardsDue,
+  fetchStats,
+  handle401,
+  setFriendlyError,
+]);
 
   // --- bulk delete ---
 const bulkDelete = useCallback(async () => {
