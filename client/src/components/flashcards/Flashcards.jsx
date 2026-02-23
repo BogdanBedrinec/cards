@@ -21,6 +21,7 @@ import { getT } from "./i18n/dictionary.js";
 import { API, DEFAULT_DECK_ID, LS_UI, LS_L1, LS_L2, LS_THEME } from "./utils/constants.js";
 import { getToken, clearAuth } from "./utils/auth.js";
 import { normalizeLang, langLabel, formatTimeUntil } from "./utils/format.js";
+import ErrorBoundary from "./utils/ErrorBoundary.jsx";
 
 // hooks
 import { useReviewShortcuts } from "./hooks/useReviewShortcuts";
@@ -439,83 +440,85 @@ export default function Flashcards() {
         </div>
       )}
 
-      {view === "review" ? (
-        <ReviewPanel
-          t={t}
-          cards={cards}
-          isCardsLoading={isCardsLoading}
-          currentReviewCard={currentReviewCard}
-          showAnswer={showAnswer}
-          setShowAnswer={setShowAnswer}
-          reviewAnswer={actions.reviewAnswer}
-          isReviewing={isReviewing}
-          progressIndex={progressIndex}
-          progressTotal={progressTotal}
-          deckLabel={deckLabel}
-          DEFAULT_DECK_ID={DEFAULT_DECK_ID}
-          formatTimeUntil={formatTimeUntilLocal}
-        />
-      ) : view === "add" ? (
-        <AddCardPanel
-          t={t}
-          word={word}
-          setWord={setWord}
-          translation={translation}
-          setTranslation={setTranslation}
-          example={example}
-          setExample={setExample}
-          handleAddCard={actions.handleAddCard}
-          decks={decks}
-          deckForNewCard={deckForNewCard}
-          setDeckForNewCard={setDeckForNewCard}
-          newDeckName={newDeckName}
-          setNewDeckName={setNewDeckName}
-          handleCreateDeckLocal={actions.handleCreateDeckLocal}
-          deckLabel={deckLabel}
-          DEFAULT_DECK_ID={DEFAULT_DECK_ID}
-        />
-      ) : (
-        <LibraryPanel
-          t={t}
-          librarySearch={librarySearch}
-          setLibrarySearch={setLibrarySearch}
-          fetchLibraryCards={fetchLibraryCardsAll}
-          libraryLoading={libraryLoading}
-          bulkBusy={bulkBusy}
-          filteredLibraryCards={filteredLibraryCards}
-          libraryCards={libraryCards}
-          selectedCount={selectedCount}
-          selectAllFiltered={selectAllFiltered}
-          clearSelection={clearSelection}
-          bulkDeck={bulkDeck}
-          setBulkDeck={setBulkDeck}
-          bulkMove={actions.bulkMove}
-          bulkDelete={actions.bulkDelete}
-          decks={decks}
-          deckLabel={deckLabel}
-          DEFAULT_DECK_ID={DEFAULT_DECK_ID}
-          toggleSelect={toggleSelect}
-          selectedIds={selectedIds}
-          openEdit={actions.openEdit}
-          handleDeleteCard={actions.handleDeleteCard}
-          learningLang={learningLang}
-          nativeLang={nativeLang}
-          langLabel={langLabel}
-          formatTimeUntil={formatTimeUntilLocal}
-          // deck manager
-          deckManageFrom={deckManageFrom}
-          setDeckManageFrom={setDeckManageFrom}
-          deckManageTo={deckManageTo}
-          setDeckManageTo={setDeckManageTo}
-          deckRemoveTo={deckRemoveTo}
-          setDeckRemoveTo={setDeckRemoveTo}
-          deckManageBusy={deckManageBusy}
-          renameDeck={actions.renameDeck}
-          removeDeckMoveCards={actions.removeDeckMoveCards}
-          isDefaultFrom={isDefaultFrom}
-          isSameRemoveTarget={isSameRemoveTarget}
-        />
-      )}
+<ErrorBoundary>
+  {view === "review" ? (
+    <ReviewPanel
+      t={t}
+      cards={cards}
+      isCardsLoading={isCardsLoading}
+      currentReviewCard={currentReviewCard}
+      showAnswer={showAnswer}
+      setShowAnswer={setShowAnswer}
+      reviewAnswer={actions.reviewAnswer}
+      isReviewing={isReviewing}
+      progressIndex={progressIndex}
+      progressTotal={progressTotal}
+      deckLabel={deckLabel}
+      DEFAULT_DECK_ID={DEFAULT_DECK_ID}
+      formatTimeUntil={formatTimeUntilLocal}
+    />
+  ) : view === "add" ? (
+    <AddCardPanel
+      t={t}
+      word={word}
+      setWord={setWord}
+      translation={translation}
+      setTranslation={setTranslation}
+      example={example}
+      setExample={setExample}
+      handleAddCard={actions.handleAddCard}
+      decks={decks}
+      deckForNewCard={deckForNewCard}
+      setDeckForNewCard={setDeckForNewCard}
+      newDeckName={newDeckName}
+      setNewDeckName={setNewDeckName}
+      handleCreateDeckLocal={actions.handleCreateDeckLocal}
+      deckLabel={deckLabel}
+      DEFAULT_DECK_ID={DEFAULT_DECK_ID}
+    />
+  ) : (
+    <LibraryPanel
+      t={t}
+      librarySearch={librarySearch}
+      setLibrarySearch={setLibrarySearch}
+      fetchLibraryCards={fetchLibraryCardsAll}
+      libraryLoading={libraryLoading}
+      bulkBusy={bulkBusy}
+      filteredLibraryCards={filteredLibraryCards}
+      libraryCards={libraryCards}
+      selectedCount={selectedCount}
+      selectAllFiltered={selectAllFiltered}
+      clearSelection={clearSelection}
+      bulkDeck={bulkDeck}
+      setBulkDeck={setBulkDeck}
+      bulkMove={actions.bulkMove}
+      bulkDelete={actions.bulkDelete}
+      decks={decks}
+      deckLabel={deckLabel}
+      DEFAULT_DECK_ID={DEFAULT_DECK_ID}
+      toggleSelect={toggleSelect}
+      selectedIds={selectedIds}
+      openEdit={actions.openEdit}
+      handleDeleteCard={actions.handleDeleteCard}
+      learningLang={learningLang}
+      nativeLang={nativeLang}
+      langLabel={langLabel}
+      formatTimeUntil={formatTimeUntilLocal}
+      // deck manager
+      deckManageFrom={deckManageFrom}
+      setDeckManageFrom={setDeckManageFrom}
+      deckManageTo={deckManageTo}
+      setDeckManageTo={setDeckManageTo}
+      deckRemoveTo={deckRemoveTo}
+      setDeckRemoveTo={setDeckRemoveTo}
+      deckManageBusy={deckManageBusy}
+      renameDeck={actions.renameDeck}
+      removeDeckMoveCards={actions.removeDeckMoveCards}
+      isDefaultFrom={isDefaultFrom}
+      isSameRemoveTarget={isSameRemoveTarget}
+    />
+  )}
+</ErrorBoundary>
 
       {editOpen && (
         <EditCardModal
