@@ -22,16 +22,12 @@ export function useFlashcardsActions({
   setExample,
 
   // deck selections
-  decks,
   deckFilter,
   setDeckFilter,
   deckForNewCard,
   setDeckForNewCard,
-  newDeckName,
-  setNewDeckName,
 
   // review state
-  cards,
   currentReviewCard,
   showAnswer,
   setShowAnswer,
@@ -45,7 +41,6 @@ export function useFlashcardsActions({
   selectedIds,
   clearSelection,
   bulkDeck,
-  bulkBusy,
   setBulkBusy,
 
   // deck manager state
@@ -53,7 +48,6 @@ export function useFlashcardsActions({
   deckManageTo,
   setDeckManageTo,
   deckRemoveTo,
-  deckManageBusy,
   setDeckManageBusy,
   deckLabel,
 
@@ -98,18 +92,7 @@ export function useFlashcardsActions({
     return token;
   }, [handle401]);
 
-  // --- deck local create ---
-  const handleCreateDeckLocal = useCallback(() => {
-    const name = newDeckName.trim();
-    if (!name) return;
-
-    // No setDecks here: decks are server-derived.
-    // Just preselect this name for the next card; it will appear after the first card is created.
-    setDeckForNewCard(name);
-    setNewDeckName("");
-  }, [newDeckName, setDeckForNewCard, setNewDeckName]);
-
-  // --- add card ---
+  // --- add card (поки старий fetch; перенесемо на apiFetch у наступному кроці) ---
   const handleAddCard = useCallback(
     async (e) => {
       e.preventDefault();
@@ -128,7 +111,7 @@ export function useFlashcardsActions({
           word: word.trim(),
           translation: translation.trim(),
           example: example.trim(),
-          deck: (deckForNewCard || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID,
+          deck: String(deckForNewCard || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID,
         };
 
         const { signal, cleanup } = withTimeout();
@@ -184,7 +167,7 @@ export function useFlashcardsActions({
     ]
   );
 
-  // --- review ---
+  // --- review (поки старий fetch; перенесемо на apiFetch у наступних кроках) ---
   const sendReview = useCallback(
     async (id, known) => {
       const token = requireToken();
@@ -364,217 +347,214 @@ export function useFlashcardsActions({
   ]);
 
   // --- bulk move ---
-const bulkMove = useCallback(async () => {
-  const ids = Array.from(selectedIds);
-  if (ids.length === 0) return;
+  const bulkMove = useCallback(async () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
 
-  const deck = String(bulkDeck || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID;
+    const deck = String(bulkDeck || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID;
 
-  setBulkBusy(true);
-  setMessage("");
+    setBulkBusy(true);
+    setMessage("");
 
-  try {
-    const res = await apiFetch({
-      url: `${API}/api/cards/bulk-move`,
-      method: "POST",
-      body: { ids, deck },
-      handle401,
-    });
+    try {
+      const res = await apiFetch({
+        url: `${API}/api/cards/bulk-move`,
+        method: "POST",
+        body: { ids, deck },
+        handle401,
+      });
 
-    if (!res.ok) {
-      setFriendlyError("❌ Bulk move", null, res.errorMessage);
-      return;
+      if (!res.ok) {
+        setFriendlyError("❌ Bulk move", null, res.errorMessage);
+        return;
+      }
+
+      setMessage(`✅ ${res.data?.message || "Bulk move ok"}`);
+      clearSelection();
+      await Promise.all([fetchLibraryCardsAll(), fetchDecks(), fetchCardsDue(), fetchStats()]);
+    } catch (err) {
+      setFriendlyError("❌ Bulk move", err);
+    } finally {
+      setBulkBusy(false);
     }
-
-    setMessage(`✅ ${res.data?.message || "Bulk move ok"}`);
-    clearSelection();
-    await Promise.all([fetchLibraryCardsAll(), fetchDecks(), fetchCardsDue(), fetchStats()]);
-  } catch (err) {
-    setFriendlyError("❌ Bulk move", err);
-  } finally {
-    setBulkBusy(false);
-  }
-}, [
-  selectedIds,
-  bulkDeck,
-  setBulkBusy,
-  setMessage,
-  clearSelection,
-  fetchLibraryCardsAll,
-  fetchDecks,
-  fetchCardsDue,
-  fetchStats,
-  handle401,
-  setFriendlyError,
-]);
+  }, [
+    selectedIds,
+    bulkDeck,
+    setBulkBusy,
+    setMessage,
+    clearSelection,
+    fetchLibraryCardsAll,
+    fetchDecks,
+    fetchCardsDue,
+    fetchStats,
+    handle401,
+    setFriendlyError,
+  ]);
 
   // --- bulk delete ---
-const bulkDelete = useCallback(async () => {
-  const ids = Array.from(selectedIds);
-  if (ids.length === 0) return;
+  const bulkDelete = useCallback(async () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
 
-  const ok = window.confirm(`${t.confirmDeleteN} (${ids.length})`);
-  if (!ok) return;
+    const ok = window.confirm(`${t.confirmDeleteN} (${ids.length})`);
+    if (!ok) return;
 
-  setBulkBusy(true);
-  setMessage("");
+    setBulkBusy(true);
+    setMessage("");
 
-  try {
-    const res = await apiFetch({
-      url: `${API}/api/cards/bulk-delete`,
-      method: "POST",
-      body: { ids },
-      handle401,
-    });
+    try {
+      const res = await apiFetch({
+        url: `${API}/api/cards/bulk-delete`,
+        method: "POST",
+        body: { ids },
+        handle401,
+      });
 
-    if (!res.ok) {
-      setFriendlyError("❌ Bulk delete", null, res.errorMessage);
-      return;
+      if (!res.ok) {
+        setFriendlyError("❌ Bulk delete", null, res.errorMessage);
+        return;
+      }
+
+      setMessage(`✅ ${res.data?.message || "Bulk delete ok"}`);
+      clearSelection();
+      await Promise.all([fetchLibraryCardsAll(), fetchDecks(), fetchCardsDue(), fetchStats()]);
+    } catch (err) {
+      setFriendlyError("❌ Bulk delete", err);
+    } finally {
+      setBulkBusy(false);
     }
-
-    setMessage(`✅ ${res.data?.message || "Bulk delete ok"}`);
-    clearSelection();
-    await Promise.all([fetchLibraryCardsAll(), fetchDecks(), fetchCardsDue(), fetchStats()]);
-  } catch (err) {
-    setFriendlyError("❌ Bulk delete", err);
-  } finally {
-    setBulkBusy(false);
-  }
-}, [
-  selectedIds,
-  t.confirmDeleteN,
-  setBulkBusy,
-  setMessage,
-  clearSelection,
-  fetchLibraryCardsAll,
-  fetchDecks,
-  fetchCardsDue,
-  fetchStats,
-  handle401,
-  setFriendlyError,
-]);
+  }, [
+    selectedIds,
+    t.confirmDeleteN,
+    setBulkBusy,
+    setMessage,
+    clearSelection,
+    fetchLibraryCardsAll,
+    fetchDecks,
+    fetchCardsDue,
+    fetchStats,
+    handle401,
+    setFriendlyError,
+  ]);
 
   // --- deck rename ---
-const renameDeck = useCallback(async () => {
-  const from = String(deckManageFrom || "").trim();
-  const to = String(deckManageTo || "").trim();
-  if (!from || !to) return;
+  const renameDeck = useCallback(async () => {
+    const from = String(deckManageFrom || "").trim();
+    const to = String(deckManageTo || "").trim();
+    if (!from || !to) return;
 
-  if (from === DEFAULT_DECK_ID) {
-    setMessage(t.cannotRenameDefault);
-    return;
-  }
-
-  const ok = window.confirm(t.confirmRename(deckLabel(from), to));
-  if (!ok) return;
-
-  setDeckManageBusy(true);
-  setMessage("");
-
-  try {
-    const res = await apiFetch({
-      url: `${API}/api/cards/decks/rename`,
-      method: "PUT",
-      body: { from, to },
-      handle401,
-    });
-
-    if (!res.ok) {
-      setFriendlyError("❌ Rename deck", null, res.errorMessage);
+    if (from === DEFAULT_DECK_ID) {
+      setMessage(t.cannotRenameDefault);
       return;
     }
 
-    setMessage(`✅ ${res.data?.message || "Deck renamed"}`);
-    setDeckManageTo("");
+    const ok = window.confirm(t.confirmRename(deckLabel(from), to));
+    if (!ok) return;
 
-    // якщо фільтр стояв на старій деці — скидаємо
-    if (deckFilter === from) setDeckFilter("ALL");
+    setDeckManageBusy(true);
+    setMessage("");
 
-    await Promise.all([fetchDecks(), fetchLibraryCardsAll(), fetchCardsDue(), fetchStats()]);
-  } catch (err) {
-    setFriendlyError("❌ Rename deck", err);
-  } finally {
-    setDeckManageBusy(false);
-  }
-}, [
-  deckManageFrom,
-  deckManageTo,
-  t,
-  deckLabel,
-  deckFilter,
-  setDeckFilter,
-  setDeckManageBusy,
-  setMessage,
-  setDeckManageTo,
-  fetchDecks,
-  fetchLibraryCardsAll,
-  fetchCardsDue,
-  fetchStats,
-  handle401,
-  setFriendlyError,
-]);
+    try {
+      const res = await apiFetch({
+        url: `${API}/api/cards/decks/rename`,
+        method: "PUT",
+        body: { from, to },
+        handle401,
+      });
+
+      if (!res.ok) {
+        setFriendlyError("❌ Rename deck", null, res.errorMessage);
+        return;
+      }
+
+      setMessage(`✅ ${res.data?.message || "Deck renamed"}`);
+      setDeckManageTo("");
+
+      if (deckFilter === from) setDeckFilter("ALL");
+
+      await Promise.all([fetchDecks(), fetchLibraryCardsAll(), fetchCardsDue(), fetchStats()]);
+    } catch (err) {
+      setFriendlyError("❌ Rename deck", err);
+    } finally {
+      setDeckManageBusy(false);
+    }
+  }, [
+    deckManageFrom,
+    deckManageTo,
+    t,
+    deckLabel,
+    deckFilter,
+    setDeckFilter,
+    setDeckManageBusy,
+    setMessage,
+    setDeckManageTo,
+    fetchDecks,
+    fetchLibraryCardsAll,
+    fetchCardsDue,
+    fetchStats,
+    handle401,
+    setFriendlyError,
+  ]);
 
   // --- remove deck (move cards) ---
-const removeDeckMoveCards = useCallback(async () => {
-  const name = String(deckManageFrom || "").trim();
-  const to = String(deckRemoveTo || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID;
-  if (!name) return;
+  const removeDeckMoveCards = useCallback(async () => {
+    const name = String(deckManageFrom || "").trim();
+    const to = String(deckRemoveTo || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID;
+    if (!name) return;
 
-  if (name === DEFAULT_DECK_ID) {
-    setMessage(t.cannotDeleteDefault);
-    return;
-  }
-
-  const ok = window.confirm(t.confirmRemove(deckLabel(name), deckLabel(to)));
-  if (!ok) return;
-
-  setDeckManageBusy(true);
-  setMessage("");
-
-  try {
-    const url = `${API}/api/cards/decks/${encodeURIComponent(
-      name
-    )}?mode=move&to=${encodeURIComponent(to)}`;
-
-    const res = await apiFetch({
-      url,
-      method: "DELETE",
-      handle401,
-    });
-
-    if (!res.ok) {
-      setFriendlyError("❌ Remove deck", null, res.errorMessage);
+    if (name === DEFAULT_DECK_ID) {
+      setMessage(t.cannotDeleteDefault);
       return;
     }
 
-    setMessage(`✅ ${res.data?.message || "Deck removed"}`);
+    const ok = window.confirm(t.confirmRemove(deckLabel(name), deckLabel(to)));
+    if (!ok) return;
 
-    if (deckFilter === name) setDeckFilter("ALL");
+    setDeckManageBusy(true);
+    setMessage("");
 
-    await Promise.all([fetchDecks(), fetchLibraryCardsAll(), fetchCardsDue(), fetchStats()]);
-  } catch (err) {
-    setFriendlyError("❌ Remove deck", err);
-  } finally {
-    setDeckManageBusy(false);
-  }
-}, [
-  deckManageFrom,
-  deckRemoveTo,
-  t,
-  deckLabel,
-  deckFilter,
-  setDeckFilter,
-  setDeckManageBusy,
-  setMessage,
-  fetchDecks,
-  fetchLibraryCardsAll,
-  fetchCardsDue,
-  fetchStats,
-  handle401,
-  setFriendlyError,
-]);
+    try {
+      const url = `${API}/api/cards/decks/${encodeURIComponent(name)}?mode=move&to=${encodeURIComponent(to)}`;
 
-  // --- delete card ---
+      const res = await apiFetch({
+        url,
+        method: "DELETE",
+        handle401,
+      });
+
+      if (!res.ok) {
+        setFriendlyError("❌ Remove deck", null, res.errorMessage);
+        return;
+      }
+
+      setMessage(`✅ ${res.data?.message || "Deck removed"}`);
+
+      if (deckFilter === name) setDeckFilter("ALL");
+
+      await Promise.all([fetchDecks(), fetchLibraryCardsAll(), fetchCardsDue(), fetchStats()]);
+    } catch (err) {
+      setFriendlyError("❌ Remove deck", err);
+    } finally {
+      setDeckManageBusy(false);
+    }
+  }, [
+    deckManageFrom,
+    deckRemoveTo,
+    t,
+    deckLabel,
+    deckFilter,
+    setDeckFilter,
+    setDeckManageBusy,
+    setMessage,
+    fetchDecks,
+    fetchLibraryCardsAll,
+    fetchCardsDue,
+    fetchStats,
+    handle401,
+    setFriendlyError,
+  ]);
+
+  // --- delete card (поки старий fetch; перенесемо на apiFetch далі) ---
   const handleDeleteCard = useCallback(
     async (id) => {
       const token = requireToken();
@@ -619,18 +599,15 @@ const removeDeckMoveCards = useCallback(async () => {
     [setEditCard, setEditWord, setEditTranslation, setEditExample, setEditDeck, setEditOpen]
   );
 
-  // --- save edit ---
+  // --- save edit (через apiFetch) ---
   const saveEdit = useCallback(async () => {
     if (!editCard?._id) return;
-
-    const token = requireToken();
-    if (!token) return;
 
     const payload = {
       word: editWord.trim(),
       translation: editTranslation.trim(),
       example: editExample.trim(),
-      deck: (editDeck || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID,
+      deck: String(editDeck || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID,
     };
 
     if (!payload.word || !payload.translation) {
@@ -638,29 +615,24 @@ const removeDeckMoveCards = useCallback(async () => {
       return;
     }
 
+    setMessage("");
+
     try {
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards/${editCard._id}`, {
+      const res = await apiFetch({
+        url: `${API}/api/cards/${editCard._id}`,
         method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Cache-Control": "no-cache",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-        signal,
-      }).finally(cleanup);
+        body: payload,
+        handle401,
+      });
 
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => null);
       if (!res.ok) {
-        setFriendlyError("❌ Update", null, data?.message || data?.error);
+        setFriendlyError("❌ Update", null, res.errorMessage);
         return;
       }
 
       setEditOpen(false);
       setEditCard(null);
+
       await Promise.all([fetchLibraryCardsAll(), fetchStats(), fetchDecks(), fetchCardsDue()]);
     } catch (err) {
       setFriendlyError("❌ Update", err);
@@ -671,20 +643,18 @@ const removeDeckMoveCards = useCallback(async () => {
     editTranslation,
     editExample,
     editDeck,
+    setMessage,
     setEditOpen,
     setEditCard,
-    setMessage,
-    requireToken,
-    handle401,
-    setFriendlyError,
     fetchLibraryCardsAll,
     fetchStats,
     fetchDecks,
     fetchCardsDue,
+    handle401,
+    setFriendlyError,
   ]);
 
   return {
-    handleCreateDeckLocal,
     handleAddCard,
     reviewAnswer,
     handleExport,
