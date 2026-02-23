@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Flashcards.css";
+import ImportExportPanel from "./panels/ImportExportPanel.jsx";
 
 // panels
 import StatsBar from "./panels/StatsBar.jsx";
@@ -405,40 +406,17 @@ export default function Flashcards() {
         librarySortOrder={librarySortOrder}
         setLibrarySortOrder={setLibrarySortOrder}
       />
-
-      {showImportExport && (
-        <div className="panel" style={{ marginTop: 12, padding: 12 }}>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
-            <button type="button" onClick={() => actions.handleExport("json")}>
-              ⬇️ Export JSON
-            </button>
-            <button type="button" onClick={() => actions.handleExport("csv")}>
-              ⬇️ Export CSV
-            </button>
-
-            <select value={importFormat} onChange={(e) => setImportFormat(e.target.value)}>
-              <option value="json">Import JSON</option>
-              <option value="csv">Import CSV</option>
-            </select>
-          </div>
-
-          <textarea
-            value={importText}
-            onChange={(e) => setImportText(e.target.value)}
-            placeholder={
-              importFormat === "csv"
-                ? "Paste CSV (headers: word,translation,example,deck,...)"
-                : "Paste JSON array or {cards:[...]}"
-            }
-            rows={6}
-            style={{ width: "100%", marginBottom: 8 }}
-          />
-
-          <button type="button" onClick={actions.handleImport}>
-            ⬆️ Import
-          </button>
-        </div>
-      )}
+{showImportExport && (
+  <ImportExportPanel
+    importFormat={importFormat}
+    setImportFormat={setImportFormat}
+    importText={importText}
+    setImportText={setImportText}
+    onExportJson={() => actions.handleExport("json")}
+    onExportCsv={() => actions.handleExport("csv")}
+    onImport={actions.handleImport}
+  />
+)}
 
 <ErrorBoundary>
   {view === "review" ? (
