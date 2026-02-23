@@ -23,6 +23,7 @@ import { API, DEFAULT_DECK_ID, LS_UI, LS_L1, LS_L2, LS_THEME } from "./utils/con
 import { getToken, clearAuth } from "./utils/auth.js";
 import { normalizeLang, langLabel, formatTimeUntil } from "./utils/format.js";
 import ErrorBoundary from "./utils/ErrorBoundary.jsx";
+import { apiFetch } from "../utils/apiFetch.js";
 
 // hooks
 import { useReviewShortcuts } from "./hooks/useReviewShortcuts";

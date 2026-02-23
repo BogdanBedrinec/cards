@@ -419,61 +419,50 @@ export function useFlashcardsActions({
   ]);
 
   // --- bulk delete ---
-  const bulkDelete = useCallback(async () => {
-    const token = requireToken();
-    if (!token) return;
+const bulkDelete = useCallback(async () => {
+  const ids = Array.from(selectedIds);
+  if (ids.length === 0) return;
 
-    const ids = Array.from(selectedIds);
-    if (ids.length === 0) return;
+  const ok = window.confirm(`${t.confirmDeleteN} (${ids.length})`);
+  if (!ok) return;
 
-    const ok = window.confirm(`${t.confirmDeleteN} (${ids.length})`);
-    if (!ok) return;
+  setBulkBusy(true);
+  setMessage("");
 
-    setBulkBusy(true);
-    setMessage("");
-    try {
-      const { signal, cleanup } = withTimeout();
-      const res = await fetch(`${API}/api/cards/bulk-delete`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Cache-Control": "no-cache",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ids }),
-        signal,
-      }).finally(cleanup);
+  try {
+    const res = await apiFetch({
+      url: `${API}/api/cards/bulk-delete`,
+      method: "POST",
+      body: { ids },
+      handle401,
+    });
 
-      if (res.status === 401) return handle401();
-
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setFriendlyError("❌ Bulk delete", null, data?.message || data?.error);
-        return;
-      }
-
-      setMessage(`✅ ${data?.message || "Bulk delete ok"}`);
-      clearSelection();
-      await Promise.all([fetchLibraryCardsAll(), fetchDecks(), fetchCardsDue(), fetchStats()]);
-    } catch (err) {
-      setFriendlyError("❌ Bulk delete", err);
-    } finally {
-      setBulkBusy(false);
+    if (!res.ok) {
+      setFriendlyError("❌ Bulk delete", null, res.errorMessage);
+      return;
     }
-  }, [
-    requireToken,
-    selectedIds,
-    t.confirmDeleteN,
-    setBulkBusy,
-    setMessage,
-    clearSelection,
-    fetchLibraryCardsAll,
-    fetchDecks,
-    fetchCardsDue,
-    fetchStats,
-    handle401,
-    setFriendlyError,
-  ]);
+
+    setMessage(`✅ ${res.data?.message || "Bulk delete ok"}`);
+    clearSelection();
+    await Promise.all([fetchLibraryCardsAll(), fetchDecks(), fetchCardsDue(), fetchStats()]);
+  } catch (err) {
+    setFriendlyError("❌ Bulk delete", err);
+  } finally {
+    setBulkBusy(false);
+  }
+}, [
+  selectedIds,
+  t.confirmDeleteN,
+  setBulkBusy,
+  setMessage,
+  clearSelection,
+  fetchLibraryCardsAll,
+  fetchDecks,
+  fetchCardsDue,
+  fetchStats,
+  handle401,
+  setFriendlyError,
+]);
 
   // --- deck rename ---
   const renameDeck = useCallback(async () => {
