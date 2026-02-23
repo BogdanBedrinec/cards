@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { API, DEFAULT_DECK_ID } from "../utils/constants.js";
 import { getToken } from "../utils/auth.js";
-import { withTimeout } from "../utils/http.js";
+import {  withTimeout } from "../utils/http.js";
 import { apiFetch } from "../utils/apiFetch.js";
 
 /**
@@ -92,7 +92,7 @@ export function useFlashcardsActions({
     return token;
   }, [handle401]);
 
-  // --- add card (поки старий fetch; перенесемо на apiFetch у наступному кроці) ---
+  // --- add card (apiFetch) ---
   const handleAddCard = useCallback(
     async (e) => {
       e.preventDefault();
@@ -103,37 +103,28 @@ export function useFlashcardsActions({
         return;
       }
 
-      const token = requireToken();
-      if (!token) return;
+      // Deck: або вибраний, або default
+      const deck = String(deckForNewCard || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID;
 
       try {
-        const payload = {
-          word: word.trim(),
-          translation: translation.trim(),
-          example: example.trim(),
-          deck: String(deckForNewCard || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID,
-        };
-
-        const { signal, cleanup } = withTimeout();
-        const res = await fetch(`${API}/api/cards`, {
+        const res = await apiFetch({
+          url: `${API}/api/cards`,
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Cache-Control": "no-cache",
-            "Content-Type": "application/json",
+          body: {
+            word: word.trim(),
+            translation: translation.trim(),
+            example: example.trim(),
+            deck,
           },
-          body: JSON.stringify(payload),
-          signal,
-        }).finally(cleanup);
+          handle401,
+        });
 
-        if (res.status === 401) return handle401();
-
-        const data = await res.json().catch(() => null);
         if (!res.ok) {
-          setFriendlyError("❌ Add", null, data?.message || data?.error);
+          setFriendlyError("❌ Add", null, res.errorMessage);
           return;
         }
 
+        // UI reset
         setWord("");
         setTranslation("");
         setExample("");
@@ -161,7 +152,6 @@ export function useFlashcardsActions({
       setSessionTotal,
       refreshAll,
       setView,
-      requireToken,
       handle401,
       setFriendlyError,
     ]
