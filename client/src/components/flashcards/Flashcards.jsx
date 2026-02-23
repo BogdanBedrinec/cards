@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Flashcards.css";
+import { apiFetch } from "./utils/apiFetch.js";
 
 // panels
 import StatsBar from "./panels/StatsBar.jsx";
@@ -209,41 +210,38 @@ export default function Flashcards() {
 
   // one-time: load profile langs
   useEffect(() => {
-    async function fetchProfileLangs() {
-      const token = getToken();
-      if (!token) return;
+  async function fetchProfileLangs() {
+    try {
+      const res = await apiFetch({
+        url: `${API}/api/users/me`,
+        method: "GET",
+        handle401,
+      });
 
-      try {
-        const res = await fetch(`${API}/api/users/me`, {
-          headers: { Authorization: `Bearer ${token}`, "Cache-Control": "no-cache" },
-          cache: "no-store",
-        });
+      if (!res.ok) return;
 
-        if (res.status === 401) return handle401();
-        if (!res.ok) return;
+      const user = res.data;
+      if (!user) return;
 
-        const user = await res.json().catch(() => null);
-        if (!user) return;
+      const ui = normalizeLang(user.interfaceLang, localStorage.getItem(LS_UI) || "en");
+      const l1 = normalizeLang(user.nativeLang, localStorage.getItem(LS_L1) || "uk");
+      const l2 = normalizeLang(user.learningLang, localStorage.getItem(LS_L2) || "en");
 
-        const ui = normalizeLang(user.interfaceLang, localStorage.getItem(LS_UI) || "en");
-        const l1 = normalizeLang(user.nativeLang, localStorage.getItem(LS_L1) || "uk");
-        const l2 = normalizeLang(user.learningLang, localStorage.getItem(LS_L2) || "en");
+      localStorage.setItem(LS_UI, ui);
+      localStorage.setItem(LS_L1, l1);
+      localStorage.setItem(LS_L2, l2);
 
-        localStorage.setItem(LS_UI, ui);
-        localStorage.setItem(LS_L1, l1);
-        localStorage.setItem(LS_L2, l2);
-
-        setInterfaceLang(ui);
-        setNativeLang(l1);
-        setLearningLang(l2);
-      } catch {
-        // ignore
-      }
+      setInterfaceLang(ui);
+      setNativeLang(l1);
+      setLearningLang(l2);
+    } catch {
+      // ignore
     }
+  }
 
-    fetchProfileLangs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  fetchProfileLangs();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
   // reset progress when entering review / changing deck filter
   useEffect(() => {
