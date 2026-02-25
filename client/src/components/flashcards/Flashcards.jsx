@@ -1,9 +1,8 @@
 // src/components/flashcards/Flashcards.jsx
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Flashcards.css";
-
 import { apiFetch } from "./utils/apiFetch.js";
 
 // panels
@@ -31,7 +30,6 @@ import { useReviewShortcuts } from "./hooks/useReviewShortcuts";
 import { useFlashcardsData } from "./hooks/useFlashcardsData";
 import { useFlashcardsActions } from "./hooks/useFlashcardsActions";
 
-// UI
 import TopBanner from "./ui/TopBanner.jsx";
 
 export default function Flashcards() {
@@ -88,8 +86,16 @@ export default function Flashcards() {
   const [importText, setImportText] = useState("");
   const [importFormat, setImportFormat] = useState("json");
 
-  // { type: "error" | "success" | "info", text: string } | null
+  // unified notice (TopBanner)
   const [notice, setNotice] = useState(null);
+  // { type: "error"|"success"|"info", text: string } | null
+
+  // ✅ compatibility setter for hooks that still expect strings
+  const setMessageCompat = useCallback((text) => {
+    const s = String(text || "").trim();
+    if (!s) setNotice(null);
+    else setNotice({ type: "info", text: s });
+  }, []);
 
   // theme
   const [theme, setTheme] = useState(() => {
@@ -106,21 +112,22 @@ export default function Flashcards() {
   const t = useMemo(() => getT(interfaceLang), [interfaceLang]);
 
   // -------- helpers --------
-  function handle401() {
+  const handle401 = useCallback(() => {
     clearAuth();
     navigate("/login", { replace: true });
-  }
+  }, [navigate]);
 
-  const deckLabel = (name) => (name === DEFAULT_DECK_ID ? t.defaultDeck : name);
+  const deckLabel = useCallback((name) => (name === DEFAULT_DECK_ID ? t.defaultDeck : name), [t]);
 
-  function logout() {
+  const logout = useCallback(() => {
     clearAuth();
     navigate("/", { replace: true });
-  }
+  }, [navigate]);
 
-  function formatTimeUntilLocal(dateStr) {
-    return formatTimeUntil(t, dateStr);
-  }
+  const formatTimeUntilLocal = useCallback(
+    (dateStr) => formatTimeUntil(t, dateStr),
+    [t]
+  );
 
   // -------- data hook --------
   const {
@@ -146,7 +153,7 @@ export default function Flashcards() {
     deckFilter,
     librarySortBy,
     librarySortOrder,
-    setNotice,
+    setMessage: setMessageCompat, // ✅ important
     handle401,
   });
 
@@ -315,13 +322,10 @@ export default function Flashcards() {
     example,
     setExample,
 
-    decks,
     deckFilter,
     setDeckFilter,
     deckForNewCard,
-    setDeckForNewCard,
 
-    cards,
     currentReviewCard,
     showAnswer,
     setShowAnswer,
@@ -334,14 +338,12 @@ export default function Flashcards() {
     selectedIds,
     clearSelection,
     bulkDeck,
-    bulkBusy,
     setBulkBusy,
 
     deckManageFrom,
     deckManageTo,
     setDeckManageTo,
     deckRemoveTo,
-    deckManageBusy,
     setDeckManageBusy,
     deckLabel,
 
@@ -362,7 +364,7 @@ export default function Flashcards() {
     importFormat,
     setShowImportExport,
 
-    setNotice,
+    setMessage: setMessageCompat, // ✅ important
     handle401,
     setFriendlyError,
 
@@ -406,7 +408,7 @@ export default function Flashcards() {
         loading={anyLoading}
         notice={notice}
         onClose={() => setNotice(null)}
-        onRetry={notice?.type === "error" && !anyLoading ? retryNow : null}
+        onRetry={retryNow}
       />
 
       <StatsBar stats={stats} t={t} />
