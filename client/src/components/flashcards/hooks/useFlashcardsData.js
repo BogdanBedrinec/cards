@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { API, DEFAULT_DECK_ID } from "../utils/constants.js";
-import { withTimeout, humanFetchError } from "../utils/http.js";
+import { humanFetchError } from "../utils/http.js";
 import { apiFetch } from "../utils/apiFetch.js";
 
 /**
@@ -50,21 +50,20 @@ export function useFlashcardsData({
     setMessage(`${prefix}: ${serverMsg || human}${hint}`);
   }
 
-  // Keep wakeBackend as plain fetch (health is commonly public; apiFetch requires token)
-async function wakeBackend() {
-  try {
-    // health is public -> auth:false
-    await apiFetch({
-      url: `${API}/api/health`,
-      method: "GET",
-      auth: false,
-      expect: "text",
-      timeoutMs: 12000,
-    });
-  } catch {
-    // ignore
+  // health is public -> auth:false
+  async function wakeBackend() {
+    try {
+      await apiFetch({
+        url: `${API}/api/health`,
+        method: "GET",
+        auth: false,
+        expect: "text",
+        timeoutMs: 12000,
+      });
+    } catch {
+      // ignore
+    }
   }
-}
 
   async function retry(fn, tries = 4, delayMs = 1200) {
     let lastErr = null;
@@ -98,13 +97,11 @@ async function wakeBackend() {
       const list = Array.isArray(res.data) ? res.data : [];
       const withDefault = list.includes(DEFAULT_DECK_ID) ? list : [DEFAULT_DECK_ID, ...list];
 
-      // ignore outdated responses
       if (reqId !== decksReqRef.current) return withDefault;
 
       setDecks(withDefault);
       return withDefault;
     } finally {
-      // only stop loading if this is latest
       if (reqId === decksReqRef.current) setIsDecksLoading(false);
     }
   }
@@ -219,10 +216,18 @@ async function wakeBackend() {
     setIsRefreshing(true);
 
     Promise.resolve()
-      .then(() => {
-        if (view === "review") return refreshAll();
-        if (view === "library") return Promise.all([fetchDecks(), fetchStats(), fetchLibraryCardsAll()]);
-        return Promise.all([fetchDecks(), fetchStats()]);
+      .then(async () => {
+        await wakeBackend();
+
+        if (view === "review") {
+          return Promise.all([retry(fetchDecks, 4), retry(fetchCardsDue, 4), retry(fetchStats, 4)]);
+        }
+
+        if (view === "library") {
+          return Promise.all([retry(fetchDecks, 4), retry(fetchStats, 4), retry(fetchLibraryCardsAll, 4)]);
+        }
+
+        return Promise.all([retry(fetchDecks, 4), retry(fetchStats, 4)]);
       })
       .finally(() => setIsRefreshing(false));
   }
@@ -240,11 +245,7 @@ async function wakeBackend() {
         if (view === "review") {
           await refreshAll();
         } else if (view === "library") {
-          await Promise.all([
-            retry(fetchDecks, 4),
-            retry(fetchStats, 4),
-            retry(fetchLibraryCardsAll, 4),
-          ]);
+          await Promise.all([retry(fetchDecks, 4), retry(fetchStats, 4), retry(fetchLibraryCardsAll, 4)]);
         } else {
           await Promise.all([retry(fetchDecks, 4), retry(fetchStats, 4)]);
         }
@@ -262,11 +263,16 @@ async function wakeBackend() {
 
     return () => {
       cancelled = true;
+
+      // bump request ids so late responses can't commit state
+      cardsReqRef.current++;
+      libraryReqRef.current++;
+      decksReqRef.current++;
+      statsReqRef.current++;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, deckFilter, librarySortBy, librarySortOrder]);
 
-  // expose a stable API surface
   const api = useMemo(
     () => ({
       fetchDecks,
@@ -278,14 +284,14 @@ async function wakeBackend() {
       wakeBackend,
       setFriendlyError,
 
-      // expose setters in case you want to override in Flashcards.jsx later
+      // (optional) expose setters if you ever need them
       setDecks,
       setCards,
       setStats,
       setLibraryCards,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [view, deckFilter, librarySortBy, librarySortOrder, t]
+    [t, view, deckFilter, librarySortBy, librarySortOrder]
   );
 
   return {

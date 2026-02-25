@@ -1,75 +1,46 @@
 // client/src/api.js
+import { apiFetch } from "./components/flashcards/utils/apiFetch.js";
+
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-// --- helpers ---
-function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
-async function fetchWithTimeout(url, options = {}, timeoutMs = 20000) {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const res = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
-    return res;
-  } finally {
-    clearTimeout(id);
-  }
-}
-
-// 1 retry if timeout / network error (good for Render cold start)
-async function fetchWithRetry(url, options = {}, timeoutMs = 20000) {
-  try {
-    return await fetchWithTimeout(url, options, timeoutMs);
-  } catch (e) {
-    // AbortError / network error => wait a bit and retry once
-    await sleep(1500);
-    return await fetchWithTimeout(url, options, timeoutMs);
-  }
-}
-
-// --- API ---
+// API wrappers (public endpoints => auth:false)
 export async function healthCheck() {
-  const res = await fetchWithRetry(`${BASE_URL}/api/health`, {}, 12000);
-  if (!res.ok) throw new Error("Health check failed");
-  return res.json();
+  const res = await apiFetch({
+    url: `${BASE_URL}/api/health`,
+    method: "GET",
+    auth: false,
+    expect: "json",
+    timeoutMs: 12000,
+  });
+
+  if (!res.ok) throw new Error(res.errorMessage || "Health check failed");
+  return res.data;
 }
 
 export async function login(email, password) {
-  const res = await fetchWithRetry(
-    `${BASE_URL}/api/auth/login`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    },
-    20000
-  );
+  const res = await apiFetch({
+    url: `${BASE_URL}/api/auth/login`,
+    method: "POST",
+    auth: false,
+    body: { email, password },
+    expect: "json",
+    timeoutMs: 20000,
+  });
 
-  // якщо сервер відповів, але з помилкою
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(data?.message || "Login failed");
-  }
-  return data; // очікую: { token, userId, ... }
+  if (!res.ok) throw new Error(res.errorMessage || "Login failed");
+  return res.data; // { token, userId, ... }
 }
 
-export async function register(email, password) {
-  const res = await fetchWithRetry(
-    `${BASE_URL}/api/auth/register`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    },
-    20000
-  );
+export async function register(email, password, extra = {}) {
+  const res = await apiFetch({
+    url: `${BASE_URL}/api/auth/register`,
+    method: "POST",
+    auth: false,
+    body: { email, password, ...extra },
+    expect: "json",
+    timeoutMs: 20000,
+  });
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.message || "Register failed");
-  return data;
+  if (!res.ok) throw new Error(res.errorMessage || "Register failed");
+  return res.data;
 }

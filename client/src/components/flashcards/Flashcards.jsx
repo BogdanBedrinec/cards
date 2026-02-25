@@ -212,16 +212,16 @@ export default function Flashcards() {
   useEffect(() => {
   async function fetchProfileLangs() {
     try {
-      const res = await apiFetch({
-        url: `${API}/api/users/me`,
-        method: "GET",
-        handle401,
-      });
+const res = await apiFetch({
+  url: `${API}/api/users/me`,
+  method: "GET",
+  handle401,
+});
 
-      if (!res.ok) return;
+if (!res.ok) return;
 
-      const user = res.data;
-      if (!user) return;
+const user = res.data;
+if (!user) return;
 
       const ui = normalizeLang(user.interfaceLang, localStorage.getItem(LS_UI) || "en");
       const l1 = normalizeLang(user.nativeLang, localStorage.getItem(LS_L1) || "uk");

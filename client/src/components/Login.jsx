@@ -1,3 +1,4 @@
+// client/src/components/Login.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
@@ -6,22 +7,18 @@ import { apiFetch } from "./flashcards/utils/apiFetch.js";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-// --- helpers ---
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function apiFetchWithRetry(params, tries = 2, delayMs = 1500) {
-  let last = null;
-  for (let i = 0; i < tries; i++) {
-    try {
-      return await apiFetch(params);
-    } catch (e) {
-      last = e;
-      if (i < tries - 1) await sleep(delayMs);
-    }
+// one retry is enough for Render cold start
+async function apiFetchRetryOnce(params) {
+  try {
+    return await apiFetch(params);
+  } catch (e) {
+    await sleep(1500);
+    return await apiFetch(params);
   }
-  throw last;
 }
 
 export default function Login({ onBack, onGoRegister, theme, onToggleTheme }) {
@@ -33,7 +30,6 @@ export default function Login({ onBack, onGoRegister, theme, onToggleTheme }) {
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ✅ safe handlers
   const handleBack = () => {
     if (typeof onBack === "function") onBack();
     else navigate("/");
@@ -62,32 +58,23 @@ export default function Login({ onBack, onGoRegister, theme, onToggleTheme }) {
     setIsSubmitting(true);
 
     try {
-      // 0) warm-up (public)
-      await apiFetchWithRetry(
-        {
-          url: `${API}/api/health`,
-          method: "GET",
-          auth: false,
-          expect: "text",
-          timeoutMs: 12000,
-        },
-        2,
-        1200
-      ).catch(() => {});
+      // optional warm-up
+      await apiFetchRetryOnce({
+        url: `${API}/api/health`,
+        method: "GET",
+        auth: false,
+        expect: "text",
+        timeoutMs: 12000,
+      }).catch(() => {});
 
-      // 1) login (public)
-      const res = await apiFetchWithRetry(
-        {
-          url: `${API}/api/auth/login`,
-          method: "POST",
-          auth: false,
-          body: { email, password },
-          expect: "json",
-          timeoutMs: 20000,
-        },
-        2,
-        1500
-      );
+      const res = await apiFetchRetryOnce({
+        url: `${API}/api/auth/login`,
+        method: "POST",
+        auth: false,
+        body: { email, password },
+        expect: "json",
+        timeoutMs: 20000,
+      });
 
       if (!res.ok) {
         setMessage(res.errorMessage || "Login error");
@@ -95,10 +82,11 @@ export default function Login({ onBack, onGoRegister, theme, onToggleTheme }) {
       }
 
       const data = res.data || {};
+
       localStorage.setItem("token", data.token);
       localStorage.setItem("userId", data.userId);
 
-      // ✅ sync language settings (one time, no duplicates)
+      // sync language settings (one time)
       if (data.interfaceLang) localStorage.setItem("fc_ui_lang", data.interfaceLang);
       if (data.nativeLang) localStorage.setItem("fc_native_lang", data.nativeLang);
       if (data.learningLang) localStorage.setItem("fc_learning_lang", data.learningLang);
@@ -106,19 +94,7 @@ export default function Login({ onBack, onGoRegister, theme, onToggleTheme }) {
       navigate("/flashcards");
     } catch (err) {
       console.error("Login error:", err);
-
-      const msg = String(err?.message || "").toLowerCase();
-      const isTimeout =
-        err?.name === "AbortError" ||
-        msg.includes("aborted") ||
-        msg.includes("failed to fetch") ||
-        msg.includes("network");
-
-      setMessage(
-        isTimeout
-          ? "Server is waking up (Render Free). Please try again in 10–20 seconds."
-          : "Server is not responding"
-      );
+      setMessage("Server is not responding");
     } finally {
       setIsSubmitting(false);
     }
@@ -176,7 +152,7 @@ export default function Login({ onBack, onGoRegister, theme, onToggleTheme }) {
 
           {isSubmitting && (
             <div className="auth-message" style={{ opacity: 0.85 }}>
-              Waking server up… first request can take ~30–50s on Render Free.
+              Waking server up… first request can take longer on Render Free.
             </div>
           )}
 

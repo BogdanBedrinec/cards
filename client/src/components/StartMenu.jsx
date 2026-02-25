@@ -1,27 +1,24 @@
+// client/src/components/StartMenu.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Registration from "./Registration.jsx";
 import Login from "./Login.jsx";
 import "./StartMenu.css";
 
+import { apiFetch } from "./flashcards/utils/apiFetch.js";
+
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const DEMO_EMAIL = "demo@demo.com";
 const DEMO_PASSWORD = "demo12345";
 
-// Demo language policy (what you asked):
+// Demo language policy:
 // - UI: English
-// - Learning (word label at top): EN
-// - Native (translation label below): DE
+// - Learning (top label): EN
+// - Native (translation label): DE
 const DEMO_UI_LANG = "en";
 const DEMO_L1_NATIVE = "de";
 const DEMO_L2_LEARNING = "en";
-
-// публичні лінки (підставиш свої)
-const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || ""; // напр. https://cards-xxx.onrender.com
-const GITHUB_URL = import.meta.env.VITE_GITHUB_URL || "";     // напр. https://github.com/you/flashcards
-const VIDEO_URL = import.meta.env.VITE_VIDEO_URL || "";       // опційно, youtube/loom
-
 
 function getSavedTheme() {
   const saved = localStorage.getItem("flashcardsTheme");
@@ -81,10 +78,15 @@ export default function StartMenu({ initialMode = null }) {
     navigate("/register");
   }
 
-  function openUrl(url) {
-  if (!url) return;
-  window.open(url, "_blank", "noopener,noreferrer");
-}
+  // one retry is enough for Render cold start
+  async function apiFetchRetryOnce(params) {
+    try {
+      return await apiFetch(params);
+    } catch (e) {
+      await new Promise((r) => setTimeout(r, 1500));
+      return await apiFetch(params);
+    }
+  }
 
   async function handleDemoLogin() {
     if (demoLoading) return;
@@ -92,32 +94,41 @@ export default function StartMenu({ initialMode = null }) {
     setDemoLoading(true);
 
     try {
-      const res = await fetch(`${API}/api/auth/login`, {
+      // optional warmup
+      await apiFetchRetryOnce({
+        url: `${API}/api/health`,
+        method: "GET",
+        auth: false,
+        expect: "text",
+        timeoutMs: 12000,
+      }).catch(() => {});
+
+      const res = await apiFetchRetryOnce({
+        url: `${API}/api/auth/login`,
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: DEMO_EMAIL, password: DEMO_PASSWORD }),
+        auth: false,
+        body: { email: DEMO_EMAIL, password: DEMO_PASSWORD },
+        expect: "json",
+        timeoutMs: 20000,
       });
 
-      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setDemoMsg(data?.message || data?.error || "Demo login failed");
+        setDemoMsg(res.errorMessage || "Demo login failed");
         return;
       }
 
-      // Store auth
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("userId", data.userId);
+      const data = res.data || {};
 
-      // ✅ Force demo languages (so they never stay swapped)
+      // Store auth
+      if (data.token) localStorage.setItem("token", data.token);
+      if (data.userId) localStorage.setItem("userId", data.userId);
+
+      // Force demo languages (so they never stay swapped)
       localStorage.setItem("fc_ui_lang", DEMO_UI_LANG);
       localStorage.setItem("fc_learning_lang", DEMO_L2_LEARNING); // top label: EN
-      localStorage.setItem("fc_native_lang", DEMO_L1_NATIVE);     // translation label: DE
+      localStorage.setItem("fc_native_lang", DEMO_L1_NATIVE); // translation label: DE
 
-      // Optional: also override whatever backend returns (we ignore it for demo)
-      // If you want, you can still read them:
-      // console.log("backend langs:", data.interfaceLang, data.nativeLang, data.learningLang);
-
-      // ✅ Hard navigation to ensure Flashcards reads fresh localStorage
+      // Hard navigation to ensure Flashcards reads fresh localStorage
       window.location.href = "/flashcards";
     } catch (err) {
       console.error("Demo login error:", err);
@@ -130,95 +141,82 @@ export default function StartMenu({ initialMode = null }) {
   // ===== Login route UI =====
   if (mode === "login") {
     return (
-      <Login
-        onBack={goHome}
-        onGoRegister={goRegister}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-      />
+      <Login onBack={goHome} onGoRegister={goRegister} theme={theme} onToggleTheme={toggleTheme} />
     );
   }
 
   // ===== Register route UI =====
   if (mode === "register") {
     return (
-      <Registration
-        onBack={goHome}
-        onGoLogin={goLogin}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-      />
+      <Registration onBack={goHome} onGoLogin={goLogin} theme={theme} onToggleTheme={toggleTheme} />
     );
   }
 
-// ===== Home UI =====
-return (
-  <div className="auth-wrap">
-    <div className="auth-card">
-      <div className="auth-head">
-<h1 className="auth-title">Flashcards Portfolio Demo</h1>
+  // ===== Home UI =====
+  return (
+    <div className="auth-wrap">
+      <div className="auth-card">
+        <div className="auth-head">
+          <h1 className="auth-title">Flashcards Portfolio Demo</h1>
 
+          <div className="auth-head-right">
+            <div className="auth-badge">Portfolio demo</div>
 
-        <div className="auth-head-right">
-          <div className="auth-badge">Portfolio demo</div>
+            <button
+              type="button"
+              className="auth-themebtn"
+              onClick={toggleTheme}
+              title={theme === "dark" ? "Light theme" : "Dark theme"}
+              aria-label="Toggle theme"
+            >
+              {theme === "dark" ? "☀️" : "🌙"}
+            </button>
+          </div>
+        </div>
 
-          <button
-            type="button"
-            className="auth-themebtn"
-            onClick={toggleTheme}
-            title={theme === "dark" ? "Light theme" : "Dark theme"}
-            aria-label="Toggle theme"
-          >
-            {theme === "dark" ? "☀️" : "🌙"}
+        <p className="auth-sub">
+          A spaced-repetition flashcards app for learning vocabulary. Review mode schedules cards
+          automatically, library shows next review time, topics + bulk actions keep everything
+          organized.
+        </p>
+
+        <div className="auth-actions" style={{ marginTop: 12 }}>
+          <button className="auth-primary" type="button" onClick={handleDemoLogin} disabled={demoLoading}>
+            {demoLoading ? "Opening demo..." : "✨ Try demo"}
+          </button>
+
+          <button className="auth-secondary" type="button" onClick={goLogin}>
+            Log in
+          </button>
+
+          <button className="auth-secondary" type="button" onClick={goRegister}>
+            Create account
           </button>
         </div>
-      </div>
 
-      <p className="auth-sub">
-        A spaced-repetition flashcards app for learning vocabulary.
-        Review mode schedules cards automatically, library shows next review time,
-        topics + bulk actions keep everything organized.
-      </p>
+        {demoMsg && <div className="auth-message">{demoMsg}</div>}
 
-      {/* PRIMARY CTA */}
-      <div className="auth-actions" style={{ marginTop: 12 }}>
-        <button className="auth-primary" type="button" onClick={handleDemoLogin} disabled={demoLoading}>
-          {demoLoading ? "Opening demo..." : "✨ Try demo"}
-        </button>
+        <div className="auth-links">
+          <a className="auth-pill" href="/flashcards">
+            🚀 Open App
+          </a>
+          <a className="auth-pill" href="https://github.com/BogdanBedrinec/cards" target="_blank" rel="noreferrer">
+            💻 GitHub
+          </a>
+          <a
+            className="auth-pill"
+            href="https://drive.google.com/file/d/1iW5fRu7CO8XUP_WU_odWtqQv_4WRE938/view?usp=sharing"
+            target="_blank"
+            rel="noreferrer"
+          >
+            🎥 Video
+          </a>
+        </div>
 
-        <button className="auth-secondary" type="button" onClick={goLogin}>
-          Log in
-        </button>
-
-        <button className="auth-secondary" type="button" onClick={goRegister}>
-          Create account
-        </button>
-      </div>
-
-      {demoMsg && <div className="auth-message">{demoMsg}</div>}
-
-      {/* LINKS */}
-
-<div className="auth-links">
-  <a className="auth-pill" href="/flashcards">🚀 Open App</a>
-  <a className="auth-pill" href="https://github.com/BogdanBedrinec/cards" target="_blank" rel="noreferrer">💻 GitHub</a>
-<a
-  className="auth-pill"
-  href="https://drive.google.com/file/d/1iW5fRu7CO8XUP_WU_odWtqQv_4WRE938/view?usp=sharing"
-  target="_blank"
-  rel="noreferrer"
->
-  🎥 Video
-</a>
-
-</div>
-
-
-      <div className="auth-footnote" style={{ marginTop: 12 }}>
-        React + Vite • Node/Express • MongoDB • JWT • REST API
+        <div className="auth-footnote" style={{ marginTop: 12 }}>
+          React + Vite • Node/Express • MongoDB • JWT • REST API
+        </div>
       </div>
     </div>
-  </div>
-);
-
+  );
 }
