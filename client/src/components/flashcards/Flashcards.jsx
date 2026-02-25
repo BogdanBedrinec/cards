@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Flashcards.css";
+
 import { apiFetch } from "./utils/apiFetch.js";
 
 // panels
@@ -29,6 +30,9 @@ import ErrorBoundary from "./utils/ErrorBoundary.jsx";
 import { useReviewShortcuts } from "./hooks/useReviewShortcuts";
 import { useFlashcardsData } from "./hooks/useFlashcardsData";
 import { useFlashcardsActions } from "./hooks/useFlashcardsActions";
+
+// UI
+import TopBanner from "./ui/TopBanner.jsx";
 
 export default function Flashcards() {
   const navigate = useNavigate();
@@ -84,8 +88,8 @@ export default function Flashcards() {
   const [importText, setImportText] = useState("");
   const [importFormat, setImportFormat] = useState("json");
 
-  // UI message
-  const [message, setMessage] = useState("");
+  // { type: "error" | "success" | "info", text: string } | null
+  const [notice, setNotice] = useState(null);
 
   // theme
   const [theme, setTheme] = useState(() => {
@@ -118,7 +122,7 @@ export default function Flashcards() {
     return formatTimeUntil(t, dateStr);
   }
 
-  // -------- data hook (ETAP 3) --------
+  // -------- data hook --------
   const {
     decks: serverDecks,
     cards,
@@ -142,7 +146,7 @@ export default function Flashcards() {
     deckFilter,
     librarySortBy,
     librarySortOrder,
-    setMessage,
+    setNotice,
     handle401,
   });
 
@@ -210,38 +214,38 @@ export default function Flashcards() {
 
   // one-time: load profile langs
   useEffect(() => {
-  async function fetchProfileLangs() {
-    try {
-const res = await apiFetch({
-  url: `${API}/api/users/me`,
-  method: "GET",
-  handle401,
-});
+    async function fetchProfileLangs() {
+      try {
+        const res = await apiFetch({
+          url: `${API}/api/users/me`,
+          method: "GET",
+          handle401,
+        });
 
-if (!res.ok) return;
+        if (!res.ok) return;
 
-const user = res.data;
-if (!user) return;
+        const user = res.data;
+        if (!user) return;
 
-      const ui = normalizeLang(user.interfaceLang, localStorage.getItem(LS_UI) || "en");
-      const l1 = normalizeLang(user.nativeLang, localStorage.getItem(LS_L1) || "uk");
-      const l2 = normalizeLang(user.learningLang, localStorage.getItem(LS_L2) || "en");
+        const ui = normalizeLang(user.interfaceLang, localStorage.getItem(LS_UI) || "en");
+        const l1 = normalizeLang(user.nativeLang, localStorage.getItem(LS_L1) || "uk");
+        const l2 = normalizeLang(user.learningLang, localStorage.getItem(LS_L2) || "en");
 
-      localStorage.setItem(LS_UI, ui);
-      localStorage.setItem(LS_L1, l1);
-      localStorage.setItem(LS_L2, l2);
+        localStorage.setItem(LS_UI, ui);
+        localStorage.setItem(LS_L1, l1);
+        localStorage.setItem(LS_L2, l2);
 
-      setInterfaceLang(ui);
-      setNativeLang(l1);
-      setLearningLang(l2);
-    } catch {
-      // ignore
+        setInterfaceLang(ui);
+        setNativeLang(l1);
+        setLearningLang(l2);
+      } catch {
+        // ignore
+      }
     }
-  }
 
-  fetchProfileLangs();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []);
+    fetchProfileLangs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // reset progress when entering review / changing deck filter
   useEffect(() => {
@@ -298,7 +302,7 @@ if (!user) return;
 
   const currentReviewCard = cards.length > 0 ? cards[Math.min(reviewIndex, cards.length - 1)] : null;
 
-  // -------- actions hook (ETAP 4) --------
+  // -------- actions hook --------
   const actions = useFlashcardsActions({
     t,
     view,
@@ -358,7 +362,7 @@ if (!user) return;
     importFormat,
     setShowImportExport,
 
-    setMessage,
+    setNotice,
     handle401,
     setFriendlyError,
 
@@ -389,30 +393,21 @@ if (!user) return;
   const progressIndex = Math.min(sessionDone + 1, progressTotal || 0);
 
   const isDefaultFrom = String(deckManageFrom || "").trim() === DEFAULT_DECK_ID;
-  const isSameRemoveTarget = String(deckRemoveTo || "").trim() === String(deckManageFrom || "").trim();
+  const isSameRemoveTarget =
+    String(deckRemoveTo || "").trim() === String(deckManageFrom || "").trim();
 
   // -------- render --------
   return (
     <div className="flashcards-container" data-theme={theme}>
       <h1 className="title">📚 Flashcards</h1>
 
-      {(anyLoading || message) && (
-        <div className={`top-banner ${anyLoading ? "is-loading" : ""}`}>
-          <div className="top-banner-left">
-            {anyLoading && <span className="spinner" aria-hidden="true" />}
-            <span>
-              {anyLoading ? t.loading : ""}
-              {message ? message : ""}
-            </span>
-          </div>
-
-          <div className="top-banner-right">
-            <button type="button" className="banner-btn" onClick={retryNow} disabled={anyLoading}>
-              {t.retry}
-            </button>
-          </div>
-        </div>
-      )}
+      <TopBanner
+        t={t}
+        loading={anyLoading}
+        notice={notice}
+        onClose={() => setNotice(null)}
+        onRetry={notice?.type === "error" && !anyLoading ? retryNow : null}
+      />
 
       <StatsBar stats={stats} t={t} />
 
