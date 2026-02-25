@@ -1,8 +1,14 @@
-async function wakeBackend() {
+export async function wakeBackend() {
   try {
-    const { signal, cleanup } = withTimeout(null, 12000);
-    await fetch(`${API}/api/health`, { cache: "no-store", signal }).finally(cleanup);
+    await apiFetch({
+      url: `${API}/api/health`,
+      method: "GET",
+      auth: false,
+      expect: "text",
+      timeoutMs: 12000,
+    });
   } catch {
+    // ignore (cold start)
   }
 }
 

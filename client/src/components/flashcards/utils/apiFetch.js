@@ -1,20 +1,6 @@
-// src/components/flashcards/utils/apiFetch.js
 import { getToken } from "./auth.js";
 import { withTimeout } from "./http.js";
 
-/**
- * apiFetch - unified fetch helper.
- *
- * Supports:
- * - auth=true/false (default true)
- * - JSON body auto stringify
- * - timeout
- * - handle401 on 401
- * - expect: "json" | "text" | "blob" | undefined (auto)
- *
- * Returns (non-raw):
- *   { ok, status, data, errorMessage }
- */
 export async function apiFetch({
   url,
   method = "GET",
@@ -22,13 +8,8 @@ export async function apiFetch({
   headers = {},
   timeoutMs = undefined,
   handle401,
-
-  // NEW: allow calls without token (login/register/health)
   auth = true,
-
-  // force response parsing
-  // "json" | "text" | "blob"
-  expect = undefined,
+  expect = undefined, // "json" | "text" | "blob"
 }) {
   const token = getToken();
 
@@ -37,8 +18,9 @@ export async function apiFetch({
     return { ok: false, status: 401, data: null, errorMessage: "No token" };
   }
 
+  const hasBody = body !== undefined && body !== null;
   const isJsonBody =
-    body !== undefined && typeof body !== "string" && !(body instanceof FormData);
+    hasBody && typeof body !== "string" && !(body instanceof FormData);
 
   const finalHeaders = {
     "Cache-Control": "no-cache",
@@ -49,7 +31,8 @@ export async function apiFetch({
     finalHeaders.Authorization = `Bearer ${token}`;
   }
 
-  if (body !== undefined && isJsonBody) {
+  // ставимо Content-Type тільки коли реально відправляємо JSON-об'єкт
+  if (isJsonBody) {
     finalHeaders["Content-Type"] = "application/json";
   }
 
@@ -59,25 +42,34 @@ export async function apiFetch({
     const res = await fetch(url, {
       method,
       headers: finalHeaders,
-      body: body === undefined ? undefined : isJsonBody ? JSON.stringify(body) : body,
+      body: !hasBody ? undefined : isJsonBody ? JSON.stringify(body) : body,
       cache: "no-store",
       signal,
     });
 
-    if (res.status === 401) {
-      if (auth) handle401?.();
-      return { ok: false, status: 401, data: null, errorMessage: "Unauthorized" };
+    // пробуємо витягнути корисну помилку, навіть при 401/400
+    const ct = res.headers.get("content-type") || "";
+    const isJson = ct.includes("application/json");
+
+    // 401: якщо auth=true — викликаємо handle401, але все одно спробуємо розпарсити
+    if (res.status === 401 && auth) {
+      handle401?.();
     }
 
     let data = null;
 
-    if (expect === "blob") data = await res.blob().catch(() => null);
-    else if (expect === "text") data = await res.text().catch(() => null);
-    else if (expect === "json") data = await res.json().catch(() => null);
-    else {
-      const ct = res.headers.get("content-type") || "";
-      if (ct.includes("application/json")) data = await res.json().catch(() => null);
-      else data = null;
+    if (expect === "blob") {
+      // якщо сервер повернув json з помилкою — краще зчитати json
+      if (!res.ok && isJson) data = await res.json().catch(() => null);
+      else data = await res.blob().catch(() => null);
+    } else if (expect === "text") {
+      data = await res.text().catch(() => null);
+    } else if (expect === "json") {
+      data = await res.json().catch(() => null);
+    } else {
+      // auto
+      if (isJson) data = await res.json().catch(() => null);
+      else data = await res.text().catch(() => null); // корисно для plain-text помилок
     }
 
     const errorMessage =
