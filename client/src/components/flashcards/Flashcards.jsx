@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Flashcards.css";
-import { apiFetch } from "./utils/apiFetch.js";
 
 // panels
 import StatsBar from "./panels/StatsBar.jsx";
@@ -20,15 +19,16 @@ import EditCardModal from "./modals/EditCardModal.jsx";
 import { getT } from "./i18n/dictionary.js";
 
 // utils
-import { API, DEFAULT_DECK_ID, LS_UI, LS_L1, LS_L2, LS_THEME } from "./utils/constants.js";
+import { DEFAULT_DECK_ID, LS_UI, LS_L1, LS_L2, LS_THEME } from "./utils/constants.js";
 import { getToken, clearAuth } from "./utils/auth.js";
-import { normalizeLang, langLabel, formatTimeUntil } from "./utils/format.js";
+import { langLabel, formatTimeUntil } from "./utils/format.js";
 import ErrorBoundary from "./utils/ErrorBoundary.jsx";
 
 // hooks
 import { useReviewShortcuts } from "./hooks/useReviewShortcuts";
 import { useFlashcardsData } from "./hooks/useFlashcardsData";
 import { useFlashcardsActions } from "./hooks/useFlashcardsActions";
+import { useProfileLangsOnce } from "./hooks/useProfileLangsOnce";
 
 import TopBanner from "./ui/TopBanner.jsx";
 
@@ -124,10 +124,7 @@ export default function Flashcards() {
     navigate("/", { replace: true });
   }, [navigate]);
 
-  const formatTimeUntilLocal = useCallback(
-    (dateStr) => formatTimeUntil(t, dateStr),
-    [t]
-  );
+  const formatTimeUntilLocal = useCallback((dateStr) => formatTimeUntil(t, dateStr), [t]);
 
   // -------- data hook --------
   const {
@@ -153,7 +150,7 @@ export default function Flashcards() {
     deckFilter,
     librarySortBy,
     librarySortOrder,
-    setMessage: setMessageCompat, // ✅ important
+    setMessage: setMessageCompat,
     handle401,
   });
 
@@ -219,40 +216,13 @@ export default function Flashcards() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [decks]);
 
-  // one-time: load profile langs
-  useEffect(() => {
-    async function fetchProfileLangs() {
-      try {
-        const res = await apiFetch({
-          url: `${API}/api/users/me`,
-          method: "GET",
-          handle401,
-        });
-
-        if (!res.ok) return;
-
-        const user = res.data;
-        if (!user) return;
-
-        const ui = normalizeLang(user.interfaceLang, localStorage.getItem(LS_UI) || "en");
-        const l1 = normalizeLang(user.nativeLang, localStorage.getItem(LS_L1) || "uk");
-        const l2 = normalizeLang(user.learningLang, localStorage.getItem(LS_L2) || "en");
-
-        localStorage.setItem(LS_UI, ui);
-        localStorage.setItem(LS_L1, l1);
-        localStorage.setItem(LS_L2, l2);
-
-        setInterfaceLang(ui);
-        setNativeLang(l1);
-        setLearningLang(l2);
-      } catch {
-        // ignore
-      }
-    }
-
-    fetchProfileLangs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // ✅ moved out of UI
+  useProfileLangsOnce({
+    handle401,
+    setInterfaceLang,
+    setNativeLang,
+    setLearningLang,
+  });
 
   // reset progress when entering review / changing deck filter
   useEffect(() => {
@@ -307,7 +277,8 @@ export default function Flashcards() {
     setSelectedIds(new Set());
   }
 
-  const currentReviewCard = cards.length > 0 ? cards[Math.min(reviewIndex, cards.length - 1)] : null;
+  const currentReviewCard =
+    cards.length > 0 ? cards[Math.min(reviewIndex, cards.length - 1)] : null;
 
   // -------- actions hook --------
   const actions = useFlashcardsActions({
@@ -364,7 +335,7 @@ export default function Flashcards() {
     importFormat,
     setShowImportExport,
 
-    setMessage: setMessageCompat, // ✅ important
+    setMessage: setMessageCompat,
     handle401,
     setFriendlyError,
 
@@ -408,7 +379,7 @@ export default function Flashcards() {
         loading={anyLoading}
         notice={notice}
         onClose={() => setNotice(null)}
-        onRetry={retryNow}
+        onRetry={notice?.type === "error" || anyLoading ? retryNow : null}
       />
 
       <StatsBar stats={stats} t={t} />
