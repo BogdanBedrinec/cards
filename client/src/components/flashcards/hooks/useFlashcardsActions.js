@@ -69,26 +69,30 @@ export function useFlashcardsActions({
   importFormat,
   setShowImportExport,
 
-  // UI message + auth
-  setMessage,
+  // UI notice + auth
+  setNotice, // ✅ NOTICE
   handle401,
   setFriendlyError,
 
-  // data refresh functions (from useFlashcardsData)
+  // data refresh functions
   refreshAll,
   fetchDecks,
   fetchStats,
   fetchCardsDue,
   fetchLibraryCardsAll,
 }) {
+  const clearNotice = useCallback(() => setNotice?.(null), [setNotice]);
+  const info = useCallback((text) => setNotice?.({ type: "info", text }), [setNotice]);
+  const success = useCallback((text) => setNotice?.({ type: "success", text }), [setNotice]);
+
   // --- add card ---
   const handleAddCard = useCallback(
     async (e) => {
       e.preventDefault();
-      setMessage("");
+      clearNotice();
 
       if (!word.trim() || !translation.trim()) {
-        setMessage("⚠️ Please fill at least word and translation");
+        info("⚠️ Please fill at least word and translation");
         return;
       }
 
@@ -116,7 +120,7 @@ export function useFlashcardsActions({
         setTranslation("");
         setExample("");
 
-        setMessage("✅ Added!");
+        success("✅ Added!");
         setSessionDone(0);
         setSessionTotal(0);
 
@@ -131,7 +135,9 @@ export function useFlashcardsActions({
       translation,
       example,
       deckForNewCard,
-      setMessage,
+      clearNotice,
+      info,
+      success,
       setWord,
       setTranslation,
       setExample,
@@ -245,7 +251,7 @@ export function useFlashcardsActions({
   // --- import ---
   const handleImport = useCallback(async () => {
     if (!importText.trim()) {
-      setMessage("⚠️ Paste data for import");
+      info("⚠️ Paste data for import");
       return;
     }
 
@@ -267,7 +273,7 @@ export function useFlashcardsActions({
       }
 
       const data = res.data || {};
-      setMessage(
+      success(
         `✅ ${data.message || "Imported"} | received=${data.received}, inserted=${data.inserted}, skipped=${data.skippedAsDuplicates}`
       );
 
@@ -285,7 +291,8 @@ export function useFlashcardsActions({
   }, [
     importText,
     importFormat,
-    setMessage,
+    info,
+    success,
     setImportText,
     setSessionDone,
     setSessionTotal,
@@ -305,7 +312,7 @@ export function useFlashcardsActions({
     const deck = String(bulkDeck || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID;
 
     setBulkBusy(true);
-    setMessage("");
+    clearNotice();
 
     try {
       const res = await apiFetch({
@@ -320,7 +327,7 @@ export function useFlashcardsActions({
         return;
       }
 
-      setMessage(`✅ ${res.data?.message || "Bulk move ok"}`);
+      success(`✅ ${res.data?.message || "Bulk move ok"}`);
       clearSelection();
       await Promise.all([fetchLibraryCardsAll(), fetchDecks(), fetchCardsDue(), fetchStats()]);
     } catch (err) {
@@ -332,7 +339,8 @@ export function useFlashcardsActions({
     selectedIds,
     bulkDeck,
     setBulkBusy,
-    setMessage,
+    clearNotice,
+    success,
     clearSelection,
     fetchLibraryCardsAll,
     fetchDecks,
@@ -351,7 +359,7 @@ export function useFlashcardsActions({
     if (!ok) return;
 
     setBulkBusy(true);
-    setMessage("");
+    clearNotice();
 
     try {
       const res = await apiFetch({
@@ -366,7 +374,7 @@ export function useFlashcardsActions({
         return;
       }
 
-      setMessage(`✅ ${res.data?.message || "Bulk delete ok"}`);
+      success(`✅ ${res.data?.message || "Bulk delete ok"}`);
       clearSelection();
       await Promise.all([fetchLibraryCardsAll(), fetchDecks(), fetchCardsDue(), fetchStats()]);
     } catch (err) {
@@ -378,7 +386,8 @@ export function useFlashcardsActions({
     selectedIds,
     t.confirmDeleteN,
     setBulkBusy,
-    setMessage,
+    clearNotice,
+    success,
     clearSelection,
     fetchLibraryCardsAll,
     fetchDecks,
@@ -395,7 +404,7 @@ export function useFlashcardsActions({
     if (!from || !to) return;
 
     if (from === DEFAULT_DECK_ID) {
-      setMessage(t.cannotRenameDefault);
+      info(t.cannotRenameDefault);
       return;
     }
 
@@ -403,7 +412,7 @@ export function useFlashcardsActions({
     if (!ok) return;
 
     setDeckManageBusy(true);
-    setMessage("");
+    clearNotice();
 
     try {
       const res = await apiFetch({
@@ -418,7 +427,7 @@ export function useFlashcardsActions({
         return;
       }
 
-      setMessage(`✅ ${res.data?.message || "Deck renamed"}`);
+      success(`✅ ${res.data?.message || "Deck renamed"}`);
       setDeckManageTo("");
 
       if (deckFilter === from) setDeckFilter("ALL");
@@ -437,7 +446,9 @@ export function useFlashcardsActions({
     deckFilter,
     setDeckFilter,
     setDeckManageBusy,
-    setMessage,
+    clearNotice,
+    info,
+    success,
     setDeckManageTo,
     fetchDecks,
     fetchLibraryCardsAll,
@@ -454,7 +465,7 @@ export function useFlashcardsActions({
     if (!name) return;
 
     if (name === DEFAULT_DECK_ID) {
-      setMessage(t.cannotDeleteDefault);
+      info(t.cannotDeleteDefault);
       return;
     }
 
@@ -462,7 +473,7 @@ export function useFlashcardsActions({
     if (!ok) return;
 
     setDeckManageBusy(true);
-    setMessage("");
+    clearNotice();
 
     try {
       const url = `${API}/api/cards/decks/${encodeURIComponent(name)}?mode=move&to=${encodeURIComponent(to)}`;
@@ -478,7 +489,7 @@ export function useFlashcardsActions({
         return;
       }
 
-      setMessage(`✅ ${res.data?.message || "Deck removed"}`);
+      success(`✅ ${res.data?.message || "Deck removed"}`);
 
       if (deckFilter === name) setDeckFilter("ALL");
 
@@ -496,7 +507,9 @@ export function useFlashcardsActions({
     deckFilter,
     setDeckFilter,
     setDeckManageBusy,
-    setMessage,
+    clearNotice,
+    info,
+    success,
     fetchDecks,
     fetchLibraryCardsAll,
     fetchCardsDue,
@@ -511,7 +524,7 @@ export function useFlashcardsActions({
       const ok = window.confirm("Delete this card?");
       if (!ok) return;
 
-      setMessage("");
+      clearNotice();
 
       try {
         const res = await apiFetch({
@@ -526,11 +539,21 @@ export function useFlashcardsActions({
         }
 
         await Promise.all([fetchLibraryCardsAll(), fetchStats(), fetchDecks(), fetchCardsDue()]);
+        success("✅ Deleted");
       } catch (err) {
         setFriendlyError("❌ Delete", err);
       }
     },
-    [setMessage, fetchLibraryCardsAll, fetchStats, fetchDecks, fetchCardsDue, handle401, setFriendlyError]
+    [
+      clearNotice,
+      fetchLibraryCardsAll,
+      fetchStats,
+      fetchDecks,
+      fetchCardsDue,
+      handle401,
+      setFriendlyError,
+      success,
+    ]
   );
 
   // --- edit modal open ---
@@ -558,11 +581,11 @@ export function useFlashcardsActions({
     };
 
     if (!payload.word || !payload.translation) {
-      setMessage("⚠️ word + translation required");
+      info("⚠️ word + translation required");
       return;
     }
 
-    setMessage("");
+    clearNotice();
 
     try {
       const res = await apiFetch({
@@ -581,6 +604,7 @@ export function useFlashcardsActions({
       setEditCard(null);
 
       await Promise.all([fetchLibraryCardsAll(), fetchStats(), fetchDecks(), fetchCardsDue()]);
+      success("✅ Updated");
     } catch (err) {
       setFriendlyError("❌ Update", err);
     }
@@ -590,7 +614,9 @@ export function useFlashcardsActions({
     editTranslation,
     editExample,
     editDeck,
-    setMessage,
+    clearNotice,
+    info,
+    success,
     setEditOpen,
     setEditCard,
     fetchLibraryCardsAll,

@@ -5,13 +5,6 @@ import { API, LS_UI, LS_L1, LS_L2 } from "../utils/constants.js";
 import { normalizeLang } from "../utils/format.js";
 import { apiFetch } from "../utils/apiFetch.js";
 
-/**
- * Loads profile languages from backend ONCE and syncs them to:
- * - localStorage (fc_ui_lang, fc_native_lang, fc_learning_lang)
- * - React state setters passed in
- *
- * Named export (matches: import { useProfileLangsOnce } from "./hooks/useProfileLangsOnce";
- */
 export function useProfileLangsOnce({
   handle401,
   setInterfaceLang,

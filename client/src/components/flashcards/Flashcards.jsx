@@ -90,13 +90,6 @@ export default function Flashcards() {
   const [notice, setNotice] = useState(null);
   // { type: "error"|"success"|"info", text: string } | null
 
-  // ✅ compatibility setter for hooks that still expect strings
-  const setMessageCompat = useCallback((text) => {
-    const s = String(text || "").trim();
-    if (!s) setNotice(null);
-    else setNotice({ type: "info", text: s });
-  }, []);
-
   // theme
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem(LS_THEME);
@@ -126,7 +119,7 @@ export default function Flashcards() {
 
   const formatTimeUntilLocal = useCallback((dateStr) => formatTimeUntil(t, dateStr), [t]);
 
-  // -------- data hook --------
+  // -------- data hook (NOTICE) --------
   const {
     decks: serverDecks,
     cards,
@@ -150,7 +143,7 @@ export default function Flashcards() {
     deckFilter,
     librarySortBy,
     librarySortOrder,
-    setMessage: setMessageCompat,
+    setNotice, // ✅ notice pipeline
     handle401,
   });
 
@@ -216,7 +209,7 @@ export default function Flashcards() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [decks]);
 
-  // ✅ moved out of UI
+  // ✅ load profile langs once (no fetch in UI)
   useProfileLangsOnce({
     handle401,
     setInterfaceLang,
@@ -280,7 +273,7 @@ export default function Flashcards() {
   const currentReviewCard =
     cards.length > 0 ? cards[Math.min(reviewIndex, cards.length - 1)] : null;
 
-  // -------- actions hook --------
+  // -------- actions hook (NOTICE) --------
   const actions = useFlashcardsActions({
     t,
     view,
@@ -335,7 +328,7 @@ export default function Flashcards() {
     importFormat,
     setShowImportExport,
 
-    setMessage: setMessageCompat,
+    setNotice, // ✅ notice pipeline
     handle401,
     setFriendlyError,
 
