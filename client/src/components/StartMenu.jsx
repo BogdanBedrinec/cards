@@ -1,21 +1,18 @@
-// client/src/components/StartMenu.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Registration from "./Registration.jsx";
 import Login from "./Login.jsx";
 import "./StartMenu.css";
 
-import { apiFetch } from "./flashcards/utils/apiFetch.js";
-
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { healthCheck, login } from "../api.js"; // ✅ один імпорт
 
 const DEMO_EMAIL = "demo@demo.com";
 const DEMO_PASSWORD = "demo12345";
 
 // Demo language policy:
 // - UI: English
-// - Learning (top label): EN
-// - Native (translation label): DE
+// - Learning label: EN
+// - Native label: DE
 const DEMO_UI_LANG = "en";
 const DEMO_L1_NATIVE = "de";
 const DEMO_L2_LEARNING = "en";
@@ -78,61 +75,29 @@ export default function StartMenu({ initialMode = null }) {
     navigate("/register");
   }
 
-  // one retry is enough for Render cold start
-  async function apiFetchRetryOnce(params) {
-    try {
-      return await apiFetch(params);
-    } catch (e) {
-      await new Promise((r) => setTimeout(r, 1500));
-      return await apiFetch(params);
-    }
-  }
-
   async function handleDemoLogin() {
     if (demoLoading) return;
     setDemoMsg("");
     setDemoLoading(true);
 
     try {
-      // optional warmup
-      await apiFetchRetryOnce({
-        url: `${API}/api/health`,
-        method: "GET",
-        auth: false,
-        expect: "text",
-        timeoutMs: 12000,
-      }).catch(() => {});
+      // warm-up (Render Free)
+      await healthCheck().catch(() => {});
 
-      const res = await apiFetchRetryOnce({
-        url: `${API}/api/auth/login`,
-        method: "POST",
-        auth: false,
-        body: { email: DEMO_EMAIL, password: DEMO_PASSWORD },
-        expect: "json",
-        timeoutMs: 20000,
-      });
+      const data = await login(DEMO_EMAIL, DEMO_PASSWORD);
 
-      if (!res.ok) {
-        setDemoMsg(res.errorMessage || "Demo login failed");
-        return;
-      }
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("userId", data.userId);
 
-      const data = res.data || {};
-
-      // Store auth
-      if (data.token) localStorage.setItem("token", data.token);
-      if (data.userId) localStorage.setItem("userId", data.userId);
-
-      // Force demo languages (so they never stay swapped)
+      // Force demo languages
       localStorage.setItem("fc_ui_lang", DEMO_UI_LANG);
-      localStorage.setItem("fc_learning_lang", DEMO_L2_LEARNING); // top label: EN
-      localStorage.setItem("fc_native_lang", DEMO_L1_NATIVE); // translation label: DE
+      localStorage.setItem("fc_learning_lang", DEMO_L2_LEARNING);
+      localStorage.setItem("fc_native_lang", DEMO_L1_NATIVE);
 
-      // Hard navigation to ensure Flashcards reads fresh localStorage
+      // Hard navigation to re-read localStorage
       window.location.href = "/flashcards";
     } catch (err) {
-      console.error("Demo login error:", err);
-      setDemoMsg("Server is not responding");
+      setDemoMsg(String(err?.message || "Demo login failed"));
     } finally {
       setDemoLoading(false);
     }
@@ -200,7 +165,12 @@ export default function StartMenu({ initialMode = null }) {
           <a className="auth-pill" href="/flashcards">
             🚀 Open App
           </a>
-          <a className="auth-pill" href="https://github.com/BogdanBedrinec/cards" target="_blank" rel="noreferrer">
+          <a
+            className="auth-pill"
+            href="https://github.com/BogdanBedrinec/cards"
+            target="_blank"
+            rel="noreferrer"
+          >
             💻 GitHub
           </a>
           <a

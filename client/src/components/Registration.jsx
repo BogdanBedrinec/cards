@@ -1,11 +1,7 @@
-// client/src/components/Registration.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Registration.css";
-
-import { apiFetch } from "./flashcards/utils/apiFetch.js";
-
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { register } from "../api.js"; // ✅ один імпорт
 
 export default function Registration({ onBack, onGoLogin, theme, onToggleTheme }) {
   const navigate = useNavigate();
@@ -48,27 +44,13 @@ export default function Registration({ onBack, onGoLogin, theme, onToggleTheme }
     setIsSubmitting(true);
 
     try {
-      const res = await apiFetch({
-        url: `${API}/api/auth/register`,
-        method: "POST",
-        auth: false,
-        body: {
-          email,
-          password,
-          interfaceLang,
-          nativeLang,
-          learningLang,
-        },
-        expect: "json",
-        timeoutMs: 20000,
+      const data = await register({
+        email,
+        password,
+        interfaceLang,
+        nativeLang,
+        learningLang,
       });
-
-      if (!res.ok) {
-        setMessage(res.errorMessage || "Registration error");
-        return;
-      }
-
-      const data = res.data || {};
 
       if (data?.token) localStorage.setItem("token", data.token);
       if (data?.userId) localStorage.setItem("userId", data.userId);
@@ -83,8 +65,7 @@ export default function Registration({ onBack, onGoLogin, theme, onToggleTheme }
 
       navigate("/flashcards");
     } catch (err) {
-      console.error("Registration error:", err);
-      setMessage("Server is not responding");
+      setMessage(String(err?.message || "Registration error"));
     } finally {
       setIsSubmitting(false);
     }
