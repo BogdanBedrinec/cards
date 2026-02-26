@@ -376,7 +376,7 @@ export function useFlashcardsActions({
     }
   }, [
     selectedIds,
-    t,
+    t.confirmDeleteN,
     setBulkBusy,
     setMessage,
     clearSelection,

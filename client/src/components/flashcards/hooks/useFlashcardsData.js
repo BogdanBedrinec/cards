@@ -1,6 +1,6 @@
 // src/components/flashcards/hooks/useFlashcardsData.js
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { API, DEFAULT_DECK_ID } from "../utils/constants.js";
 import { humanFetchError } from "../utils/http.js";
 import { apiFetch } from "../utils/apiFetch.js";
@@ -11,7 +11,7 @@ import { apiFetch } from "../utils/apiFetch.js";
  * - boot/refresh logic when view/filter/sort changes
  * - retryNow
  *
- * Keep UI state in Flashcards.jsx; this hook only manages remote data + loading flags.
+ * This hook manages remote data + loading flags only.
  */
 export function useFlashcardsData({
   t,
@@ -44,14 +44,17 @@ export function useFlashcardsData({
   const anyLoading =
     isBootLoading || isRefreshing || isCardsLoading || isStatsLoading || isDecksLoading;
 
-  function setFriendlyError(prefix, err, serverMsg) {
-    const human = humanFetchError(err);
-    const hint = human.includes("Network error") ? ` — ${t.offlineHint}` : "";
-    setMessage(`${prefix}: ${serverMsg || human}${hint}`);
-  }
+  const setFriendlyError = useCallback(
+    (prefix, err, serverMsg) => {
+      const human = humanFetchError(err);
+      const hint = human.includes("Network error") ? ` — ${t.offlineHint}` : "";
+      setMessage(`${prefix}: ${serverMsg || human}${hint}`);
+    },
+    [t, setMessage]
+  );
 
   // health is public -> auth:false
-  async function wakeBackend() {
+  const wakeBackend = useCallback(async () => {
     try {
       await apiFetch({
         url: `${API}/api/health`,
@@ -63,9 +66,9 @@ export function useFlashcardsData({
     } catch {
       // ignore
     }
-  }
+  }, []);
 
-  async function retry(fn, tries = 4, delayMs = 1200) {
+  const retry = useCallback(async (fn, tries = 4, delayMs = 1200) => {
     let lastErr = null;
     for (let i = 0; i < tries; i++) {
       try {
@@ -76,9 +79,9 @@ export function useFlashcardsData({
       }
     }
     throw lastErr;
-  }
+  }, []);
 
-  async function fetchDecks() {
+  const fetchDecks = useCallback(async () => {
     const reqId = ++decksReqRef.current;
 
     setIsDecksLoading(true);
@@ -104,9 +107,9 @@ export function useFlashcardsData({
     } finally {
       if (reqId === decksReqRef.current) setIsDecksLoading(false);
     }
-  }
+  }, [handle401, setFriendlyError]);
 
-  async function fetchStats() {
+  const fetchStats = useCallback(async () => {
     const reqId = ++statsReqRef.current;
 
     setIsStatsLoading(true);
@@ -132,9 +135,9 @@ export function useFlashcardsData({
     } finally {
       if (reqId === statsReqRef.current) setIsStatsLoading(false);
     }
-  }
+  }, [handle401, setFriendlyError]);
 
-  async function fetchCardsDue() {
+  const fetchCardsDue = useCallback(async () => {
     const reqId = ++cardsReqRef.current;
 
     setIsCardsLoading(true);
@@ -168,9 +171,9 @@ export function useFlashcardsData({
     } finally {
       if (reqId === cardsReqRef.current) setIsCardsLoading(false);
     }
-  }
+  }, [deckFilter, handle401, setFriendlyError]);
 
-  async function fetchLibraryCardsAll() {
+  const fetchLibraryCardsAll = useCallback(async () => {
     const reqId = ++libraryReqRef.current;
 
     setLibraryLoading(true);
@@ -204,14 +207,14 @@ export function useFlashcardsData({
     } finally {
       if (reqId === libraryReqRef.current) setLibraryLoading(false);
     }
-  }
+  }, [deckFilter, librarySortBy, librarySortOrder, handle401, setFriendlyError]);
 
-  async function refreshAll() {
+  const refreshAll = useCallback(async () => {
     await wakeBackend();
     await Promise.all([retry(fetchDecks, 4), retry(fetchCardsDue, 4), retry(fetchStats, 4)]);
-  }
+  }, [wakeBackend, retry, fetchDecks, fetchCardsDue, fetchStats]);
 
-  function retryNow() {
+  const retryNow = useCallback(() => {
     setMessage("");
     setIsRefreshing(true);
 
@@ -224,13 +227,28 @@ export function useFlashcardsData({
         }
 
         if (view === "library") {
-          return Promise.all([retry(fetchDecks, 4), retry(fetchStats, 4), retry(fetchLibraryCardsAll, 4)]);
+          return Promise.all([
+            retry(fetchDecks, 4),
+            retry(fetchStats, 4),
+            retry(fetchLibraryCardsAll, 4),
+          ]);
         }
 
         return Promise.all([retry(fetchDecks, 4), retry(fetchStats, 4)]);
       })
+      .catch((e) => setFriendlyError("❌ Load", e))
       .finally(() => setIsRefreshing(false));
-  }
+  }, [
+    setMessage,
+    wakeBackend,
+    view,
+    retry,
+    fetchDecks,
+    fetchCardsDue,
+    fetchStats,
+    fetchLibraryCardsAll,
+    setFriendlyError,
+  ]);
 
   // boot + reload when view / filters / sorts change
   useEffect(() => {
@@ -245,7 +263,11 @@ export function useFlashcardsData({
         if (view === "review") {
           await refreshAll();
         } else if (view === "library") {
-          await Promise.all([retry(fetchDecks, 4), retry(fetchStats, 4), retry(fetchLibraryCardsAll, 4)]);
+          await Promise.all([
+            retry(fetchDecks, 4),
+            retry(fetchStats, 4),
+            retry(fetchLibraryCardsAll, 4),
+          ]);
         } else {
           await Promise.all([retry(fetchDecks, 4), retry(fetchStats, 4)]);
         }
@@ -273,27 +295,6 @@ export function useFlashcardsData({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, deckFilter, librarySortBy, librarySortOrder]);
 
-  const api = useMemo(
-    () => ({
-      fetchDecks,
-      fetchStats,
-      fetchCardsDue,
-      fetchLibraryCardsAll,
-      refreshAll,
-      retryNow,
-      wakeBackend,
-      setFriendlyError,
-
-      // (optional) expose setters if you ever need them
-      setDecks,
-      setCards,
-      setStats,
-      setLibraryCards,
-    }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, view, deckFilter, librarySortBy, librarySortOrder]
-  );
-
   return {
     // data
     decks,
@@ -311,6 +312,19 @@ export function useFlashcardsData({
     anyLoading,
 
     // functions
-    ...api,
+    fetchDecks,
+    fetchStats,
+    fetchCardsDue,
+    fetchLibraryCardsAll,
+    refreshAll,
+    retryNow,
+    wakeBackend,
+    setFriendlyError,
+
+    // optional setters (can remove later)
+    setDecks,
+    setCards,
+    setStats,
+    setLibraryCards,
   };
 }
