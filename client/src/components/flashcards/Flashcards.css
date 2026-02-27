@@ -331,7 +331,7 @@ body[data-theme="dark"]{ background: #0b1020; }
    ============================ */
 
 .toolbar{
-  padding: 12px;
+  padding: 14px;
   display: grid;
   gap: 12px;
   margin-bottom: 12px;
@@ -343,14 +343,19 @@ body[data-theme="dark"]{ background: #0b1020; }
   gap: 10px;
   align-items: center;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
-.toolbar-row-top{ justify-content: space-between; }
+.toolbar-row-top{
+  justify-content: space-between;
+}
 
 .toolbar-tabs{
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;
 }
 
 .toolbar-actions-right{
@@ -358,29 +363,37 @@ body[data-theme="dark"]{ background: #0b1020; }
   gap: 10px;
   align-items: center;
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .toolbar-row-controls{
-  display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(5, minmax(160px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   align-items: end;
+  min-width: 0;
+}
+
+.ctrl{
+  display: grid;
+  gap: 6px;
+  min-width: 180px;
 }
 
 .ctrl .ctrl-label{
   font-size: 12px;
   color: var(--muted2);
-  margin-bottom: 4px;
+  margin-bottom: 0;
 }
 
-/* allow shrink */
-.toolbar > *{ min-width: 0; }
 .toolbar button{
   min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.toolbar select{
+  min-width: 220px;
+  max-width: 280px;
 }
 
 /* ============================
