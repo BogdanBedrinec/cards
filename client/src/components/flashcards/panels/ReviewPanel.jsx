@@ -19,100 +19,119 @@ export default function ReviewPanel({
 
   if (isCardsLoading) {
     return (
-      <div className="panel" style={{ marginTop: 12 }}>
-        <div style={{ opacity: 0.8 }}>{t.loading}</div>
+      <div className="review-shell">
+        <div className="review-card review-card-empty">
+          <div className="review-empty-text">{t.loading}</div>
+        </div>
       </div>
     );
   }
 
   if (!hasCards) {
     return (
-      <div className="panel" style={{ marginTop: 12 }}>
-        <h3 style={{ marginTop: 0 }}>{t.review}</h3>
-        <p style={{ marginBottom: 0, opacity: 0.85 }}>{t.noCardsToReview || "No cards to review"}</p>
+      <div className="review-shell">
+        <div className="review-card review-card-empty">
+          <h3 className="review-empty-title">{t.review}</h3>
+          <p className="review-empty-text">
+            {t.noCardsToReview || "No cards to review"}
+          </p>
+        </div>
       </div>
     );
   }
 
   const c = currentReviewCard || cards[0];
-
   const deckName = deckLabel?.(c.deck || DEFAULT_DECK_ID) ?? (c.deck || DEFAULT_DECK_ID);
   const nextIn = formatTimeUntil?.(c.nextReview);
 
   return (
-    <div className="panel" style={{ marginTop: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <div style={{ opacity: 0.85 }}>
-          <b>{t.deck || "Deck"}:</b> {deckName}
-          {nextIn ? <span style={{ marginLeft: 10, opacity: 0.8 }}>• {nextIn}</span> : null}
+    <div className="review-shell">
+      <div className="review-card">
+        <div className="review-card-head">
+          <div className="review-deck-wrap">
+            <span className="review-deck-label">{t.deck || "Deck"}:</span>
+            <span className="review-chip">{deckName}</span>
+            {nextIn ? (
+              <span className="review-next-time">• {nextIn}</span>
+            ) : null}
+          </div>
+
+          <div className="review-progress">
+            <span className="review-progress-label">{t.progress || "Progress"}:</span>
+            <span className="review-progress-value">
+              {progressIndex}/{progressTotal || cards.length}
+            </span>
+          </div>
         </div>
 
-        <div style={{ opacity: 0.85 }}>
-          <b>{t.progress || "Progress"}:</b> {progressIndex}/{progressTotal || cards.length}
+        <div
+          className="review-main"
+          role="button"
+          tabIndex={0}
+          onClick={() => setShowAnswer((v) => !v)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setShowAnswer((v) => !v);
+            }
+          }}
+          aria-label="flashcard"
+        >
+          <div className="review-word">
+            {c.word || "—"}
+          </div>
+
+          {!showAnswer ? (
+            <div className="review-hint">
+              {t.tapToShow || "Tap to show answer"}
+            </div>
+          ) : (
+            <div className="review-answer-block">
+              <div className="review-translation">
+                {c.translation || "—"}
+              </div>
+
+              {c.example ? (
+                <div className="review-example">
+                  {c.example}
+                </div>
+              ) : null}
+            </div>
+          )}
         </div>
-      </div>
 
-      <div
-        className="flashcard"
-        role="button"
-        tabIndex={0}
-        onClick={() => setShowAnswer((v) => !v)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") setShowAnswer((v) => !v);
-        }}
-        style={{
-          marginTop: 14,
-          padding: 16,
-          borderRadius: 12,
-          cursor: "pointer",
-          userSelect: "none",
-        }}
-        aria-label="flashcard"
-      >
-        <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>
-          {c.word || "—"}
+        <div className="review-actions">
+          <button
+            type="button"
+            className="review-btn review-btn-good"
+            onClick={() => reviewAnswer(true)}
+            disabled={isReviewing}
+          >
+            {t.know || "Know"} ✅ (1)
+          </button>
+
+          <button
+            type="button"
+            className="review-btn review-btn-bad"
+            onClick={() => reviewAnswer(false)}
+            disabled={isReviewing}
+          >
+            {t.dontKnow || "Don't know"} ❌ (2)
+          </button>
+
+          <button
+            type="button"
+            className="review-btn review-btn-show"
+            onClick={() => setShowAnswer(true)}
+            disabled={showAnswer}
+          >
+            {t.show || "Show"} (Space/Enter)
+          </button>
         </div>
 
-        {showAnswer ? (
-          <>
-            <div style={{ fontSize: 18, marginBottom: 8 }}>{c.translation || "—"}</div>
-            {c.example ? <div style={{ opacity: 0.85 }}>{c.example}</div> : null}
-          </>
-        ) : (
-          <div style={{ opacity: 0.7 }}>{t.tapToShow || "Tap to show answer"}</div>
-        )}
-      </div>
-
-      <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
-        <button
-          type="button"
-          onClick={() => reviewAnswer(true)}
-          disabled={isReviewing}
-          style={{ minWidth: 140 }}
-        >
-          {t.know || "Know"} (1)
-        </button>
-
-        <button
-          type="button"
-          onClick={() => reviewAnswer(false)}
-          disabled={isReviewing}
-          style={{ minWidth: 140 }}
-        >
-          {t.dontKnow || "Don't know"} (2)
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setShowAnswer(true)}
-          disabled={showAnswer}
-        >
-          {t.show || "Show"} (Space/Enter)
-        </button>
-      </div>
-
-      <div style={{ marginTop: 10, opacity: 0.7, fontSize: 13 }}>
-        {t.shortcutsHint || "Shortcuts: Space/Enter = show, 1 = know, 2 = don't know"}
+        <div className="review-shortcuts">
+          {t.shortcutsHint || "Shortcuts: Space/Enter = show, 1 = know, 2 = don't know"}
+        </div>
       </div>
     </div>
   );
