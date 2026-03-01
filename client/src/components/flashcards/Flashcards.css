@@ -1694,3 +1694,90 @@ body[data-theme="dark"] { color-scheme: dark; }
     width: 100%;
   }
 }
+
+/* ============================
+   Library card alignment fix
+   ============================ */
+
+.library-card-item{
+  padding: 14px 18px;
+}
+
+.library-card-main{
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 14px;
+  align-items: center; /* головний фікс */
+  min-height: 110px;   /* менше пустоти */
+}
+
+.library-checkbox-wrap{
+  align-self: flex-start;
+  padding-top: 6px;
+}
+
+.library-card-content{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.library-card-word-row{
+  margin-bottom: 4px;
+}
+
+.library-card-word{
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.library-card-translation{
+  margin-bottom: 4px;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.library-card-example{
+  margin-bottom: 6px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.library-card-meta{
+  gap: 6px 10px;
+}
+
+.library-card-actions{
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* кнопки по центру */
+  gap: 8px;
+  min-width: 140px;
+  align-self: center;
+}
+
+.library-item-btn{
+  width: 100%;
+  min-width: 0;
+  padding: 9px 12px;
+}
+
+@media (max-width: 760px){
+  .library-card-main{
+    grid-template-columns: auto 1fr;
+    align-items: start;
+  }
+
+  .library-card-actions{
+    grid-column: 2;
+    flex-direction: row;
+    min-width: 0;
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .library-item-btn{
+    flex: 1;
+  }
+}
