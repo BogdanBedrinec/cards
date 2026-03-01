@@ -21,7 +21,7 @@ export default function ReviewPanel({
     return (
       <div className="review-shell">
         <div className="review-card review-card-empty">
-          <div className="review-empty-text">{t.loading}</div>
+          <div className="review-empty-text">{t.loading || "Loading..."}</div>
         </div>
       </div>
     );
@@ -31,7 +31,7 @@ export default function ReviewPanel({
     return (
       <div className="review-shell">
         <div className="review-card review-card-empty">
-          <h3 className="review-empty-title">{t.review}</h3>
+          <h3 className="review-empty-title">{t.review || "Review"}</h3>
           <p className="review-empty-text">
             {t.noCardsToReview || "No cards to review"}
           </p>
@@ -51,9 +51,7 @@ export default function ReviewPanel({
           <div className="review-deck-wrap">
             <span className="review-deck-label">{t.deck || "Deck"}:</span>
             <span className="review-chip">{deckName}</span>
-            {nextIn ? (
-              <span className="review-next-time">• {nextIn}</span>
-            ) : null}
+            {nextIn ? <span className="review-next-time">• {nextIn}</span> : null}
           </div>
 
           <div className="review-progress">
@@ -77,9 +75,7 @@ export default function ReviewPanel({
           }}
           aria-label="flashcard"
         >
-          <div className="review-word">
-            {c.word || "—"}
-          </div>
+          <div className="review-word">{c.word || "—"}</div>
 
           {!showAnswer ? (
             <div className="review-hint">
@@ -87,14 +83,10 @@ export default function ReviewPanel({
             </div>
           ) : (
             <div className="review-answer-block">
-              <div className="review-translation">
-                {c.translation || "—"}
-              </div>
+              <div className="review-translation">{c.translation || "—"}</div>
 
               {c.example ? (
-                <div className="review-example">
-                  {c.example}
-                </div>
+                <div className="review-example">{c.example}</div>
               ) : null}
             </div>
           )}
@@ -107,7 +99,7 @@ export default function ReviewPanel({
             onClick={() => reviewAnswer(true)}
             disabled={isReviewing}
           >
-            {t.know || "Know"} ✅ (1)
+            {(t.know || "Know")} (1)
           </button>
 
           <button
@@ -116,7 +108,7 @@ export default function ReviewPanel({
             onClick={() => reviewAnswer(false)}
             disabled={isReviewing}
           >
-            {t.dontKnow || "Don't know"} ❌ (2)
+            {(t.dontKnow || "Don't know")} (2)
           </button>
 
           <button
@@ -125,7 +117,7 @@ export default function ReviewPanel({
             onClick={() => setShowAnswer(true)}
             disabled={showAnswer}
           >
-            {t.show || "Show"} (Space/Enter)
+            {(t.show || "Show")} (Space/Enter)
           </button>
         </div>
 
