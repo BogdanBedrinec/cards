@@ -1558,3 +1558,139 @@ body[data-theme="dark"] { color-scheme: dark; }
     padding: 12px;
   }
 }
+
+/* ============================
+   Library cards polish
+   вставити в КІНЕЦЬ Flashcards.css
+   ============================ */
+
+.library-card-item{
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+.library-card-item:hover{
+  transform: translateY(-1px);
+  border-color: rgba(79,70,229,.18);
+  box-shadow: 0 8px 18px rgba(15,23,42,.04);
+}
+
+.flashcards-container[data-theme="dark"] .library-card-item:hover{
+  border-color: rgba(139,92,246,.22);
+  box-shadow: 0 10px 22px rgba(0,0,0,.16);
+}
+
+.library-card-main{
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 14px;
+  align-items: start;
+}
+
+.library-checkbox-wrap{
+  padding-top: 6px;
+}
+
+.library-card-content{
+  min-width: 0;
+}
+
+.library-card-word-row{
+  margin-bottom: 8px;
+}
+
+.library-card-word{
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.library-card-lang{
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+.library-card-translation{
+  font-size: 16px;
+  line-height: 1.35;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.library-card-example{
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.library-card-meta{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  font-size: 12px;
+  color: var(--muted2);
+}
+
+.library-card-actions{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+  min-width: 132px;
+}
+
+.library-item-btn{
+  min-width: 0;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+@media (max-width: 760px){
+  .library-card-main{
+    grid-template-columns: auto 1fr;
+  }
+
+  .library-card-actions{
+    grid-column: 2;
+    flex-direction: row;
+    min-width: 0;
+    margin-top: 8px;
+  }
+
+  .library-item-btn{
+    width: auto;
+    flex: 1;
+  }
+}
+
+@media (max-width: 520px){
+  .library-card-item{
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .library-card-word{
+    font-size: 17px;
+  }
+
+  .library-card-translation{
+    font-size: 15px;
+  }
+
+  .library-card-actions{
+    flex-direction: column;
+  }
+
+  .library-item-btn{
+    width: 100%;
+  }
+}
