@@ -92,34 +92,34 @@ export default function ReviewPanel({
           )}
         </div>
 
-        <div className="review-actions">
-          <button
-            type="button"
-            className="review-btn review-btn-good"
-            onClick={() => reviewAnswer(true)}
-            disabled={isReviewing}
-          >
-            {(t.know || "Know")} (1)
-          </button>
+<div className="review-actions">
+  <button
+    type="button"
+    className="review-btn review-btn-know"
+    onClick={() => reviewAnswer(true)}
+    disabled={isReviewing}
+  >
+    {t.know || "Know"}
+  </button>
 
-          <button
-            type="button"
-            className="review-btn review-btn-bad"
-            onClick={() => reviewAnswer(false)}
-            disabled={isReviewing}
-          >
-            {(t.dontKnow || "Don't know")} (2)
-          </button>
+  <button
+    type="button"
+    className="review-btn review-btn-dontknow"
+    onClick={() => reviewAnswer(false)}
+    disabled={isReviewing}
+  >
+    {t.dontKnow || "Don't know"}
+  </button>
 
-          <button
-            type="button"
-            className="review-btn review-btn-show"
-            onClick={() => setShowAnswer(true)}
-            disabled={showAnswer}
-          >
-            {(t.show || "Show")} (Space/Enter)
-          </button>
-        </div>
+  <button
+    type="button"
+    className="review-btn review-btn-show"
+    onClick={() => setShowAnswer(true)}
+    disabled={showAnswer}
+  >
+    {t.show || "Show"}
+  </button>
+</div>
 
         <div className="review-shortcuts">
           {t.shortcutsHint || "Shortcuts: Space/Enter = show, 1 = know, 2 = don't know"}

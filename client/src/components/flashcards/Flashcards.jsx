@@ -227,6 +227,14 @@ export default function Flashcards() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, deckFilter]);
 
+  useEffect(() => {
+  if (view !== "review") return;
+  if (sessionTotal > 0) return;
+  if (!Array.isArray(cards) || cards.length === 0) return;
+
+  setSessionTotal(cards.length);
+}, [view, cards, sessionTotal]);
+
   // clear selection when leaving library or changing filter
   useEffect(() => {
     if (view !== "library") {
@@ -355,8 +363,9 @@ export default function Flashcards() {
   });
 
   // -------- progress numbers --------
-  const progressTotal = sessionTotal || cards.length;
-  const progressIndex = Math.min(sessionDone + 1, progressTotal || 0);
+const progressTotal = sessionTotal > 0 ? sessionTotal : cards.length;
+const progressIndex =
+  progressTotal > 0 ? Math.min(sessionDone + 1, progressTotal) : 0;
 
   const isDefaultFrom = String(deckManageFrom || "").trim() === DEFAULT_DECK_ID;
   const isSameRemoveTarget =
