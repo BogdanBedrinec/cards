@@ -120,10 +120,6 @@ export default function ReviewPanel({
     {t.show || "Show"}
   </button>
 </div>
-
-        <div className="review-shortcuts">
-          {t.shortcutsHint || "Shortcuts: Space/Enter = show, 1 = know, 2 = don't know"}
-        </div>
       </div>
     </div>
   );

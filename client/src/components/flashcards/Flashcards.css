@@ -1371,3 +1371,54 @@ body[data-theme="dark"] { color-scheme: dark; }
     padding: 28px 16px !important;
   }
 }
+
+.review-card{
+  width: 100% !important;
+  max-width: 720px !important;
+  min-width: 0 !important;
+  padding: 14px 14px 12px !important;
+  border-radius: 16px !important;
+  box-sizing: border-box !important;
+}
+
+.review-main{
+  width: 100% !important;
+  min-height: 150px !important;
+  padding: 24px 16px !important;
+  border-radius: 14px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+.review-word{
+  font-size: clamp(24px, 4vw, 36px) !important;
+  line-height: 1.08 !important;
+  margin-bottom: 10px !important;
+}
+
+.review-hint{
+  margin-top: 10px !important;
+  font-size: 15px !important;
+}
+
+.review-translation{
+  font-size: clamp(18px, 2.5vw, 24px) !important;
+}
+
+.review-example{
+  margin-top: 8px !important;
+  font-size: 14px !important;
+}
+
+.flashcards-container[data-theme="dark"] .review-card{
+  max-width: 720px !important;
+  padding: 14px 14px 12px !important;
+}
+
+.flashcards-container[data-theme="dark"] .review-main{
+  min-height: 150px !important;
+  padding: 24px 16px !important;
+}
