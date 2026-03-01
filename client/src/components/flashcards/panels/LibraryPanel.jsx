@@ -49,7 +49,6 @@ export default function LibraryPanel({
   return (
     <section className="library-shell">
       <div className="library-panel">
-        {/* Header */}
         <div className="library-header">
           <h3 className="library-title">{t.library || "Library"}</h3>
 
@@ -63,7 +62,6 @@ export default function LibraryPanel({
           </button>
         </div>
 
-        {/* Search row */}
         <div className="library-search-row">
           <input
             className="library-search-input"
@@ -77,7 +75,6 @@ export default function LibraryPanel({
           </div>
         </div>
 
-        {/* Bulk bar */}
         <div className="library-bulk-bar">
           <div className="library-bulk-left">
             <button
@@ -140,7 +137,6 @@ export default function LibraryPanel({
           </div>
         </div>
 
-        {/* Deck manager */}
         <details className="library-deck-manager">
           <summary className="library-deck-summary">
             {t.deckManagerTitle || "Deck manager"}
@@ -219,7 +215,6 @@ export default function LibraryPanel({
           </div>
         </details>
 
-        {/* Cards */}
         <div className="library-cards-list">
           {list.length === 0 ? (
             <div className="library-empty">
