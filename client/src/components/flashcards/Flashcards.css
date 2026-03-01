@@ -945,111 +945,6 @@ body[data-theme="dark"] { color-scheme: dark; }
   }
 }
 
-/* ============================
-   Review card — depth upgrade
-   ============================ */
-
-.flashcards-container[data-theme="dark"] .review-card{
-  background:
-    linear-gradient(180deg, rgba(18, 28, 58, 0.96), rgba(10, 18, 40, 0.98));
-  border: 1px solid rgba(255,255,255,.10);
-  box-shadow:
-    0 18px 40px rgba(0,0,0,.34),
-    0 0 0 1px rgba(255,255,255,.03) inset,
-    0 1px 0 rgba(255,255,255,.04) inset;
-}
-
-.flashcards-container[data-theme="dark"] .review-card-head{
-  margin-bottom: 16px;
-}
-
-.flashcards-container[data-theme="dark"] .review-chip{
-  background: rgba(139,92,246,.18);
-  border: 1px solid rgba(139,92,246,.18);
-  color: #f3f4f6;
-}
-
-.flashcards-container[data-theme="dark"] .review-main{
-  background:
-    radial-gradient(circle at top, rgba(139,92,246,.12), transparent 46%),
-    linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,.01));
-  border: 1px solid rgba(255,255,255,.09);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.04),
-    0 14px 30px rgba(0,0,0,.18);
-  border-radius: 18px;
-  padding: 52px 24px;
-}
-
-.flashcards-container[data-theme="dark"] .review-main:hover{
-  border-color: rgba(139,92,246,.22);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.05),
-    0 18px 34px rgba(0,0,0,.22),
-    0 0 0 1px rgba(139,92,246,.05);
-}
-
-.flashcards-container[data-theme="dark"] .review-word{
-  color: #f8fafc;
-  text-shadow: 0 2px 18px rgba(139,92,246,.12);
-  letter-spacing: -.02em;
-}
-
-.flashcards-container[data-theme="dark"] .review-hint{
-  color: rgba(226,232,240,.72);
-}
-
-.flashcards-container[data-theme="dark"] .review-translation{
-  color: #f8fafc;
-}
-
-.flashcards-container[data-theme="dark"] .review-example{
-  color: rgba(226,232,240,.68);
-}
-
-.flashcards-container[data-theme="dark"] .review-btn{
-  background: rgba(255,255,255,.02);
-  border: 1px solid rgba(255,255,255,.10);
-  color: #f3f4f6;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
-}
-
-.flashcards-container[data-theme="dark"] .review-btn:hover{
-  background: rgba(255,255,255,.05);
-  border-color: rgba(255,255,255,.16);
-}
-
-.flashcards-container[data-theme="dark"] .review-btn-good{
-  border-color: rgba(16,185,129,.20);
-}
-
-.flashcards-container[data-theme="dark"] .review-btn-good:hover{
-  background: rgba(16,185,129,.10);
-  border-color: rgba(16,185,129,.32);
-}
-
-.flashcards-container[data-theme="dark"] .review-btn-bad{
-  border-color: rgba(239,68,68,.18);
-}
-
-.flashcards-container[data-theme="dark"] .review-btn-bad:hover{
-  background: rgba(239,68,68,.10);
-  border-color: rgba(239,68,68,.28);
-}
-
-.flashcards-container[data-theme="dark"] .review-btn-show{
-  border-color: rgba(139,92,246,.20);
-}
-
-.flashcards-container[data-theme="dark"] .review-btn-show:hover{
-  background: rgba(139,92,246,.10);
-  border-color: rgba(139,92,246,.32);
-}
-
-.flashcards-container[data-theme="dark"] .review-shortcuts{
-  color: rgba(226,232,240,.50);
-}
-
 /* =========================================
    OLD DARK REVIEW CARD — restore classic look
    вставити в КІНЕЦЬ Flashcards.css
@@ -1308,121 +1203,6 @@ body[data-theme="dark"] { color-scheme: dark; }
   }
 }
 
-/* =========================================
-   FINAL REVIEW SIZE LOCK
-   ставити В САМИЙ КІНЕЦЬ файлу
-   ========================================= */
-
-.review-shell{
-  margin-top: 12px;
-  display: flex;
-  justify-content: center;
-}
-
-.review-card{
-  width: 100% !important;
-  max-width: 860px !important;
-  min-width: 0 !important;
-  padding: 18px 18px 14px !important;
-  border-radius: 18px !important;
-  box-sizing: border-box !important;
-}
-
-.review-main{
-  width: 100% !important;
-  min-height: 200px !important;
-  padding: 36px 20px !important;
-  border-radius: 16px !important;
-  box-sizing: border-box !important;
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: center !important;
-  align-items: center !important;
-}
-
-.flashcards-container[data-theme="dark"] .review-card{
-  width: 100% !important;
-  max-width: 860px !important;
-  min-width: 0 !important;
-  padding: 18px 18px 14px !important;
-  border-radius: 18px !important;
-  box-sizing: border-box !important;
-}
-
-.flashcards-container[data-theme="dark"] .review-main{
-  width: 100% !important;
-  min-height: 200px !important;
-  padding: 36px 20px !important;
-  border-radius: 16px !important;
-  box-sizing: border-box !important;
-}
-
-@media (max-width: 640px){
-  .review-card,
-  .flashcards-container[data-theme="dark"] .review-card{
-    max-width: 100% !important;
-    padding: 14px 14px 12px !important;
-    border-radius: 16px !important;
-  }
-
-  .review-main,
-  .flashcards-container[data-theme="dark"] .review-main{
-    min-height: 170px !important;
-    padding: 28px 16px !important;
-  }
-}
-
-.review-card{
-  width: 100% !important;
-  max-width: 720px !important;
-  min-width: 0 !important;
-  padding: 14px 14px 12px !important;
-  border-radius: 16px !important;
-  box-sizing: border-box !important;
-}
-
-.review-main{
-  width: 100% !important;
-  min-height: 150px !important;
-  padding: 24px 16px !important;
-  border-radius: 14px !important;
-  box-sizing: border-box !important;
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: center !important;
-  align-items: center !important;
-}
-
-.review-word{
-  font-size: clamp(24px, 4vw, 36px) !important;
-  line-height: 1.08 !important;
-  margin-bottom: 10px !important;
-}
-
-.review-hint{
-  margin-top: 10px !important;
-  font-size: 15px !important;
-}
-
-.review-translation{
-  font-size: clamp(18px, 2.5vw, 24px) !important;
-}
-
-.review-example{
-  margin-top: 8px !important;
-  font-size: 14px !important;
-}
-
-.flashcards-container[data-theme="dark"] .review-card{
-  max-width: 720px !important;
-  padding: 14px 14px 12px !important;
-}
-
-.flashcards-container[data-theme="dark"] .review-main{
-  min-height: 150px !important;
-  padding: 24px 16px !important;
-}
-
 /* ============================
    Library
    ============================ */
@@ -1535,8 +1315,6 @@ body[data-theme="dark"] { color-scheme: dark; }
   background: rgba(239, 68, 68, .06);
 }
 
-/* deck manager */
-
 .library-deck-manager{
   margin-bottom: 14px;
   border-bottom: 1px solid var(--line);
@@ -1600,8 +1378,6 @@ body[data-theme="dark"] { color-scheme: dark; }
   font-size: 12px;
   color: var(--muted);
 }
-
-/* cards list */
 
 .library-cards-list{
   display: grid;
@@ -1700,8 +1476,6 @@ body[data-theme="dark"] { color-scheme: dark; }
   flex-wrap: wrap;
   flex-shrink: 0;
 }
-
-/* responsive */
 
 @media (max-width: 900px){
   .library-bulk-bar{
