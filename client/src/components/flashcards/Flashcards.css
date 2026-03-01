@@ -1307,3 +1307,67 @@ body[data-theme="dark"] { color-scheme: dark; }
     line-height: 1.45;
   }
 }
+
+/* =========================================
+   FINAL REVIEW SIZE LOCK
+   ставити В САМИЙ КІНЕЦЬ файлу
+   ========================================= */
+
+.review-shell{
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+}
+
+.review-card{
+  width: 100% !important;
+  max-width: 860px !important;
+  min-width: 0 !important;
+  padding: 18px 18px 14px !important;
+  border-radius: 18px !important;
+  box-sizing: border-box !important;
+}
+
+.review-main{
+  width: 100% !important;
+  min-height: 200px !important;
+  padding: 36px 20px !important;
+  border-radius: 16px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+.flashcards-container[data-theme="dark"] .review-card{
+  width: 100% !important;
+  max-width: 860px !important;
+  min-width: 0 !important;
+  padding: 18px 18px 14px !important;
+  border-radius: 18px !important;
+  box-sizing: border-box !important;
+}
+
+.flashcards-container[data-theme="dark"] .review-main{
+  width: 100% !important;
+  min-height: 200px !important;
+  padding: 36px 20px !important;
+  border-radius: 16px !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 640px){
+  .review-card,
+  .flashcards-container[data-theme="dark"] .review-card{
+    max-width: 100% !important;
+    padding: 14px 14px 12px !important;
+    border-radius: 16px !important;
+  }
+
+  .review-main,
+  .flashcards-container[data-theme="dark"] .review-main{
+    min-height: 170px !important;
+    padding: 28px 16px !important;
+  }
+}
