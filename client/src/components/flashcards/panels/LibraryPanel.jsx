@@ -47,7 +47,7 @@ export default function LibraryPanel({
   const sel = selectedIds instanceof Set ? selectedIds : new Set();
 
   return (
-    <section className="library-shell">
+    <div className="library-shell">
       <div className="library-panel">
         <div className="library-header">
           <h3 className="library-title">{t.library || "Library"}</h3>
@@ -95,15 +95,15 @@ export default function LibraryPanel({
               {t.clear || "Clear"}
             </button>
 
-            <div className="library-selected">
+            <span className="library-selected">
               {t.selected || "Selected"}: <b>{selectedCount}</b>
-            </div>
+            </span>
           </div>
 
           <div className="library-bulk-right">
-            <label className="library-inline-label">
+            <span className="library-inline-label">
               {t.moveTo || "Move to"}
-            </label>
+            </span>
 
             <select
               className="library-bulk-select"
@@ -139,13 +139,16 @@ export default function LibraryPanel({
 
         <details className="library-deck-manager">
           <summary className="library-deck-summary">
-            {t.deckManagerTitle || "Deck manager"}
+            {t.deckManagerTitle || t.deckManager || "Deck manager"}
           </summary>
 
           <div className="library-deck-manager-inner">
             <div className="library-deck-row">
-              <div className="library-field">
-                <label className="library-field-label">{t.from || "From"}</label>
+              <label className="library-field">
+                <span className="library-field-label">
+                  {t.from || "From"}
+                </span>
+
                 <select
                   value={deckManageFrom}
                   onChange={(e) => setDeckManageFrom(e.target.value)}
@@ -156,19 +159,20 @@ export default function LibraryPanel({
                     </option>
                   ))}
                 </select>
-              </div>
+              </label>
 
-              <div className="library-field library-field-grow">
-                <label className="library-field-label">
+              <label className="library-field library-field-grow">
+                <span className="library-field-label">
                   {t.newName || "New name"}
-                </label>
+                </span>
+
                 <input
                   value={deckManageTo}
                   onChange={(e) => setDeckManageTo(e.target.value)}
                   placeholder={t.newName || "New name"}
                   disabled={isDefaultFrom}
                 />
-              </div>
+              </label>
 
               <button
                 type="button"
@@ -181,10 +185,11 @@ export default function LibraryPanel({
             </div>
 
             <div className="library-deck-row">
-              <div className="library-field">
-                <label className="library-field-label">
+              <label className="library-field">
+                <span className="library-field-label">
                   {t.removeMoveTo || "Remove: move cards to"}
-                </label>
+                </span>
+
                 <select
                   value={deckRemoveTo}
                   onChange={(e) => setDeckRemoveTo(e.target.value)}
@@ -195,7 +200,7 @@ export default function LibraryPanel({
                     </option>
                   ))}
                 </select>
-              </div>
+              </label>
 
               <button
                 type="button"
@@ -203,7 +208,7 @@ export default function LibraryPanel({
                 onClick={removeDeckMoveCards}
                 disabled={deckManageBusy || isDefaultFrom || isSameRemoveTarget}
               >
-                {deckManageBusy ? t.loading : t.removeBtn || "Remove"}
+                {deckManageBusy ? t.loading : t.removeBtn || t.removeDeck || "Remove"}
               </button>
             </div>
 
@@ -215,28 +220,28 @@ export default function LibraryPanel({
           </div>
         </details>
 
-        <div className="library-cards-list">
-          {list.length === 0 ? (
-            <div className="library-empty">
-              {t.noFound || t.noCards || "No cards found."}
-            </div>
-          ) : (
-            list.map((c) => {
+        {list.length === 0 ? (
+          <div className="library-empty">
+            {t.noFound || t.noCards || "No cards"}
+          </div>
+        ) : (
+          <div className="library-cards-list">
+            {list.map((c) => {
               const id = c._id;
               const checked = sel.has(id);
               const nextIn = formatTimeUntil?.(c.nextReview);
 
               return (
-                <article key={id} className="library-card-item">
+                <div key={id} className="library-card-item">
                   <div className="library-card-main">
-                    <label className="library-checkbox-wrap">
+                    <div className="library-checkbox-wrap">
                       <input
                         type="checkbox"
                         checked={checked}
                         onChange={() => toggleSelect(id)}
                         aria-label="select"
                       />
-                    </label>
+                    </div>
 
                     <div className="library-card-content">
                       <div className="library-card-word-row">
@@ -279,19 +284,20 @@ export default function LibraryPanel({
 
                       <div className="library-card-meta">
                         <span>
-                          {t.deck || "Deck"}: <b>{deckLabel?.(c.deck) ?? c.deck}</b>
+                          {t.deckFilter || t.deck || "Deck"}:{" "}
+                          <b>{deckLabel?.(c.deck) ?? c.deck}</b>
                         </span>
 
                         {nextIn ? <span>• {nextIn}</span> : null}
                       </div>
                     </div>
                   </div>
-                </article>
+                </div>
               );
-            })
-          )}
-        </div>
+            })}
+          </div>
+        )}
       </div>
-    </section>
+    </div>
   );
 }
