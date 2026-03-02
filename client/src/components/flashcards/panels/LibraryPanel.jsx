@@ -243,54 +243,54 @@ export default function LibraryPanel({
                       />
                     </div>
 
-                    <div className="library-card-content">
-                      <div className="library-card-word-row">
-                        <div className="library-card-word">
-                          {c.word || "—"}
-                          <span className="library-card-lang">
-                            ({langLabel?.(learningLang)})
-                          </span>
-                        </div>
+<div className="library-card-content">
+  <div className="library-card-word-row">
+    <div className="library-card-word">
+      {c.word || "—"}
+      <span className="library-card-lang">
+        ({langLabel?.(learningLang)})
+      </span>
+    </div>
+  </div>
 
-                        <div className="library-card-actions">
-                          <button
-                            type="button"
-                            className="library-item-btn"
-                            onClick={() => openEdit(c)}
-                          >
-                            {t.edit || "Edit"}
-                          </button>
+  <div className="library-card-translation">
+    {c.translation || "—"}
+    <span className="library-card-lang">
+      ({langLabel?.(nativeLang)})
+    </span>
+  </div>
 
-                          <button
-                            type="button"
-                            className="library-item-btn danger"
-                            onClick={() => handleDeleteCard(id)}
-                          >
-                            {t.delete || "Delete"}
-                          </button>
-                        </div>
-                      </div>
+  {c.example ? (
+    <div className="library-card-example">{c.example}</div>
+  ) : null}
 
-                      <div className="library-card-translation">
-                        {c.translation || "—"}
-                        <span className="library-card-lang">
-                          ({langLabel?.(nativeLang)})
-                        </span>
-                      </div>
+  <div className="library-card-meta">
+    <span>
+      {t.deckFilter || t.deck || "Deck"}:{" "}
+      <b>{deckLabel?.(c.deck) ?? c.deck}</b>
+    </span>
 
-                      {c.example ? (
-                        <div className="library-card-example">{c.example}</div>
-                      ) : null}
+    {nextIn ? <span>• {nextIn}</span> : null}
+  </div>
+</div>
 
-                      <div className="library-card-meta">
-                        <span>
-                          {t.deckFilter || t.deck || "Deck"}:{" "}
-                          <b>{deckLabel?.(c.deck) ?? c.deck}</b>
-                        </span>
+<div className="library-card-actions">
+  <button
+    type="button"
+    className="library-item-btn"
+    onClick={() => openEdit(c)}
+  >
+    {t.edit || "Edit"}
+  </button>
 
-                        {nextIn ? <span>• {nextIn}</span> : null}
-                      </div>
-                    </div>
+  <button
+    type="button"
+    className="library-item-btn danger"
+    onClick={() => handleDeleteCard(id)}
+  >
+    {t.delete || "Delete"}
+  </button>
+</div>
                   </div>
                 </div>
               );
