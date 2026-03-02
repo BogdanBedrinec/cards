@@ -70,9 +70,9 @@ export default function LibraryPanel({
             placeholder={t.searchPlaceholder || t.search || "Search..."}
           />
 
-          <div className="library-found">
-            {t.found || "Found"}: <b>{list.length}</b>
-          </div>
+<div className="library-found">
+  <b>{list.length}</b> {t.cardsLabel || "Karten"}
+</div>
         </div>
 
         <div className="library-bulk-bar">
@@ -245,20 +245,20 @@ export default function LibraryPanel({
 
 <div className="library-card-content">
   <div className="library-card-word-row">
-    <div className="library-card-word">
-      {c.word || "—"}
-      <span className="library-card-lang">
-        ({langLabel?.(learningLang)})
-      </span>
-    </div>
+<div className="library-card-word">
+  {c.word || "—"}{" "}
+  <span className="library-card-lang">
+    ({langLabel?.(learningLang)})
+  </span>
+</div>
   </div>
 
-  <div className="library-card-translation">
-    {c.translation || "—"}
-    <span className="library-card-lang">
-      ({langLabel?.(nativeLang)})
-    </span>
-  </div>
+<div className="library-card-translation">
+  {c.translation || "—"}{" "}
+  <span className="library-card-lang">
+    ({langLabel?.(nativeLang)})
+  </span>
+</div>
 
   {c.example ? (
     <div className="library-card-example">{c.example}</div>
