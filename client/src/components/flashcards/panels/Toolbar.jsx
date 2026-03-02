@@ -87,7 +87,6 @@ export default function Toolbar({
                 <option value="createdAt">{t.sortByCreatedAt}</option>
                 <option value="word">{t.sortByWord}</option>
                 <option value="nextReview">{t.sortByNextReview}</option>
-                <option value="accuracy">{t.sortByAccuracy}</option>
               </select>
             </div>
 
