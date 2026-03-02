@@ -19,7 +19,6 @@ export default function EditCardModal({
   onClose,
   onSave,
 }) {
-  if (!open) return null;
 
   return (
     <div
