@@ -9,9 +9,8 @@ export function useFlashcardsData({
   t,
   view,
   deckFilter,
-  librarySortBy,
-  librarySortOrder,
-  setNotice, // ✅ вместо setMessage
+  librarySort,
+  setNotice,
   handle401,
 }) {
   const cardsReqRef = useRef(0);
@@ -36,6 +35,10 @@ export function useFlashcardsData({
     isBootLoading || isRefreshing || isCardsLoading || isStatsLoading || isDecksLoading;
 
   const clearNotice = useCallback(() => setNotice?.(null), [setNotice]);
+
+  const [sortBy = "createdAt", sortOrder = "desc"] = String(
+    librarySort || "createdAt_desc"
+  ).split("_");
 
   const setFriendlyError = useCallback(
     (prefix, err, serverMsg) => {
@@ -172,8 +175,8 @@ export function useFlashcardsData({
     try {
       const params = new URLSearchParams();
       params.set("mode", "all");
-      params.set("sort", librarySortBy);
-      params.set("order", librarySortOrder);
+      params.set("sort", sortBy);
+      params.set("order", sortOrder);
       if (deckFilter !== "ALL") params.set("deck", deckFilter);
 
       const res = await apiFetch({
@@ -198,7 +201,7 @@ export function useFlashcardsData({
     } finally {
       if (reqId === libraryReqRef.current) setLibraryLoading(false);
     }
-  }, [deckFilter, librarySortBy, librarySortOrder, handle401, setFriendlyError]);
+  }, [deckFilter, sortBy, sortOrder, handle401, setFriendlyError]);
 
   const refreshAll = useCallback(async () => {
     await wakeBackend();
@@ -278,7 +281,7 @@ export function useFlashcardsData({
       statsReqRef.current++;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, deckFilter, librarySortBy, librarySortOrder]);
+  }, [view, deckFilter, librarySort]);
 
   return {
     decks,

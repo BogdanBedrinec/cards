@@ -14,19 +14,16 @@ export default function Toolbar({
   logout,
   showImportExport,
   setShowImportExport,
-  librarySortBy,
-  setLibrarySortBy,
-  librarySortOrder,
-  setLibrarySortOrder,
+  librarySort,
+  setLibrarySort,
 }) {
   return (
     <div className="toolbar">
       <div className="toolbar-row toolbar-row-top">
-
         <button
           className="icon-btn"
           type="button"
-          onClick={() => setShowImportExport(v => !v)}
+          onClick={() => setShowImportExport((v) => !v)}
         >
           {showImportExport ? "✖" : "📦"}
         </button>
@@ -34,7 +31,7 @@ export default function Toolbar({
         <button
           className="icon-btn"
           type="button"
-          onClick={() => setTheme(t0 => (t0 === "dark" ? "light" : "dark"))}
+          onClick={() => setTheme((t0) => (t0 === "dark" ? "light" : "dark"))}
         >
           {theme === "dark" ? "☀️" : "🌙"}
         </button>
@@ -58,7 +55,6 @@ export default function Toolbar({
       </div>
 
       <div className="toolbar-row toolbar-row-controls">
-
         {(view === "review" || view === "library") && (
           <div className="ctrl">
             <div className="ctrl-label">{t.deckFilter}</div>
@@ -77,32 +73,19 @@ export default function Toolbar({
         )}
 
         {view === "library" && (
-          <>
-            <div className="ctrl">
-              <div className="ctrl-label">{t.sort}</div>
-              <select
-                value={librarySortBy}
-                onChange={(e) => setLibrarySortBy(e.target.value)}
-              >
-                <option value="createdAt">{t.sortByCreatedAt}</option>
-                <option value="word">{t.sortByWord}</option>
-                <option value="nextReview">{t.sortByNextReview}</option>
-              </select>
-            </div>
-
-            <div className="ctrl">
-              <div className="ctrl-label">{t.order}</div>
-              <select
-                value={librarySortOrder}
-                onChange={(e) => setLibrarySortOrder(e.target.value)}
-              >
-                <option value="asc">⬆️ {t.az}</option>
-                <option value="desc">⬇️ {t.za}</option>
-              </select>
-            </div>
-          </>
+          <div className="ctrl">
+            <div className="ctrl-label">{t.sort}</div>
+            <select
+              value={librarySort}
+              onChange={(e) => setLibrarySort(e.target.value)}
+            >
+              <option value="createdAt_desc">{t.sortByCreatedAt} ↓</option>
+              <option value="createdAt_asc">{t.sortByCreatedAt} ↑</option>
+              <option value="nextReview_asc">{t.sortByNextReview} ↑</option>
+              <option value="nextReview_desc">{t.sortByNextReview} ↓</option>
+            </select>
+          </div>
         )}
-
       </div>
     </div>
   );

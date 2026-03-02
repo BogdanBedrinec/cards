@@ -59,8 +59,7 @@ export default function Flashcards() {
 
   // library
   const [librarySearch, setLibrarySearch] = useState("");
-  const [librarySortBy, setLibrarySortBy] = useState("createdAt");
-  const [librarySortOrder, setLibrarySortOrder] = useState("desc");
+  const [librarySort, setLibrarySort] = useState("createdAt_desc");
 
   // bulk selection
   const [selectedIds, setSelectedIds] = useState(() => new Set());
@@ -138,14 +137,13 @@ export default function Flashcards() {
     retryNow,
     setFriendlyError,
   } = useFlashcardsData({
-    t,
-    view,
-    deckFilter,
-    librarySortBy,
-    librarySortOrder,
-    setNotice, // ✅ notice pipeline
-    handle401,
-  });
+  t,
+  view,
+  deckFilter,
+  librarySort,
+  setNotice,
+  handle401,
+});
 
   // -------- extraDecks (UI-only drafts) --------
   const [extraDecks, setExtraDecks] = useState([]);
@@ -386,25 +384,23 @@ const progressIndex =
 
       <StatsBar stats={stats} t={t} />
 
-      <Toolbar
-        t={t}
-        theme={theme}
-        setTheme={setTheme}
-        view={view}
-        setView={setView}
-        decks={decks}
-        deckFilter={deckFilter}
-        setDeckFilter={setDeckFilter}
-        deckLabel={deckLabel}
-        retryNow={retryNow}
-        logout={logout}
-        showImportExport={showImportExport}
-        setShowImportExport={setShowImportExport}
-        librarySortBy={librarySortBy}
-        setLibrarySortBy={setLibrarySortBy}
-        librarySortOrder={librarySortOrder}
-        setLibrarySortOrder={setLibrarySortOrder}
-      />
+<Toolbar
+  t={t}
+  theme={theme}
+  setTheme={setTheme}
+  view={view}
+  setView={setView}
+  decks={decks}
+  deckFilter={deckFilter}
+  setDeckFilter={setDeckFilter}
+  deckLabel={deckLabel}
+  retryNow={retryNow}
+  logout={logout}
+  showImportExport={showImportExport}
+  setShowImportExport={setShowImportExport}
+  librarySort={librarySort}
+  setLibrarySort={setLibrarySort}
+/>
 
       {showImportExport && (
         <ImportExportPanel
