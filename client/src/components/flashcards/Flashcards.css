@@ -1381,7 +1381,7 @@ body[data-theme="dark"] { color-scheme: dark; }
 
 .library-cards-list{
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .library-empty{
@@ -1389,12 +1389,13 @@ body[data-theme="dark"] { color-scheme: dark; }
   color: var(--muted);
 }
 
+/* CARD */
 .library-card-item{
   border: 1px solid var(--line);
   border-radius: 16px;
-  padding: 14px;
+  padding: 14px 16px;
   background: var(--surface);
-  transition: border-color .15s ease, box-shadow .15s ease, transform .05s ease;
+  transition: border-color .15s ease, box-shadow .15s ease;
 }
 
 .library-card-item:hover{
@@ -1407,36 +1408,32 @@ body[data-theme="dark"] { color-scheme: dark; }
 }
 
 .library-card-main{
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 14px;
+  align-items: start;
 }
 
 .library-checkbox-wrap{
   display: flex;
   align-items: flex-start;
   padding-top: 4px;
-  flex-shrink: 0;
 }
 
 .library-card-content{
-  flex: 1;
   min-width: 0;
 }
 
 .library-card-word-row{
-  display: flex;
-  gap: 12px;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .library-card-word{
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 800;
   color: var(--text);
   word-break: break-word;
+  line-height: 1.25;
 }
 
 .library-card-lang{
@@ -1452,12 +1449,13 @@ body[data-theme="dark"] { color-scheme: dark; }
   opacity: .92;
   margin-bottom: 6px;
   word-break: break-word;
+  line-height: 1.4;
 }
 
 .library-card-example{
   font-size: 14px;
   color: var(--muted);
-  line-height: 1.45;
+  line-height: 1.5;
   margin-bottom: 8px;
   word-break: break-word;
 }
@@ -1472,11 +1470,17 @@ body[data-theme="dark"] { color-scheme: dark; }
 
 .library-card-actions{
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  flex-wrap: wrap;
-  flex-shrink: 0;
+  align-items: stretch;
+  min-width: 132px;
 }
 
+.library-item-btn{
+  width: 100%;
+}
+
+/* responsive */
 @media (max-width: 900px){
   .library-bulk-bar{
     grid-template-columns: 1fr;
@@ -1496,15 +1500,6 @@ body[data-theme="dark"] { color-scheme: dark; }
     white-space: normal;
   }
 
-  .library-card-word-row{
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .library-card-actions{
-    justify-content: flex-start;
-  }
-
   .library-deck-row{
     flex-direction: column;
     align-items: stretch;
@@ -1518,6 +1513,23 @@ body[data-theme="dark"] { color-scheme: dark; }
 
   .library-action-btn{
     width: 100%;
+  }
+
+  .library-card-main{
+    grid-template-columns: auto 1fr;
+  }
+
+  .library-card-actions{
+    grid-column: 2;
+    flex-direction: row;
+    flex-wrap: wrap;
+    min-width: 0;
+    margin-top: 8px;
+  }
+
+  .library-item-btn{
+    width: auto;
+    min-width: 120px;
   }
 }
 
@@ -1550,15 +1562,18 @@ body[data-theme="dark"] { color-scheme: dark; }
     flex: 1;
   }
 
-  .library-card-main{
-    gap: 10px;
-  }
-
   .library-card-item{
     padding: 12px;
   }
-}
 
+  .library-card-actions{
+    flex-direction: column;
+  }
+
+  .library-item-btn{
+    width: 100%;
+  }
+}
 /* ============================
    Library cards polish
    вставити в КІНЕЦЬ Flashcards.css
