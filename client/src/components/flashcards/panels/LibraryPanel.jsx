@@ -75,67 +75,69 @@ export default function LibraryPanel({
 </div>
         </div>
 
-        <div className="library-bulk-bar">
-          <div className="library-bulk-left">
-            <button
-              type="button"
-              className="library-bulk-btn"
-              onClick={selectAllFiltered}
-              disabled={list.length === 0}
-            >
-              {t.selectAll || "Select all"}
-            </button>
+<div className="library-bulk-bar">
+  <div className="library-bulk-left">
+    <button
+      type="button"
+      className="library-bulk-btn"
+      onClick={selectAllFiltered}
+      disabled={list.length === 0}
+    >
+      {t.selectAll || "Select all"}
+    </button>
 
-            <button
-              type="button"
-              className="library-bulk-btn"
-              onClick={clearSelection}
-              disabled={selectedCount === 0}
-            >
-              {t.clear || "Clear"}
-            </button>
+    <button
+      type="button"
+      className="library-bulk-btn"
+      onClick={clearSelection}
+      disabled={selectedCount === 0}
+    >
+      {t.clear || "Clear"}
+    </button>
 
-            <span className="library-selected">
-              {t.selected || "Selected"}: <b>{selectedCount}</b>
-            </span>
-          </div>
+    <span className="library-selected">
+      {t.selected || "Selected"}: <b>{selectedCount}</b>
+    </span>
+  </div>
 
-          <div className="library-bulk-right">
-            <span className="library-inline-label">
-              {t.moveTo || "Move to"}
-            </span>
+  {selectedCount > 0 && (
+    <div className="library-bulk-right">
+      <span className="library-inline-label">
+        {t.moveTo || "Move to"}
+      </span>
 
-            <select
-              className="library-bulk-select"
-              value={bulkDeck}
-              onChange={(e) => setBulkDeck(e.target.value)}
-            >
-              {decksList.map((d) => (
-                <option key={d} value={d}>
-                  {deckLabel ? deckLabel(d) : d}
-                </option>
-              ))}
-            </select>
+      <select
+        className="library-bulk-select"
+        value={bulkDeck}
+        onChange={(e) => setBulkDeck(e.target.value)}
+      >
+        {decksList.map((d) => (
+          <option key={d} value={d}>
+            {deckLabel ? deckLabel(d) : d}
+          </option>
+        ))}
+      </select>
 
-            <button
-              type="button"
-              className="library-bulk-btn"
-              onClick={bulkMove}
-              disabled={bulkBusy || selectedCount === 0}
-            >
-              {bulkBusy ? t.loading : t.move || "Move"}
-            </button>
+      <button
+        type="button"
+        className="library-bulk-btn"
+        onClick={bulkMove}
+        disabled={bulkBusy}
+      >
+        {bulkBusy ? t.loading : t.move || "Move"}
+      </button>
 
-            <button
-              type="button"
-              className="library-bulk-btn danger"
-              onClick={bulkDelete}
-              disabled={bulkBusy || selectedCount === 0}
-            >
-              {bulkBusy ? t.loading : t.deleteSelected || t.delete || "Delete"}
-            </button>
-          </div>
-        </div>
+      <button
+        type="button"
+        className="library-bulk-btn danger"
+        onClick={bulkDelete}
+        disabled={bulkBusy}
+      >
+        {bulkBusy ? t.loading : t.deleteSelected || t.delete || "Delete"}
+      </button>
+    </div>
+  )}
+</div>
 
         <details className="library-deck-manager">
           <summary className="library-deck-summary">

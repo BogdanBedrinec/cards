@@ -1130,10 +1130,11 @@ body[data-theme="dark"] { color-scheme: dark; }
 }
 
 .library-bulk-bar{
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 12px;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
   padding: 12px 0;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
