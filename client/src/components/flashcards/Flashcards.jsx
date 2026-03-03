@@ -246,37 +246,26 @@ export default function Flashcards() {
   // -------- derived --------
 const filteredLibraryCards = useMemo(() => {
   const q = librarySearch.trim().toLowerCase();
-  let list = Array.isArray(libraryCards) ? [...libraryCards] : [];
+  const list = Array.isArray(libraryCards) ? libraryCards : [];
 
-  if (q) {
-    const starts = [];
-    const includes = [];
+  if (!q) return list;
 
-    for (const c of list) {
-      const w = (c.word || "").toLowerCase().trim();
-      const tr = (c.translation || "").toLowerCase().trim();
+  const starts = [];
+  const includes = [];
 
-      if (w.startsWith(q) || tr.startsWith(q)) {
-        starts.push(c);
-      } else if (w.includes(q) || tr.includes(q)) {
-        includes.push(c);
-      }
+  for (const c of list) {
+    const word = (c.word || "").toLowerCase().trim();
+    const translation = (c.translation || "").toLowerCase().trim();
+
+    if (word.startsWith(q) || translation.startsWith(q)) {
+      starts.push(c);
+    } else if (word.includes(q) || translation.includes(q)) {
+      includes.push(c);
     }
-
-    list = [...starts, ...includes];
   }
 
-  if (librarySort === "word_asc") {
-    list.sort((a, b) =>
-      String(a.word || "").trim().localeCompare(String(b.word || "").trim(), "de", {
-        sensitivity: "base",
-        numeric: true,
-      })
-    );
-  }
-
-  return list;
-}, [libraryCards, librarySearch, librarySort]);
+  return [...starts, ...includes];
+}, [libraryCards, librarySearch]);
 
   const selectedCount = selectedIds.size;
 
