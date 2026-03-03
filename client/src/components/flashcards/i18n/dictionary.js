@@ -81,6 +81,12 @@ const DICT = {
     dueNowLabel: "Fällig jetzt",
 
     delete: "Löschen",
+
+    sortNewest: "Neueste zuerst",
+sortOldest: "Älteste zuerst",
+sortNextReviewSoon: "Nächste Wiederholung",
+sortWordAZ: "Wort (A–Z)",
+cardsLabel: "Karten",
   },
 
   en: {
@@ -164,6 +170,12 @@ const DICT = {
     dueNowLabel: "Due now",
 
     delete: "Delete",
+
+    sortNewest: "Newest first",
+sortOldest: "Oldest first",
+sortNextReviewSoon: "Next review soonest",
+sortWordAZ: "Word (A–Z)",
+cardsLabel: "cards",
   },
 
   uk: {
@@ -247,6 +259,12 @@ const DICT = {
     dueNowLabel: "До повтору зараз",
 
     delete: "Видалити",
+
+    sortNewest: "Нові спочатку",
+sortOldest: "Старі спочатку",
+sortNextReviewSoon: "Найближче повторення",
+sortWordAZ: "Слово (А–Я)",
+cardsLabel: "карток",
   },
 };
 

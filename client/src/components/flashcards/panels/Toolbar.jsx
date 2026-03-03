@@ -75,15 +75,23 @@ export default function Toolbar({
         {view === "library" && (
           <div className="ctrl">
             <div className="ctrl-label">{t.sort}</div>
-            <select
-              value={librarySort}
-              onChange={(e) => setLibrarySort(e.target.value)}
-            >
-              <option value="createdAt_desc">{t.sortByCreatedAt} ↓</option>
-              <option value="createdAt_asc">{t.sortByCreatedAt} ↑</option>
-              <option value="nextReview_asc">{t.sortByNextReview} ↑</option>
-              <option value="nextReview_desc">{t.sortByNextReview} ↓</option>
-            </select>
+<select
+  value={librarySort}
+  onChange={(e) => setLibrarySort(e.target.value)}
+>
+  <option value="createdAt_desc">
+    {t.sortNewest || "Newest first"}
+  </option>
+  <option value="createdAt_asc">
+    {t.sortOldest || "Oldest first"}
+  </option>
+  <option value="nextReview_asc">
+    {t.sortNextReviewSoon || "Next review soonest"}
+  </option>
+  <option value="word_asc">
+    {t.sortWordAZ || "Word (A–Z)"}
+  </option>
+</select>
           </div>
         )}
       </div>

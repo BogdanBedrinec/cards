@@ -244,18 +244,39 @@ export default function Flashcards() {
   }, [view, deckFilter]);
 
   // -------- derived --------
-  const filteredLibraryCards = useMemo(() => {
-    const q = librarySearch.trim().toLowerCase();
-    if (!q) return libraryCards;
+const filteredLibraryCards = useMemo(() => {
+  const q = librarySearch.trim().toLowerCase();
+  let list = Array.isArray(libraryCards) ? [...libraryCards] : [];
 
-    return (Array.isArray(libraryCards) ? libraryCards : []).filter((c) => {
-      const w = (c.word || "").toLowerCase();
-      const tr = (c.translation || "").toLowerCase();
-      const ex = (c.example || "").toLowerCase();
-      const dk = (c.deck || "").toLowerCase();
-      return w.includes(q) || tr.includes(q) || ex.includes(q) || dk.includes(q);
-    });
-  }, [libraryCards, librarySearch]);
+  if (q) {
+    const starts = [];
+    const includes = [];
+
+    for (const c of list) {
+      const w = (c.word || "").toLowerCase().trim();
+      const tr = (c.translation || "").toLowerCase().trim();
+
+      if (w.startsWith(q) || tr.startsWith(q)) {
+        starts.push(c);
+      } else if (w.includes(q) || tr.includes(q)) {
+        includes.push(c);
+      }
+    }
+
+    list = [...starts, ...includes];
+  }
+
+  if (librarySort === "word_asc") {
+    list.sort((a, b) =>
+      String(a.word || "").trim().localeCompare(String(b.word || "").trim(), "de", {
+        sensitivity: "base",
+        numeric: true,
+      })
+    );
+  }
+
+  return list;
+}, [libraryCards, librarySearch, librarySort]);
 
   const selectedCount = selectedIds.size;
 
