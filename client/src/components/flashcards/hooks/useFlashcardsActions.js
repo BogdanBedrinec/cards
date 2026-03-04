@@ -40,13 +40,6 @@ selectedIds,
 clearSelection,
 setBulkBusy,
 
-  // deck manager state
-  deckManageFrom,
-  deckManageTo,
-  setDeckManageTo,
-  setDeckManageBusy,
-  deckLabel,
-
   // edit modal state
   setEditOpen,
   setEditCard,
@@ -348,67 +341,6 @@ setBulkBusy,
     setFriendlyError,
   ]);
 
-  // --- deck rename ---
-  const renameDeck = useCallback(async () => {
-    const from = String(deckManageFrom || "").trim();
-    const to = String(deckManageTo || "").trim();
-    if (!from || !to) return;
-
-    if (from === DEFAULT_DECK_ID) {
-      info(t.cannotRenameDefault);
-      return;
-    }
-
-    const ok = window.confirm(t.confirmRename(deckLabel(from), to));
-    if (!ok) return;
-
-    setDeckManageBusy(true);
-    clearNotice();
-
-    try {
-      const res = await apiFetch({
-        url: `${API}/api/cards/decks/rename`,
-        method: "PUT",
-        body: { from, to },
-        handle401,
-      });
-
-      if (!res.ok) {
-        setFriendlyError("❌ Rename deck", null, res.errorMessage);
-        return;
-      }
-
-      success(`✅ ${res.data?.message || "Deck renamed"}`);
-      setDeckManageTo("");
-
-      if (deckFilter === from) setDeckFilter("ALL");
-
-      await Promise.all([fetchDecks(), fetchLibraryCardsAll(), fetchCardsDue(), fetchStats()]);
-    } catch (err) {
-      setFriendlyError("❌ Rename deck", err);
-    } finally {
-      setDeckManageBusy(false);
-    }
-  }, [
-    deckManageFrom,
-    deckManageTo,
-    t,
-    deckLabel,
-    deckFilter,
-    setDeckFilter,
-    setDeckManageBusy,
-    clearNotice,
-    info,
-    success,
-    setDeckManageTo,
-    fetchDecks,
-    fetchLibraryCardsAll,
-    fetchCardsDue,
-    fetchStats,
-    handle401,
-    setFriendlyError,
-  ]);
-
   // --- delete card ---
   const handleDeleteCard = useCallback(
     async (id) => {
@@ -524,7 +456,6 @@ return {
   handleExport,
   handleImport,
   bulkDelete,
-  renameDeck,
   handleDeleteCard,
   openEdit,
   saveEdit,

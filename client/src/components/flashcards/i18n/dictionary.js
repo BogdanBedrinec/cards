@@ -88,7 +88,6 @@ sortNextReviewSoon: "Nächste Wiederholung",
 sortWordAZ: "Wort (A–Z)",
 cardsLabel: "Karten",
 
-manageThemes: "Themen verwalten",
   },
 
   en: {
@@ -179,7 +178,6 @@ sortNextReviewSoon: "Next review soonest",
 sortWordAZ: "Word (A–Z)",
 cardsLabel: "cards",
 
-manageThemes: "Manage themes",
   },
 
   uk: {
@@ -270,7 +268,6 @@ sortNextReviewSoon: "Найближче повторення",
 sortWordAZ: "Слово (А–Я)",
 cardsLabel: "карток",
 
-manageThemes: "Керування темами",
   },
 };
 

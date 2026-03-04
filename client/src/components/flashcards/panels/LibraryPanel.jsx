@@ -25,15 +25,6 @@ export default function LibraryPanel({
   nativeLang,
   langLabel,
   formatTimeUntil,
-
-  // deck manager
-  deckManageFrom,
-  setDeckManageFrom,
-  deckManageTo,
-  setDeckManageTo,
-  deckManageBusy,
-  renameDeck,
-  isDefaultFrom,
 }) {
   const list = Array.isArray(filteredLibraryCards) ? filteredLibraryCards : [];
   const decksList = Array.isArray(decks) ? decks : [];
@@ -106,63 +97,6 @@ export default function LibraryPanel({
   </div>
 )}
 </div>
-
-{decksList.length > 1 && (
-        <details className="library-deck-manager">
-<summary className="library-deck-summary">
-  {t.manageThemes || "Manage themes"}
-</summary>
-
-          <div className="library-deck-manager-inner">
-            <div className="library-deck-row">
-              <label className="library-field">
-                <span className="library-field-label">
-                  {t.from || "From"}
-                </span>
-
-                <select
-                  value={deckManageFrom}
-                  onChange={(e) => setDeckManageFrom(e.target.value)}
-                >
-                  {decksList.map((d) => (
-                    <option key={d} value={d}>
-                      {deckLabel ? deckLabel(d) : d}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="library-field library-field-grow">
-                <span className="library-field-label">
-                  {t.newName || "New name"}
-                </span>
-
-                <input
-                  value={deckManageTo}
-                  onChange={(e) => setDeckManageTo(e.target.value)}
-                  placeholder={t.newName || "New name"}
-                  disabled={isDefaultFrom}
-                />
-              </label>
-
-              <button
-                type="button"
-                className="library-action-btn"
-                onClick={renameDeck}
-                disabled={deckManageBusy || isDefaultFrom}
-              >
-                {deckManageBusy ? t.loading : t.renameBtn || t.rename || "Rename"}
-              </button>
-            </div>
-
-            {isDefaultFrom ? (
-              <div className="library-deck-hint">
-                {t.cannotEditDefault || "Default deck cannot be renamed or removed."}
-              </div>
-            ) : null}
-          </div>
-        </details>
-)}
 
         {list.length === 0 ? (
           <div className="library-empty">

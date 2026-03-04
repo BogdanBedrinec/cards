@@ -65,11 +65,6 @@ export default function Flashcards() {
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
 
-  // deck manager
-  const [deckManageFrom, setDeckManageFrom] = useState(DEFAULT_DECK_ID);
-  const [deckManageTo, setDeckManageTo] = useState("");
-  const [deckManageBusy, setDeckManageBusy] = useState(false);
-
   // edit modal
   const [editOpen, setEditOpen] = useState(false);
   const [editCard, setEditCard] = useState(null);
@@ -199,7 +194,6 @@ useEffect(() => {
   if (!Array.isArray(decks) || decks.length === 0) return;
 
   if (deckForNewCard && !decks.includes(deckForNewCard)) setDeckForNewCard(DEFAULT_DECK_ID);
-  if (deckManageFrom && !decks.includes(deckManageFrom)) setDeckManageFrom(DEFAULT_DECK_ID);
   // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [decks]);
 
@@ -315,10 +309,6 @@ const filteredLibraryCards = useMemo(() => {
     clearSelection,
     setBulkBusy,
 
-    deckManageFrom,
-    deckManageTo,
-    setDeckManageTo,
-    setDeckManageBusy,
     deckLabel,
 
     setEditOpen,
@@ -368,8 +358,6 @@ const filteredLibraryCards = useMemo(() => {
 const progressTotal = sessionTotal > 0 ? sessionTotal : cards.length;
 const progressIndex =
   progressTotal > 0 ? Math.min(sessionDone + 1, progressTotal) : 0;
-
-  const isDefaultFrom = String(deckManageFrom || "").trim() === DEFAULT_DECK_ID;
 
   // -------- render --------
   return (
@@ -475,14 +463,6 @@ const progressIndex =
             nativeLang={nativeLang}
             langLabel={langLabel}
             formatTimeUntil={formatTimeUntilLocal}
-            // deck manager
-            deckManageFrom={deckManageFrom}
-            setDeckManageFrom={setDeckManageFrom}
-            deckManageTo={deckManageTo}
-            setDeckManageTo={setDeckManageTo}
-            deckManageBusy={deckManageBusy}
-            renameDeck={actions.renameDeck}
-            isDefaultFrom={isDefaultFrom}
           />
         )}
       </ErrorBoundary>
