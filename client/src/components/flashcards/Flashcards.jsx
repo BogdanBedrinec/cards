@@ -318,7 +318,6 @@ const filteredLibraryCards = useMemo(() => {
     deckManageFrom,
     deckManageTo,
     setDeckManageTo,
-    deckRemoveTo,
     setDeckManageBusy,
     deckLabel,
 
