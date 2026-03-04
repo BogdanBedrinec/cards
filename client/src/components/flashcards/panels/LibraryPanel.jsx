@@ -12,9 +12,6 @@ export default function LibraryPanel({
   selectedCount,
   selectAllFiltered,
   clearSelection,
-  bulkDeck,
-  setBulkDeck,
-  bulkMove,
   bulkDelete,
 
   decks,
@@ -100,43 +97,18 @@ export default function LibraryPanel({
     </span>
   </div>
 
-  {selectedCount > 0 && (
-    <div className="library-bulk-right">
-      <span className="library-inline-label">
-        {t.moveTo || "Move to"}
-      </span>
-
-      <select
-        className="library-bulk-select"
-        value={bulkDeck}
-        onChange={(e) => setBulkDeck(e.target.value)}
-      >
-        {decksList.map((d) => (
-          <option key={d} value={d}>
-            {deckLabel ? deckLabel(d) : d}
-          </option>
-        ))}
-      </select>
-
-      <button
-        type="button"
-        className="library-bulk-btn"
-        onClick={bulkMove}
-        disabled={bulkBusy}
-      >
-        {bulkBusy ? t.loading : t.move || "Move"}
-      </button>
-
-      <button
-        type="button"
-        className="library-bulk-btn danger"
-        onClick={bulkDelete}
-        disabled={bulkBusy}
-      >
-        {bulkBusy ? t.loading : t.deleteSelected || t.delete || "Delete"}
-      </button>
-    </div>
-  )}
+{selectedCount > 0 && (
+  <div className="library-bulk-right">
+    <button
+      type="button"
+      className="library-bulk-btn danger"
+      onClick={bulkDelete}
+      disabled={bulkBusy}
+    >
+      {bulkBusy ? t.loading : t.deleteSelected || t.delete || "Delete"}
+    </button>
+  </div>
+)}
 </div>
 
 {decksList.length > 1 && (

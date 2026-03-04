@@ -36,11 +36,9 @@ export function useFlashcardsActions({
   setSessionDone,
   setSessionTotal,
 
-  // library state
-  selectedIds,
-  clearSelection,
-  bulkDeck,
-  setBulkBusy,
+selectedIds,
+clearSelection,
+setBulkBusy,
 
   // deck manager state
   deckManageFrom,
@@ -300,52 +298,6 @@ export function useFlashcardsActions({
     view,
     fetchLibraryCardsAll,
     setShowImportExport,
-    handle401,
-    setFriendlyError,
-  ]);
-
-  // --- bulk move ---
-  const bulkMove = useCallback(async () => {
-    const ids = Array.from(selectedIds);
-    if (ids.length === 0) return;
-
-    const deck = String(bulkDeck || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID;
-
-    setBulkBusy(true);
-    clearNotice();
-
-    try {
-      const res = await apiFetch({
-        url: `${API}/api/cards/bulk-move`,
-        method: "POST",
-        body: { ids, deck },
-        handle401,
-      });
-
-      if (!res.ok) {
-        setFriendlyError("❌ Bulk move", null, res.errorMessage);
-        return;
-      }
-
-      success(`✅ ${res.data?.message || "Bulk move ok"}`);
-      clearSelection();
-      await Promise.all([fetchLibraryCardsAll(), fetchDecks(), fetchCardsDue(), fetchStats()]);
-    } catch (err) {
-      setFriendlyError("❌ Bulk move", err);
-    } finally {
-      setBulkBusy(false);
-    }
-  }, [
-    selectedIds,
-    bulkDeck,
-    setBulkBusy,
-    clearNotice,
-    success,
-    clearSelection,
-    fetchLibraryCardsAll,
-    fetchDecks,
-    fetchCardsDue,
-    fetchStats,
     handle401,
     setFriendlyError,
   ]);
@@ -627,17 +579,16 @@ export function useFlashcardsActions({
     setFriendlyError,
   ]);
 
-  return {
-    handleAddCard,
-    reviewAnswer,
-    handleExport,
-    handleImport,
-    bulkMove,
-    bulkDelete,
-    renameDeck,
-    removeDeckMoveCards,
-    handleDeleteCard,
-    openEdit,
-    saveEdit,
-  };
+return {
+  handleAddCard,
+  reviewAnswer,
+  handleExport,
+  handleImport,
+  bulkDelete,
+  renameDeck,
+  removeDeckMoveCards,
+  handleDeleteCard,
+  openEdit,
+  saveEdit,
+};
 }

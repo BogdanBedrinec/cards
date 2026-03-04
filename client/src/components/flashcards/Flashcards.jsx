@@ -63,7 +63,6 @@ export default function Flashcards() {
 
   // bulk selection
   const [selectedIds, setSelectedIds] = useState(() => new Set());
-  const [bulkDeck, setBulkDeck] = useState(DEFAULT_DECK_ID);
   const [bulkBusy, setBulkBusy] = useState(false);
 
   // deck manager
@@ -197,15 +196,14 @@ export default function Flashcards() {
   }, [interfaceLang]);
 
   // ✅ if decks change — validate selections
-  useEffect(() => {
-    if (!Array.isArray(decks) || decks.length === 0) return;
+useEffect(() => {
+  if (!Array.isArray(decks) || decks.length === 0) return;
 
-    if (deckForNewCard && !decks.includes(deckForNewCard)) setDeckForNewCard(DEFAULT_DECK_ID);
-    if (bulkDeck && !decks.includes(bulkDeck)) setBulkDeck(DEFAULT_DECK_ID);
-    if (deckManageFrom && !decks.includes(deckManageFrom)) setDeckManageFrom(DEFAULT_DECK_ID);
-    if (deckRemoveTo && !decks.includes(deckRemoveTo)) setDeckRemoveTo(DEFAULT_DECK_ID);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [decks]);
+  if (deckForNewCard && !decks.includes(deckForNewCard)) setDeckForNewCard(DEFAULT_DECK_ID);
+  if (deckManageFrom && !decks.includes(deckManageFrom)) setDeckManageFrom(DEFAULT_DECK_ID);
+  if (deckRemoveTo && !decks.includes(deckRemoveTo)) setDeckRemoveTo(DEFAULT_DECK_ID);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [decks]);
 
   // ✅ load profile langs once (no fetch in UI)
   useProfileLangsOnce({
@@ -317,7 +315,6 @@ const filteredLibraryCards = useMemo(() => {
 
     selectedIds,
     clearSelection,
-    bulkDeck,
     setBulkBusy,
 
     deckManageFrom,
@@ -472,9 +469,6 @@ const progressIndex =
             selectedCount={selectedCount}
             selectAllFiltered={selectAllFiltered}
             clearSelection={clearSelection}
-            bulkDeck={bulkDeck}
-            setBulkDeck={setBulkDeck}
-            bulkMove={actions.bulkMove}
             bulkDelete={actions.bulkDelete}
             decks={decks}
             deckLabel={deckLabel}
