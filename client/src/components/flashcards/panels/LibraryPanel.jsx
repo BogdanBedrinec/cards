@@ -31,13 +31,9 @@ export default function LibraryPanel({
   setDeckManageFrom,
   deckManageTo,
   setDeckManageTo,
-  deckRemoveTo,
-  setDeckRemoveTo,
   deckManageBusy,
   renameDeck,
-  removeDeckMoveCards,
   isDefaultFrom,
-  isSameRemoveTarget,
 }) {
   const list = Array.isArray(filteredLibraryCards) ? filteredLibraryCards : [];
   const decksList = Array.isArray(decks) ? decks : [];
@@ -156,34 +152,6 @@ export default function LibraryPanel({
                 disabled={deckManageBusy || isDefaultFrom}
               >
                 {deckManageBusy ? t.loading : t.renameBtn || t.rename || "Rename"}
-              </button>
-            </div>
-
-            <div className="library-deck-row">
-              <label className="library-field">
-                <span className="library-field-label">
-                  {t.removeMoveTo || "Remove: move cards to"}
-                </span>
-
-                <select
-                  value={deckRemoveTo}
-                  onChange={(e) => setDeckRemoveTo(e.target.value)}
-                >
-                  {decksList.map((d) => (
-                    <option key={d} value={d}>
-                      {deckLabel ? deckLabel(d) : d}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <button
-                type="button"
-                className="library-action-btn danger"
-                onClick={removeDeckMoveCards}
-                disabled={deckManageBusy || isDefaultFrom || isSameRemoveTarget}
-              >
-                {deckManageBusy ? t.loading : t.removeBtn || t.removeDeck || "Remove"}
               </button>
             </div>
 

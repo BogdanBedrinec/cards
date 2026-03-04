@@ -44,7 +44,6 @@ setBulkBusy,
   deckManageFrom,
   deckManageTo,
   setDeckManageTo,
-  deckRemoveTo,
   setDeckManageBusy,
   deckLabel,
 
@@ -410,66 +409,6 @@ setBulkBusy,
     setFriendlyError,
   ]);
 
-  // --- remove deck (move cards) ---
-  const removeDeckMoveCards = useCallback(async () => {
-    const name = String(deckManageFrom || "").trim();
-    const to = String(deckRemoveTo || DEFAULT_DECK_ID).trim() || DEFAULT_DECK_ID;
-    if (!name) return;
-
-    if (name === DEFAULT_DECK_ID) {
-      info(t.cannotDeleteDefault);
-      return;
-    }
-
-    const ok = window.confirm(t.confirmRemove(deckLabel(name), deckLabel(to)));
-    if (!ok) return;
-
-    setDeckManageBusy(true);
-    clearNotice();
-
-    try {
-      const url = `${API}/api/cards/decks/${encodeURIComponent(name)}?mode=move&to=${encodeURIComponent(to)}`;
-
-      const res = await apiFetch({
-        url,
-        method: "DELETE",
-        handle401,
-      });
-
-      if (!res.ok) {
-        setFriendlyError("❌ Remove deck", null, res.errorMessage);
-        return;
-      }
-
-      success(`✅ ${res.data?.message || "Deck removed"}`);
-
-      if (deckFilter === name) setDeckFilter("ALL");
-
-      await Promise.all([fetchDecks(), fetchLibraryCardsAll(), fetchCardsDue(), fetchStats()]);
-    } catch (err) {
-      setFriendlyError("❌ Remove deck", err);
-    } finally {
-      setDeckManageBusy(false);
-    }
-  }, [
-    deckManageFrom,
-    deckRemoveTo,
-    t,
-    deckLabel,
-    deckFilter,
-    setDeckFilter,
-    setDeckManageBusy,
-    clearNotice,
-    info,
-    success,
-    fetchDecks,
-    fetchLibraryCardsAll,
-    fetchCardsDue,
-    fetchStats,
-    handle401,
-    setFriendlyError,
-  ]);
-
   // --- delete card ---
   const handleDeleteCard = useCallback(
     async (id) => {
@@ -586,7 +525,6 @@ return {
   handleImport,
   bulkDelete,
   renameDeck,
-  removeDeckMoveCards,
   handleDeleteCard,
   openEdit,
   saveEdit,

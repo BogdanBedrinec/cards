@@ -68,7 +68,6 @@ export default function Flashcards() {
   // deck manager
   const [deckManageFrom, setDeckManageFrom] = useState(DEFAULT_DECK_ID);
   const [deckManageTo, setDeckManageTo] = useState("");
-  const [deckRemoveTo, setDeckRemoveTo] = useState(DEFAULT_DECK_ID);
   const [deckManageBusy, setDeckManageBusy] = useState(false);
 
   // edit modal
@@ -201,7 +200,6 @@ useEffect(() => {
 
   if (deckForNewCard && !decks.includes(deckForNewCard)) setDeckForNewCard(DEFAULT_DECK_ID);
   if (deckManageFrom && !decks.includes(deckManageFrom)) setDeckManageFrom(DEFAULT_DECK_ID);
-  if (deckRemoveTo && !decks.includes(deckRemoveTo)) setDeckRemoveTo(DEFAULT_DECK_ID);
   // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [decks]);
 
@@ -373,8 +371,6 @@ const progressIndex =
   progressTotal > 0 ? Math.min(sessionDone + 1, progressTotal) : 0;
 
   const isDefaultFrom = String(deckManageFrom || "").trim() === DEFAULT_DECK_ID;
-  const isSameRemoveTarget =
-    String(deckRemoveTo || "").trim() === String(deckManageFrom || "").trim();
 
   // -------- render --------
   return (
@@ -485,13 +481,9 @@ const progressIndex =
             setDeckManageFrom={setDeckManageFrom}
             deckManageTo={deckManageTo}
             setDeckManageTo={setDeckManageTo}
-            deckRemoveTo={deckRemoveTo}
-            setDeckRemoveTo={setDeckRemoveTo}
             deckManageBusy={deckManageBusy}
             renameDeck={actions.renameDeck}
-            removeDeckMoveCards={actions.removeDeckMoveCards}
             isDefaultFrom={isDefaultFrom}
-            isSameRemoveTarget={isSameRemoveTarget}
           />
         )}
       </ErrorBoundary>
