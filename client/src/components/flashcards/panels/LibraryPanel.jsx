@@ -139,10 +139,11 @@ export default function LibraryPanel({
   )}
 </div>
 
+{decksList.length > 1 && (
         <details className="library-deck-manager">
-          <summary className="library-deck-summary">
-            {t.deckManagerTitle || t.deckManager || "Deck manager"}
-          </summary>
+<summary className="library-deck-summary">
+  {t.manageThemes || "Manage themes"}
+</summary>
 
           <div className="library-deck-manager-inner">
             <div className="library-deck-row">
@@ -221,6 +222,7 @@ export default function LibraryPanel({
             ) : null}
           </div>
         </details>
+)}
 
         {list.length === 0 ? (
           <div className="library-empty">

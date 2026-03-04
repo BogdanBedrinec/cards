@@ -1197,10 +1197,14 @@ body[data-theme="dark"] { color-scheme: dark; }
 
 .library-deck-summary{
   cursor: pointer;
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
   list-style: none;
+}
+
+.library-deck-summary::before{
+  color: var(--muted2);
 }
 
 .library-deck-summary::-webkit-details-marker{
