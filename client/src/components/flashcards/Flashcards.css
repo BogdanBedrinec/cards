@@ -665,7 +665,8 @@ button:disabled{ opacity: .55; cursor: not-allowed; }
 .add-card-panel{
   margin-top: 12px;
   padding: 22px;
-  max-width: 920px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .add-card-title{
@@ -673,11 +674,13 @@ button:disabled{ opacity: .55; cursor: not-allowed; }
   font-size: 22px;
   font-weight: 900;
   color: var(--text);
+  padding-left: 8px;
 }
 
 .add-card-form{
   display: grid;
   gap: 16px;
+  padding-inline: 8px;
 }
 
 .add-card-form textarea{
@@ -694,7 +697,7 @@ button:disabled{ opacity: .55; cursor: not-allowed; }
 .add-card-section{
   display: grid;
   gap: 12px;
-  padding: 16px;
+  padding: 18px;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: rgba(79,70,229,.03);
@@ -715,6 +718,7 @@ button:disabled{ opacity: .55; cursor: not-allowed; }
   color: var(--muted2);
   line-height: 1.2;
   margin-bottom: 2px;
+  padding-left: 2px;
 }
 
 .add-note{
@@ -740,6 +744,12 @@ button:disabled{ opacity: .55; cursor: not-allowed; }
   border-radius: 12px;
   font-weight: 700;
   align-self: stretch;
+  min-width: 132px;
+}
+
+.add-secondary-btn:hover{
+  background: var(--btn-hover-bg);
+  border-color: var(--btn-hover-border);
 }
 
 .add-primary-btn{
