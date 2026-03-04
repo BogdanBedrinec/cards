@@ -664,12 +664,13 @@ button:disabled{ opacity: .55; cursor: not-allowed; }
 
 .add-card-panel{
   margin-top: 12px;
-  padding: 18px;
+  padding: 22px;
+  max-width: 980px;
 }
 
 .add-card-title{
   margin: 0 0 16px 0;
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 900;
   color: var(--text);
 }
@@ -688,8 +689,14 @@ button:disabled{ opacity: .55; cursor: not-allowed; }
 .add-card-section{
   display: grid;
   gap: 14px;
-  padding-top: 6px;
-  border-top: 1px solid var(--line);
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(79,70,229,.03);
+}
+
+.flashcards-container[data-theme="dark"] .add-card-section{
+  background: rgba(139,92,246,.06);
 }
 
 .add-field{
@@ -721,13 +728,18 @@ button:disabled{ opacity: .55; cursor: not-allowed; }
 
 .add-secondary-btn{
   white-space: nowrap;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-weight: 700;
 }
 
 .add-primary-btn{
   width: 100%;
-  min-height: 48px;
-  font-size: 15px;
+  min-height: 52px;
+  font-size: 16px;
   font-weight: 800;
+  border-radius: 14px;
 }
 
 @media (max-width: 760px){

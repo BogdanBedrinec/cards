@@ -46,7 +46,7 @@ export default function AddCardPanel({
         <div className="add-field">
           <label className="add-label">{t.example || "Example"}</label>
           <textarea
-            rows={4}
+            rows={3}
             value={example}
             onChange={(e) => setExample(e.target.value)}
             placeholder={t.exampleHint || "Example sentence..."}
@@ -73,11 +73,11 @@ export default function AddCardPanel({
 
           <div className="add-new-deck-row">
             <div className="add-field add-field-grow">
-              <label className="add-label">{t.newDeck || "New deck name"}</label>
+<label className="add-label">{t.newDeck || "New deck"}</label>
               <input
                 value={newDeckName}
                 onChange={(e) => setNewDeckName(e.target.value)}
-                placeholder={t.newDeck || "New deck name"}
+                placeholder={t.newDeckPlaceholder || "Type a new deck name..."}
               />
             </div>
 
