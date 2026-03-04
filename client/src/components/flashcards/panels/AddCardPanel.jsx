@@ -19,60 +19,80 @@ export default function AddCardPanel({
   DEFAULT_DECK_ID,
 }) {
   return (
-    <div className="panel" style={{ marginTop: 12 }}>
-      <h3 style={{ marginTop: 0 }}>{t.addCard || "Add card"}</h3>
+    <div className="panel add-card-panel">
+      <h3 className="add-card-title">{t.addCard || "Add card"}</h3>
 
-      <form onSubmit={handleAddCard} style={{ display: "grid", gap: 10 }}>
-        <div style={{ display: "grid", gap: 6 }}>
-          <label style={{ fontSize: 13, opacity: 0.85 }}>{t.word || "Word"}</label>
-          <input value={word} onChange={(e) => setWord(e.target.value)} placeholder="DE..." />
+      <form onSubmit={handleAddCard} className="add-card-form">
+        <div className="add-card-grid">
+          <div className="add-field">
+            <label className="add-label">{t.word || "Word"}</label>
+            <input
+              value={word}
+              onChange={(e) => setWord(e.target.value)}
+              placeholder="DE..."
+            />
+          </div>
+
+          <div className="add-field">
+            <label className="add-label">{t.translation || "Translation"}</label>
+            <input
+              value={translation}
+              onChange={(e) => setTranslation(e.target.value)}
+              placeholder="UA..."
+            />
+          </div>
         </div>
 
-        <div style={{ display: "grid", gap: 6 }}>
-          <label style={{ fontSize: 13, opacity: 0.85 }}>{t.translation || "Translation"}</label>
-          <input
-            value={translation}
-            onChange={(e) => setTranslation(e.target.value)}
-            placeholder="UA..."
-          />
-        </div>
-
-        <div style={{ display: "grid", gap: 6 }}>
-          <label style={{ fontSize: 13, opacity: 0.85 }}>{t.example || "Example"}</label>
+        <div className="add-field">
+          <label className="add-label">{t.example || "Example"}</label>
           <textarea
-            rows={3}
+            rows={4}
             value={example}
             onChange={(e) => setExample(e.target.value)}
             placeholder={t.exampleHint || "Example sentence..."}
           />
         </div>
 
-        <div style={{ display: "grid", gap: 6 }}>
-          <label style={{ fontSize: 13, opacity: 0.85 }}>{t.deck || "Deck"}</label>
-          <select value={deckForNewCard} onChange={(e) => setDeckForNewCard(e.target.value)}>
-            {(decks || []).map((d) => (
-              <option key={d} value={d}>
-                {deckLabel ? deckLabel(d) : d}
-              </option>
-            ))}
-          </select>
-          <div style={{ fontSize: 12, opacity: 0.7 }}>
-            {t.defaultDeckNote || `Default: ${deckLabel?.(DEFAULT_DECK_ID) ?? DEFAULT_DECK_ID}`}
+        <div className="add-card-section">
+          <div className="add-field">
+            <label className="add-label">{t.deck || "Deck"}</label>
+            <select
+              value={deckForNewCard}
+              onChange={(e) => setDeckForNewCard(e.target.value)}
+            >
+              {(decks || []).map((d) => (
+                <option key={d} value={d}>
+                  {deckLabel ? deckLabel(d) : d}
+                </option>
+              ))}
+            </select>
+            <div className="add-note">
+              {t.defaultDeckNote || `Default: ${deckLabel?.(DEFAULT_DECK_ID) ?? DEFAULT_DECK_ID}`}
+            </div>
+          </div>
+
+          <div className="add-new-deck-row">
+            <div className="add-field add-field-grow">
+              <label className="add-label">{t.newDeck || "New deck name"}</label>
+              <input
+                value={newDeckName}
+                onChange={(e) => setNewDeckName(e.target.value)}
+                placeholder={t.newDeck || "New deck name"}
+              />
+            </div>
+
+            <button
+              type="button"
+              className="add-secondary-btn"
+              onClick={handleCreateDeckLocal}
+              disabled={!newDeckName.trim()}
+            >
+              {t.createDeck || "Create deck"}
+            </button>
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          <input
-            value={newDeckName}
-            onChange={(e) => setNewDeckName(e.target.value)}
-            placeholder={t.newDeck || "New deck name"}
-          />
-          <button type="button" onClick={handleCreateDeckLocal}>
-            {t.createDeck || "Create deck (local)"}
-          </button>
-        </div>
-
-        <button type="submit" style={{ marginTop: 6 }}>
+        <button type="submit" className="add-primary-btn">
           {t.add || "Add"}
         </button>
       </form>
