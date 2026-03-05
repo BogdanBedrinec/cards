@@ -55,23 +55,6 @@ export default function Toolbar({
       </div>
 
       <div className="toolbar-row toolbar-row-controls">
-        {(view === "review" || view === "library") && (
-          <div className="ctrl">
-            <div className="ctrl-label">{t.deckFilter}</div>
-            <select
-              value={deckFilter}
-              onChange={(e) => setDeckFilter(e.target.value)}
-            >
-              <option value="ALL">{t.allDecks}</option>
-              {decks.map((d) => (
-                <option key={d} value={d}>
-                  {deckLabel(d)}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
         {view === "library" && (
           <div className="ctrl">
             <div className="ctrl-label">{t.sort}</div>

@@ -158,6 +158,11 @@ export default function Flashcards() {
   }, [serverDecks, extraDecks]);
 
   useEffect(() => {
+  if (deckFilter !== "ALL") setDeckFilter("ALL");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
+
+  useEffect(() => {
     if (!Array.isArray(serverDecks) || extraDecks.length === 0) return;
     setExtraDecks((prev) => prev.filter((d) => !serverDecks.includes(d)));
   }, [serverDecks, extraDecks.length]);
