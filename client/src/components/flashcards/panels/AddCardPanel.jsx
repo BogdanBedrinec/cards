@@ -87,7 +87,7 @@ export default function AddCardPanel({
               onClick={handleCreateDeckLocal}
               disabled={!newDeckName.trim()}
             >
-              {t.createDeck || "Create deck"}
+              {t.createDeck}
             </button>
           </div>
         </div>

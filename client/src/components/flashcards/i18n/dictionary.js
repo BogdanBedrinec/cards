@@ -87,7 +87,7 @@ sortOldest: "Älteste zuerst",
 sortNextReviewSoon: "Nächste Wiederholung",
 sortWordAZ: "Wort (A–Z)",
 cardsLabel: "Karten",
-
+createDeck: "Thema erstellen",
   },
 
   en: {
@@ -178,6 +178,8 @@ sortNextReviewSoon: "Next review soonest",
 sortWordAZ: "Word (A–Z)",
 cardsLabel: "cards",
 
+createDeck: "Create theme",
+
   },
 
   uk: {
@@ -267,6 +269,8 @@ sortOldest: "Старі спочатку",
 sortNextReviewSoon: "Найближче повторення",
 sortWordAZ: "Слово (А–Я)",
 cardsLabel: "карток",
+
+createDeck: "Створити тему",
 
   },
 };

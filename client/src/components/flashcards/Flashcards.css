@@ -730,7 +730,7 @@ button:disabled{ opacity: .55; cursor: not-allowed; }
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 12px;
-  align-items: stretch;
+  align-items: end;
 }
 
 .add-field-grow{
@@ -739,17 +739,20 @@ button:disabled{ opacity: .55; cursor: not-allowed; }
 
 .add-secondary-btn{
   white-space: nowrap;
-  min-height: 46px;
-  padding: 0 18px;
+  height: 42px;        
+  padding: 0 14px;     
   border-radius: 12px;
-  font-weight: 700;
-  align-self: stretch;
-  min-width: 132px;
+  font-weight: 800;
+  align-self: end;     
+  min-width: 0;
 }
 
-.add-secondary-btn:hover{
-  background: var(--btn-hover-bg);
-  border-color: var(--btn-hover-border);
+@media (max-width: 760px){
+  .add-secondary-btn{
+    width: 100%;
+    height: 46px;
+    align-self: stretch;
+  }
 }
 
 .add-primary-btn{
