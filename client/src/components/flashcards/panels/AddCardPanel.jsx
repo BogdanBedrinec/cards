@@ -20,12 +20,12 @@ export default function AddCardPanel({
 }) {
   return (
     <div className="panel add-card-panel">
-      <h3 className="add-card-title">{t.addCard || "Add card"}</h3>
+      <h3 className="add-card-title">{t.addCard}</h3>
 
       <form onSubmit={handleAddCard} className="add-card-form">
         <div className="add-card-grid">
           <div className="add-field">
-            <label className="add-label">{t.word || "Word"}</label>
+            <label className="add-label">{t.word}</label>
             <input
               value={word}
               onChange={(e) => setWord(e.target.value)}
@@ -34,7 +34,7 @@ export default function AddCardPanel({
           </div>
 
           <div className="add-field">
-            <label className="add-label">{t.translation || "Translation"}</label>
+            <label className="add-label">{t.translation}</label>
             <input
               value={translation}
               onChange={(e) => setTranslation(e.target.value)}
@@ -44,18 +44,18 @@ export default function AddCardPanel({
         </div>
 
         <div className="add-field">
-          <label className="add-label">{t.example || "Example"}</label>
+          <label className="add-label">{t.example}</label>
           <textarea
             rows={3}
             value={example}
             onChange={(e) => setExample(e.target.value)}
-            placeholder={t.exampleHint || "Example sentence..."}
+            placeholder={t.exampleHint}
           />
         </div>
 
         <div className="add-card-section">
           <div className="add-field">
-            <label className="add-label">{t.deck || "Deck"}</label>
+            <label className="add-label">{t.deck}</label>
             <select
               value={deckForNewCard}
               onChange={(e) => setDeckForNewCard(e.target.value)}
@@ -67,17 +67,17 @@ export default function AddCardPanel({
               ))}
             </select>
             <div className="add-note">
-              {t.defaultDeckNote || `Default: ${deckLabel?.(DEFAULT_DECK_ID) ?? DEFAULT_DECK_ID}`}
+              {t.defaultDeckNote?.replace("{default}", deckLabel?.(DEFAULT_DECK_ID) ?? DEFAULT_DECK_ID)}
             </div>
           </div>
 
           <div className="add-new-deck-row">
             <div className="add-field add-field-grow">
-<label className="add-label">{t.newDeck || "New deck"}</label>
+<label className="add-label">{t.newDeck}</label>
               <input
                 value={newDeckName}
                 onChange={(e) => setNewDeckName(e.target.value)}
-                placeholder={t.newDeckPlaceholder || "Type a new deck name..."}
+                placeholder={t.newDeckPlaceholder}
               />
             </div>
 
@@ -93,7 +93,7 @@ export default function AddCardPanel({
         </div>
 
         <button type="submit" className="add-primary-btn">
-          {t.add || "Add"}
+          {t.add}
         </button>
       </form>
     </div>

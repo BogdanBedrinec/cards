@@ -88,6 +88,18 @@ sortNextReviewSoon: "Nächste Wiederholung",
 sortWordAZ: "Wort (A–Z)",
 cardsLabel: "Karten",
 createDeck: "Thema erstellen",
+
+addCard: "Karte hinzufügen",
+word: "Wort",
+translation: "Übersetzung",
+example: "Beispiel",
+exampleHint: "Beispielsatz...",
+deck: "Thema",
+defaultDeckNote: "Standard: {default}",
+newDeck: "Neues Thema",
+newDeckPlaceholder: "Name für neues Thema...",
+createDeck: "Thema erstellen",
+add: "Hinzufügen",
   },
 
   en: {
@@ -180,6 +192,18 @@ cardsLabel: "cards",
 
 createDeck: "Create theme",
 
+addCard: "Add card",
+word: "Word",
+translation: "Translation",
+example: "Example",
+exampleHint: "Example sentence...",
+deck: "Deck",
+defaultDeckNote: "Default: {default}",
+newDeck: "New deck",
+newDeckPlaceholder: "New deck name...",
+createDeck: "Create deck",
+add: "Add",
+
   },
 
   uk: {
@@ -271,6 +295,18 @@ sortWordAZ: "Слово (А–Я)",
 cardsLabel: "карток",
 
 createDeck: "Створити тему",
+
+addCard: "Додати картку",
+word: "Слово",
+translation: "Переклад",
+example: "Приклад",
+exampleHint: "Приклад речення...",
+deck: "Тема",
+defaultDeckNote: "За замовчуванням: {default}",
+newDeck: "Нова тема",
+newDeckPlaceholder: "Назва нової теми...",
+createDeck: "Створити тему",
+add: "Додати",
 
   },
 };
