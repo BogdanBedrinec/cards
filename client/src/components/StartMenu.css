@@ -362,3 +362,22 @@ input:focus, select:focus{
   opacity: 0.5;
   pointer-events: none;
 }
+
+/* FORCE: auth links should NOT look disabled */
+.auth-links .auth-pill{
+  opacity: 1 !important;
+  filter: none !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+/* optional: keep color consistent (no visited weirdness) */
+.auth-links .auth-pill:visited{
+  color: inherit;
+}
+
+.auth-links .auth-pill.is-disabled{
+  opacity: .55;
+  pointer-events: none;
+  cursor: not-allowed;
+}
