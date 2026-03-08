@@ -381,3 +381,25 @@ input:focus, select:focus{
   pointer-events: none;
   cursor: not-allowed;
 }
+
+/* HARD RESET for auth buttons (override parent too) */
+.auth-card,
+.auth-links,
+.auth-links .auth-pill{
+  opacity: 1 !important;
+  filter: none !important;
+  pointer-events: auto !important;
+}
+
+/* force normal button look */
+.auth-links .auth-pill{
+  background: rgba(255,255,255,.08) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  color: #e9eefc !important;
+  text-decoration: none !important;
+}
+
+.auth-links .auth-pill:hover{
+  background: rgba(255,255,255,.12) !important;
+  border-color: rgba(255,255,255,.22) !important;
+}
