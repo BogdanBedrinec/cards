@@ -74,17 +74,14 @@ export async function login(req, res) {
       return res.status(401).json({ message: "Невірний email або пароль" });
     }
 
-// demo language override (EN -> DE)
 if (user.email === "demo@demo.com") {
-  user.interfaceLang = "en"; // UI EN
-  user.nativeLang = "de";    // L1 = DE (переклад)
-  user.learningLang = "en";  // L2 = EN (слово)
+  user.interfaceLang = "en";
+  user.nativeLang = "de";
+  user.learningLang = "en";
   await user.save();
+
+  await reseedDemoCards(user); // ✅ ТІЛЬКИ ДЛЯ ДЕМО
 }
-
-
-
-    await reseedDemoCards(user);
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
