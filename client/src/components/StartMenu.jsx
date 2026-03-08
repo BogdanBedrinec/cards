@@ -5,6 +5,7 @@ import Login from "./Login.jsx";
 import "./StartMenu.css";
 
 import { healthCheck, login } from "../api.js"; // ✅ один імпорт
+import { Link } from "react-router-dom";
 
 const DEMO_EMAIL = "demo@demo.com";
 const DEMO_PASSWORD = "demo12345";
@@ -162,9 +163,7 @@ export default function StartMenu({ initialMode = null }) {
         {demoMsg && <div className="auth-message">{demoMsg}</div>}
 
         <div className="auth-links">
-          <a className="auth-pill" href="/flashcards">
-            🚀 Open App
-          </a>
+<Link className="auth-pill" to="/flashcards">🚀 Open App</Link>
           <a
             className="auth-pill"
             href="https://github.com/BogdanBedrinec/cards"
