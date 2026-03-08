@@ -174,7 +174,7 @@ export default function StartMenu({ initialMode = null }) {
           </a>
           <a
             className="auth-pill"
-            href="https://github.com/BogdanBedrinec/cards/releases/download/v1.0.0/Cards.video.mp4"
+            href="https://github.com/BogdanBedrinec/cards/releases/tag/v1.0.0"
             target="_blank"
             rel="noreferrer"
           >
