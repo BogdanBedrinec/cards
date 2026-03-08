@@ -81,7 +81,7 @@ currentTime >= nextReview
 ![Deck Manager](./screenshots/deck-manager.png)
 
 ## 🎥 Demo Video
-▶️ Watch: https://drive.google.com/file/d/1iW5fRu7CO8XUP_WU_odWtqQv_4WRE938/view?usp=sharing
+▶️ Watch: https://github.com/BogdanBedrinec/cards/releases/download/v1.0.0/Cards.video.mp4
 
 
 ---
