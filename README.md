@@ -80,8 +80,9 @@ currentTime >= nextReview
 ### Deck Manager
 ![Deck Manager](./screenshots/deck-manager.png)
 
-## 🎥 Demo Video
-▶️ Watch: https://github.com/BogdanBedrinec/cards/releases/download/v1.0.0/Cards.video.mp4
+## Demo video
+▶️ Watch: https://github.com/BogdanBedrinec/cards/releases/tag/v1.0.0
+⬇️ Download (mp4): https://github.com/BogdanBedrinec/cards/releases/download/v1.0.0/Cards.video.mp4
 
 
 ---
