@@ -1,100 +1,54 @@
-# Flashcards App — Spaced Repetition Learning System
+# Flashcards — Spaced Repetition Vocabulary App
 
-A full-stack flashcards web application designed for efficient vocabulary learning using an interval-based spaced repetition algorithm.
+Full-stack flashcards web app for vocabulary learning with interval-based spaced repetition (`nextReview`).
 
-The system automatically schedules card reviews based on user performance and stores the next review timestamp for each card in the database.
+## Links
+- 🚀 App: https://cards-6rxm.onrender.com  
+- 🛠️ API: https://cards-api-a10o.onrender.com  
+- ▶️ Video (watch): https://github.com/BogdanBedrinec/cards/releases/tag/v1.0.0  
+- ⬇️ Video (mp4): https://github.com/BogdanBedrinec/cards/releases/download/v1.0.0/Cards.video.mp4  
 
-This project demonstrates:
-- full-stack architecture
-- REST API design
-- JWT authentication
-- interval scheduling logic
-- deck-based content management
-- multilingual UI
-
----
-
-## Live Demo
-
-Frontend: https://cards-6rxm.onrender.com
-Backend API: https://cards-api-a10o.onrender.com
-
-Demo account:  
-- Email: demo@demo.com  
-- Password: demo12345  
-
----
+**Demo account:** `demo@demo.com` / `demo12345`
 
 ## Features
-
-- JWT Authentication
-- Deterministic spaced repetition algorithm
-- Deck (Topic) management
-- Bulk actions (move / delete cards)
-- Multi-language UI (DE / EN / UK)
-- Dark / Light mode
-- Learning statistics
-- Next review time preview in Library
+- Review mode: flip → mark known/unknown
+- Library: search, sorting, edit & delete
 - Import / Export (JSON / CSV)
+- Stats + due scheduling
+- Dark/Light mode + DE/EN/UK UI
+- JWT auth + REST API
 
----
+## Run locally
 
-## Spaced Repetition Logic
+Open **two terminals**.
 
-Each card follows a fixed review interval ladder:
+### 1) Backend
+bash
+cd server
+npm install
+node index
 
-currentTime >= nextReview
+Create server/.env:
 
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_secret
+PORT=5000
 
----
+Backend runs on: http://localhost:5000
 
-## Tech Stack
+2) Frontend
+cd client
+npm install
+npm run dev
 
-### Frontend
-- React (Vite) — UI rendering
-- React Router — navigation
-- Custom CSS — styling & theming
+Frontend runs on: http://localhost:5173
 
-### Backend
-- Node.js — runtime
-- Express — REST API
-- MongoDB (Mongoose) — persistence layer
-- JWT — authentication & protected routes
+(Optional) client/.env:
 
-### Architecture
-- Token-based authentication
-- RESTful API
-- Interval-based scheduling system
-- Deck-based content grouping
+VITE_API_URL=http://localhost:5000
 
----
+Tech: React (Vite) • Node/Express • MongoDB • JWT
 
-## Screenshots
+Author
 
-### Review Mode
-![Review](./screenshots/review.png)
-
-### Library
-![Library](./screenshots/library.png)
-
-### Deck Manager
-![Deck Manager](./screenshots/deck-manager.png)
-
-## Demo video
-▶️ Watch: https://github.com/BogdanBedrinec/cards/releases/tag/v1.0.0
-⬇️ Download (mp4): https://github.com/BogdanBedrinec/cards/releases/download/v1.0.0/Cards.video.mp4
-
-
----
-
-## Project Structure
-/client → React frontend
-/server → Express backend
----
-
-## Author
-
-Bohdan  
-Junior Full-Stack Developer
-
-GitHub: https://github.com/BogdanBedrinec
+Bohdan — https://github.com/BogdanBedrinec
