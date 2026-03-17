@@ -44,7 +44,7 @@ export default function Toolbar({
             {t.library}
           </button>
           <button type="button" onClick={() => setView("add")}>
-            {t.add}
+            ➕{t.add}
           </button>
         </div>
 
