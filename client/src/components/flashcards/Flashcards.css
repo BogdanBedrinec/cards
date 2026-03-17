@@ -1623,3 +1623,14 @@ body[data-theme="dark"] { color-scheme: dark; }
     width: 100%;
   }
 }
+
+.auth-links{
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+.auth-pill{
+  flex: 0 0 auto;
+  min-width: 120px; /* щоб дві виглядали симетрично */
+  text-align: center;
+}

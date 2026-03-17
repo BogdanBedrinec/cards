@@ -163,7 +163,6 @@ export default function StartMenu({ initialMode = null }) {
         {demoMsg && <div className="auth-message">{demoMsg}</div>}
 
         <div className="auth-links">
-<Link className="auth-pill" to="/flashcards">🚀 Open App</Link>
           <a
             className="auth-pill"
             href="https://github.com/BogdanBedrinec/cards"
