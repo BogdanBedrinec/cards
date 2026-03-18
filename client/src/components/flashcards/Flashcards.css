@@ -928,37 +928,27 @@ button:disabled{ opacity: .55; cursor: not-allowed; }
 
 /* центральна зона старої картки */
 .flashcards-container[data-theme="dark"] .review-main{
-  min-height: 255px;
-  border-radius: 20px;
-  border: 1px solid rgba(255,255,255,.08);
   background:
     radial-gradient(circle at top center, rgba(125,92,255,.08), transparent 42%),
     linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+  border-color: rgba(255,255,255,.08);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.03),
     0 10px 28px rgba(0,0,0,.16);
-  padding: 38px 26px 34px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-align: center;
-  cursor: pointer;
-  transition: border-color .15s ease, transform .12s ease, box-shadow .15s ease;
 }
 
 .flashcards-container[data-theme="dark"] .review-btn{
-  min-width: 172px;
-  height: 42px;
-  border-radius: 14px;
-  padding: 0 18px;
   background: #132042;
   color: #f4f7ff;
-  border: 1px solid rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.10);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
-  font-size: 14px;
-  font-weight: 800;
 }
 
+@media (max-width: 640px){
+  .review-main{
+    height: 170px; /* <-- додай */
+  }
+}
 /* ============================
    Library
    ============================ */
