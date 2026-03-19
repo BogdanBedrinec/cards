@@ -1,0 +1,70 @@
+:root{
+  --surface: #ffffff;
+  --text: #0f172a;
+  --line: rgba(15,23,42,.12);
+  --btn-hover-bg: rgba(79,70,229,.06);
+  --btn-hover-border: rgba(79,70,229,.22);
+}
+
+body[data-theme="dark"]{
+  --surface: #0f172a;
+  --text: #e5e7eb;
+  --line: rgba(255,255,255,.12);
+  --btn-hover-bg: rgba(139,92,246,.10);
+  --btn-hover-border: rgba(139,92,246,.28);
+}
+
+.auth-links{
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+.auth-pill{
+  flex: 0 0 auto;
+  min-width: 120px; /* щоб дві виглядали симетрично */
+  text-align: center;
+}
+
+/* Auth forms: dark dropdown fix */
+body[data-theme="dark"] .auth-card select,
+body[data-theme="dark"] .auth-card option {
+  background-color: #0b1020;
+  color: #e5e7eb;
+}
+
+body[data-theme="dark"] .auth-card select {
+  border-color: rgba(255,255,255,.12);
+}
+
+body:not([data-theme="dark"]) .auth-card select,
+body:not([data-theme="dark"]) .auth-card option {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+body[data-theme="dark"] .auth-card select { color-scheme: dark; }
+
+/* FIX: make GitHub/Video pills visible */
+.auth-links .auth-pill{
+  opacity: 1 !important;
+  filter: none !important;
+  color: var(--text) !important;
+  background: var(--surface) !important;
+  border: 1px solid var(--line) !important;
+}
+
+.auth-links .auth-pill:hover{
+  background: var(--btn-hover-bg) !important;
+  border-color: var(--btn-hover-border) !important;
+}
+
+/* якщо раптом десь стоїть pointer-events:none */
+.auth-links .auth-pill{
+  pointer-events: auto !important;
+}
+
+body[data-theme="dark"] .auth-links .auth-pill{
+  color: #e5e7eb !important;
+  background: #0f172a !important;
+  border-color: rgba(255,255,255,.12) !important;
+}

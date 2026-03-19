@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import "./Flashcards.css";
+import "./styles/index.css";
 
 // panels
 import StatsBar from "./panels/StatsBar.jsx";

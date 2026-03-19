@@ -1,0 +1,129 @@
+.top-banner{
+  margin-top: 10px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--banner-line);
+  background: var(--banner-bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .06);
+  position: relative;
+  overflow: hidden;
+  animation: bannerIn .18s ease-out;
+}
+
+.top-banner::before{
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: rgba(79,70,229,.65);
+}
+
+.flashcards-container[data-theme="dark"] .top-banner::before{
+  background: rgba(139,92,246,.75);
+}
+
+.top-banner-left{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.top-banner-left span{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.top-banner-right{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.banner-btn{
+  padding: 8px 12px;
+  border-radius: 11px;
+  font-size: 12px;
+  font-weight: 800;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.banner-btn:hover{
+  background: var(--btn-hover-bg);
+  border-color: var(--btn-hover-border);
+}
+
+.spinner{
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,.18);
+  border-top-color: rgba(255,255,255,.82);
+  animation: spin .8s linear infinite;
+  flex: 0 0 auto;
+}
+
+.flashcards-container:not([data-theme="dark"]) .spinner{
+  border: 2px solid rgba(15,23,42,.16);
+  border-top-color: rgba(15,23,42,.72);
+}
+
+.top-banner.is-loading{
+  background: linear-gradient(180deg, rgba(79,70,229,.08), rgba(79,70,229,.04));
+  border-color: rgba(79,70,229,.16);
+}
+
+.flashcards-container[data-theme="dark"] .top-banner.is-loading{
+  background: linear-gradient(180deg, rgba(139,92,246,.14), rgba(139,92,246,.08));
+  border-color: rgba(139,92,246,.22);
+}
+
+.top-banner.is-info{
+  background: linear-gradient(180deg, rgba(59,130,246,.10), rgba(59,130,246,.05));
+  border-color: rgba(59,130,246,.18);
+}
+.top-banner.is-info::before{ background: rgba(59,130,246,.8); }
+
+.top-banner.is-success{
+  background: linear-gradient(180deg, rgba(16,185,129,.11), rgba(16,185,129,.05));
+  border-color: rgba(16,185,129,.20);
+}
+.top-banner.is-success::before{ background: rgba(16,185,129,.88); }
+
+.top-banner.is-error{
+  background: linear-gradient(180deg, rgba(239,68,68,.11), rgba(239,68,68,.05));
+  border-color: rgba(239,68,68,.20);
+}
+.top-banner.is-error::before{ background: rgba(239,68,68,.88); }
+
+@keyframes spin{ to{ transform: rotate(360deg); } }
+
+@keyframes bannerIn{
+  from{ opacity: 0; transform: translateY(-4px); }
+  to{ opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 640px){
+  .top-banner{ align-items: flex-start; flex-direction: column; }
+  .top-banner-left{ width: 100%; }
+  .top-banner-left span{
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    line-height: 1.35;
+  }
+  .top-banner-right{ width: 100%; justify-content: flex-end; }
+}
