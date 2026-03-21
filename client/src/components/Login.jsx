@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "./Login.css";
-import { healthCheck, login } from "../api.js"; // ✅ один імпорт
+import { healthCheck, login } from "../api.js";
 
 export default function Login({ onBack, onGoRegister, theme, onToggleTheme }) {
   const navigate = useNavigate();
@@ -40,7 +39,6 @@ export default function Login({ onBack, onGoRegister, theme, onToggleTheme }) {
     setIsSubmitting(true);
 
     try {
-      // warm-up (Render Free)
       await healthCheck().catch(() => {});
 
       const data = await login(email, password);
@@ -48,7 +46,6 @@ export default function Login({ onBack, onGoRegister, theme, onToggleTheme }) {
       localStorage.setItem("token", data.token);
       localStorage.setItem("userId", data.userId);
 
-      // sync language settings
       if (data.interfaceLang) localStorage.setItem("fc_ui_lang", data.interfaceLang);
       if (data.nativeLang) localStorage.setItem("fc_native_lang", data.nativeLang);
       if (data.learningLang) localStorage.setItem("fc_learning_lang", data.learningLang);
