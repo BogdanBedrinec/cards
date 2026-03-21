@@ -11,15 +11,11 @@ dotenv.config();
 
 const app = express();
 
-// ---------- Basics ----------
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
 app.use(express.json({ limit: "1mb" }));
 
-// ---------- CORS (controlled by ENV) ----------
-// ENV example:
-// CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://cards-xxxx.onrender.com
 const allowedOrigins = (process.env.CORS_ORIGINS || "")
   .split(",")
   .map((s) => s.trim())
@@ -39,14 +35,12 @@ const corsOptions = {
 
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // ✅ important for preflight
+app.options("*", cors(corsOptions)); 
 
-// ---------- Health check ----------
 app.get("/api/health", (req, res) => {
   res.json({ ok: true, time: new Date().toISOString() });
 });
 
-// ---------- No-cache for API (helps with stale data) ----------
 app.use("/api", (req, res, next) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
   res.setHeader("Pragma", "no-cache");
@@ -56,7 +50,6 @@ app.use("/api", (req, res, next) => {
 });
 
 
-// ---------- No cache for API ----------
 app.use("/api", (req, res, next) => {
   res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
   res.set("Pragma", "no-cache");
@@ -66,12 +59,10 @@ app.use("/api", (req, res, next) => {
 });
 
 
-// ---------- Routes ----------
 app.use("/api/users", usersRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/cards", cardRoutes);
 
-// ---------- Mongo ----------
 const { MONGO_URI } = process.env;
 if (!MONGO_URI) {
   console.error("❌ Missing MONGO_URI in .env");
@@ -86,7 +77,6 @@ mongoose
     process.exit(1);
   });
 
-// ---------- Error handler ----------
 app.use((err, req, res, next) => {
   if (err && String(err.message || "").startsWith("CORS blocked")) {
     return res.status(403).json({ message: err.message });
@@ -95,6 +85,5 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: "Server error" });
 });
 
-// ---------- Start ----------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

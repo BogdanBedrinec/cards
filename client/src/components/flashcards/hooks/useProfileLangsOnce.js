@@ -1,5 +1,3 @@
-// src/components/flashcards/hooks/useProfileLangsOnce.js
-
 import { useEffect } from "react";
 import { API, LS_UI, LS_L1, LS_L2 } from "../utils/constants.js";
 import { normalizeLang } from "../utils/format.js";
@@ -39,7 +37,6 @@ export function useProfileLangsOnce({
         setNativeLang(l1);
         setLearningLang(l2);
       } catch {
-        // ignore (offline / server sleeping / etc.)
       }
     })();
 

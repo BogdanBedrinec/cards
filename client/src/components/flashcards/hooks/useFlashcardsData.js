@@ -1,5 +1,3 @@
-// src/components/flashcards/hooks/useFlashcardsData.js
-
 import { useCallback, useEffect, useRef, useState } from "react";
 import { API, DEFAULT_DECK_ID } from "../utils/constants.js";
 import { humanFetchError } from "../utils/http.js";
@@ -49,7 +47,6 @@ export function useFlashcardsData({
     [t, setNotice]
   );
 
-  // health is public -> auth:false
   const wakeBackend = useCallback(async () => {
     try {
       await apiFetch({
@@ -60,7 +57,6 @@ export function useFlashcardsData({
         timeoutMs: 12000,
       });
     } catch {
-      // ignore
     }
   }, []);
 
@@ -280,7 +276,6 @@ export function useFlashcardsData({
       decksReqRef.current++;
       statsReqRef.current++;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, deckFilter, librarySort]);
 
   return {

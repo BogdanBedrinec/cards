@@ -9,7 +9,6 @@ export default function auth(req, res, next) {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // ✅ один стандарт на весь проєкт
     req.userId = String(decoded.userId);
     req.user = { id: req.userId };
 

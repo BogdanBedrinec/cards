@@ -13,7 +13,6 @@ async function run() {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("✅ MongoDB connected");
 
-    // Знаходимо картки, де немає createdAt (або воно null)
     const cards = await WordCard.find({
       $or: [{ createdAt: { $exists: false } }, { createdAt: null }],
     }).select("_id createdAt updatedAt");
@@ -23,10 +22,8 @@ async function run() {
     let updated = 0;
 
     for (const c of cards) {
-      // Час створення можна взяти з ObjectId
-      const createdAt = c._id.getTimestamp(); // Date
+      const createdAt = c._id.getTimestamp(); 
 
-      // updatedAt ставимо таким самим, щоб не було "порожньо"
       c.createdAt = createdAt;
       c.updatedAt = createdAt;
 

@@ -3,18 +3,11 @@ import auth from "../middleware/auth.js";
 import WordCard from "../models/WordCard.js";
 import { stringify } from "csv-stringify/sync";
 import { parse } from "csv-parse/sync";
-import mongoose from "mongoose"; // додай зверху файлу, якщо ще нема
+import mongoose from "mongoose"; 
 
 const router = express.Router();
 const DEFAULT_DECK = "__DEFAULT__";
 
-// ============================================
-// GET /api/cards
-// mode=due | all
-// sort=nextReview | createdAt | word | translation | accuracy
-// order=asc | desc
-// deck=...
-// ============================================
 router.get("/", auth, async (req, res) => {
   try {
     const userId = req.userId;
@@ -29,7 +22,6 @@ router.get("/", auth, async (req, res) => {
 
     if (deck && deck !== "ALL") filter.deck = deck;
 
-    // due includes: missing/null OR <= now
     if (mode === "due") {
       filter.$or = [
         { nextReview: { $exists: false } },
@@ -38,7 +30,6 @@ router.get("/", auth, async (req, res) => {
       ];
     }
 
-    // DB sort for most fields
     let mongoSort = {};
     if (sort === "nextreview") mongoSort = { nextReview: order, _id: 1 };
     else if (sort === "createdat") mongoSort = { createdAt: order, _id: 1 };
@@ -48,14 +39,12 @@ router.get("/", auth, async (req, res) => {
 
     let cards = await WordCard.find(filter).sort(mongoSort);
 
-    // accuracy: computed in JS (because stored fields)
     if (sort === "accuracy") {
       cards = cards.sort((a, b) => {
         const accA = a.reviewCount ? a.correctCount / a.reviewCount : 0;
         const accB = b.reviewCount ? b.correctCount / b.reviewCount : 0;
 
         if (accA === accB) {
-          // stable tie-breaker
           const ca = a.createdAt ? new Date(a.createdAt).getTime() : 0;
           const cb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           if (ca === cb) return String(a._id).localeCompare(String(b._id));
@@ -73,9 +62,6 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
-// ============================================
-// GET /api/cards/decks
-// ============================================
 router.get("/decks", auth, async (req, res) => {
   try {
     const userId = req.userId;
@@ -92,10 +78,6 @@ router.get("/decks", auth, async (req, res) => {
   }
 });
 
-// ============================================
-// PUT /api/cards/decks/rename
-// body: { from, to }
-// ============================================
 router.put("/decks/rename", auth, async (req, res) => {
   try {
     const userId = req.userId;
@@ -107,7 +89,6 @@ router.put("/decks/rename", auth, async (req, res) => {
       return res.status(400).json({ message: "Не можна перейменувати дефолтну тему" });
     if (from === to) return res.json({ message: "No changes", moved: 0, conflicts: 0 });
 
-    // знайти всі _id карток у цьому deck
     const cards = await WordCard.find({ userId, deck: from }, { _id: 1 }).lean();
     const ids = cards.map((c) => c._id);
 
@@ -144,11 +125,6 @@ router.put("/decks/rename", auth, async (req, res) => {
   }
 });
 
-
-// ============================================
-// DELETE /api/cards/decks/:name
-// query: mode=move|delete  & to=...
-// ============================================
 router.delete("/decks/:name", auth, async (req, res) => {
   try {
     const userId = req.userId;
@@ -165,7 +141,6 @@ router.delete("/decks/:name", auth, async (req, res) => {
       return res.json({ message: "Deck deleted", deletedCards: r.deletedCount });
     }
 
-    // mode=move
     if (to === name) {
       return res.status(400).json({ message: "to не може дорівнювати deck, який видаляємо" });
     }
@@ -209,10 +184,6 @@ router.delete("/decks/:name", auth, async (req, res) => {
 });
 
 
-// ============================================
-// PATCH /api/cards/bulk
-// { ids: [...], action: "delete" | "moveDeck", toDeck? }
-// ============================================
 router.patch("/bulk", auth, async (req, res) => {
   try {
     const userId = req.userId;
@@ -258,9 +229,6 @@ router.patch("/bulk", auth, async (req, res) => {
   }
 });
 
-// ============================================
-// GET /api/cards/all (legacy)
-// ============================================
 router.get("/all", auth, async (req, res) => {
   try {
     const userId = req.userId;
@@ -272,9 +240,6 @@ router.get("/all", auth, async (req, res) => {
   }
 });
 
-// ============================================
-// GET /api/cards/due (legacy)
-// ============================================
 router.get("/due", auth, async (req, res) => {
   try {
     const userId = req.userId;
@@ -292,9 +257,6 @@ router.get("/due", auth, async (req, res) => {
   }
 });
 
-// ============================================
-// POST /api/cards (add)
-// ============================================
 router.post("/", auth, async (req, res) => {
   try {
     const { word, translation, example = "", deck = DEFAULT_DECK } = req.body;
@@ -307,7 +269,6 @@ router.post("/", auth, async (req, res) => {
     const cleanTranslation = String(translation).trim();
     const cleanDeck = String(deck || DEFAULT_DECK).trim() || DEFAULT_DECK;
 
-    // захист від дублювання
     const exists = await WordCard.findOne({
       userId: req.userId,
       word: cleanWord,
@@ -327,7 +288,7 @@ router.post("/", auth, async (req, res) => {
       translation: cleanTranslation,
       example: String(example || "").trim(),
       deck: cleanDeck,
-      nextReview: new Date(), // показати одразу
+      nextReview: new Date(), 
     });
 
     await newCard.save();
@@ -343,9 +304,6 @@ router.post("/", auth, async (req, res) => {
   }
 });
 
-// ============================================
-// Review handler: PUT/POST /api/cards/:id/review
-// ============================================
 const reviewHandler = async (req, res) => {
   try {
     const { known } = req.body;
@@ -357,38 +315,33 @@ const reviewHandler = async (req, res) => {
     if (known) card.correctCount = (card.correctCount || 0) + 1;
     card.lastReviewed = new Date();
 
-// ✅ твій новий план інтервалів (в хвилинах)
 const intervals = [
-  1,      // 1 хв
-  5,      // 5 хв
-  10,     // 10 хв
-  30,     // 30 хв
-  60,     // 1 год
-  180,    // 3 год
-  360,    // 6 год
-  720,    // 12 год
-  1440,   // 1 день
-  4320,   // 3 дні
-  10080,  // 7 днів
-  20160,  // 14 днів
-  30240,  // 21 день
-  40320,  // 28 днів
+  1,      
+  5,      
+  10,     
+  30,     
+  60,     
+  180,    
+  360,    
+  720,    
+  1440,   
+  4320,   
+  10080,  
+  20160,  
+  30240, 
+  40320,  
 ];
 
 if (known) {
-  // якщо правильно — прогрес росте
   card.correctCount = (card.correctCount || 0) + 1;
 
-  // 1-ше правильне = 1 хв, 2-ге = 5 хв, ... 14-те і далі = 28 днів
   const idx = Math.min(card.correctCount - 1, intervals.length - 1);
   const minutes = intervals[idx];
 
   card.nextReview = new Date(Date.now() + minutes * 60 * 1000);
 } else {
-  // ❌ якщо неправильно — повний ресет прогресу
   card.correctCount = 0;
 
-  // старт знову з 1 хв
   card.nextReview = new Date(Date.now() + 1 * 60 * 1000);
 }
 
@@ -408,10 +361,6 @@ if (known) {
 router.put("/:id/review", auth, reviewHandler);
 router.post("/:id/review", auth, reviewHandler);
 
-// ============================================
-// BULK: POST /api/cards/bulk-delete
-// body: { ids: ["id1","id2", ...] }
-// ============================================
 router.post("/bulk-delete", auth, async (req, res) => {
   try {
     const userId = req.userId;
@@ -421,7 +370,6 @@ router.post("/bulk-delete", auth, async (req, res) => {
       return res.status(400).json({ message: "ids має бути непорожнім масивом" });
     }
 
-    // валідні ObjectId (щоб не падало)
     const objectIds = ids
       .filter((id) => mongoose.Types.ObjectId.isValid(id))
       .map((id) => new mongoose.Types.ObjectId(id));
@@ -447,10 +395,6 @@ router.post("/bulk-delete", auth, async (req, res) => {
   }
 });
 
-// ============================================
-// BULK: POST /api/cards/bulk-move
-// body: { ids: ["id1","id2", ...], deck: "New Deck" }
-// ============================================
 router.post("/bulk-move", auth, async (req, res) => {
   try {
     const userId = req.userId;
@@ -463,7 +407,6 @@ router.post("/bulk-move", auth, async (req, res) => {
 
     const newDeck = String(deckRaw || DEFAULT_DECK).trim() || DEFAULT_DECK;
 
-    // валідні ObjectId
     const objectIds = ids
       .filter((id) => mongoose.Types.ObjectId.isValid(id))
       .map((id) => new mongoose.Types.ObjectId(id));
@@ -472,9 +415,6 @@ router.post("/bulk-move", auth, async (req, res) => {
       return res.status(400).json({ message: "Немає валідних id" });
     }
 
-    // updateMany може впасти через unique index (userId+word+translation+deck),
-    // якщо у цільовому deck вже є така сама картка.
-    // Тому робимо "обережний" bulkWrite з ordered:false
     const ops = objectIds.map((id) => ({
       updateOne: {
         filter: { _id: id, userId },
@@ -486,10 +426,8 @@ router.post("/bulk-move", auth, async (req, res) => {
     try {
       bulkRes = await WordCard.bulkWrite(ops, { ordered: false });
     } catch (e) {
-      // Навіть якщо частина впала через дублікати — bulkWrite все одно може частково оновити
       bulkRes = e?.result || null;
 
-      // Повернемо зрозуміле повідомлення
       return res.status(207).json({
         message:
           "Bulk move частково виконано ⚠️ (частина карток не перенеслась через дублікати у цільовій темі)",
@@ -516,9 +454,6 @@ router.post("/bulk-move", auth, async (req, res) => {
 });
 
 
-// ============================================
-// DELETE /api/cards/:id
-// ============================================
 router.delete("/:id", auth, async (req, res) => {
   try {
     const deleted = await WordCard.findOneAndDelete({ _id: req.params.id, userId: req.userId });
@@ -531,9 +466,6 @@ router.delete("/:id", auth, async (req, res) => {
   }
 });
 
-// ============================================
-// PUT /api/cards/:id (edit)
-// ============================================
 router.put("/:id", auth, async (req, res) => {
   try {
     const { word, translation, example, deck } = req.body;
@@ -564,9 +496,6 @@ router.put("/:id", auth, async (req, res) => {
   }
 });
 
-// ============================================
-// GET /api/cards/stats
-// ============================================
 router.get("/stats", auth, async (req, res) => {
   try {
     const userId = req.userId;
@@ -631,9 +560,6 @@ router.get("/stats", auth, async (req, res) => {
   }
 });
 
-// ============================================
-// EXPORT: GET /api/cards/export?format=json|csv
-// ============================================
 router.get("/export", auth, async (req, res) => {
   try {
     const userId = req.userId;
@@ -683,10 +609,6 @@ router.get("/export", auth, async (req, res) => {
   }
 });
 
-// ============================================
-// IMPORT: POST /api/cards/import
-// format=json|csv
-// ============================================
 router.post("/import", auth, async (req, res) => {
   try {
     const userId = req.userId;

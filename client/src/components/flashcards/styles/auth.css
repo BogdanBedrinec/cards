@@ -21,11 +21,10 @@ body[data-theme="dark"]{
 }
 .auth-pill{
   flex: 0 0 auto;
-  min-width: 120px; /* щоб дві виглядали симетрично */
+  min-width: 120px; 
   text-align: center;
 }
 
-/* Auth forms: dark dropdown fix */
 body[data-theme="dark"] .auth-card select,
 body[data-theme="dark"] .auth-card option {
   background-color: #0b1020;
@@ -44,7 +43,6 @@ body:not([data-theme="dark"]) .auth-card option {
 
 body[data-theme="dark"] .auth-card select { color-scheme: dark; }
 
-/* FIX: make GitHub/Video pills visible */
 .auth-links .auth-pill{
   opacity: 1 !important;
   filter: none !important;
@@ -58,7 +56,6 @@ body[data-theme="dark"] .auth-card select { color-scheme: dark; }
   border-color: var(--btn-hover-border) !important;
 }
 
-/* якщо раптом десь стоїть pointer-events:none */
 .auth-links .auth-pill{
   pointer-events: auto !important;
 }

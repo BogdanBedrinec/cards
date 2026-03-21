@@ -36,7 +36,6 @@ export async function register(req, res) {
       learningLang: l2,
     });
 
-    // ✅ Видаємо токен одразу після реєстрації (автологін)
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
     return res.status(201).json({
@@ -80,7 +79,7 @@ if (user.email === "demo@demo.com") {
   user.learningLang = "en";
   await user.save();
 
-  await reseedDemoCards(user); // ✅ ТІЛЬКИ ДЛЯ ДЕМО
+  await reseedDemoCards(user);
 }
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });

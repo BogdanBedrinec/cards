@@ -1,5 +1,3 @@
-// client/src/components/flashcards/i18n/dictionary.js
-
 const DICT = {
   de: {
     review: "⚡ Wiederholen",

@@ -1,10 +1,7 @@
-// src/components/flashcards/Flashcards.jsx
-
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "./styles/index.css";
 
-// panels
 import StatsBar from "./panels/StatsBar.jsx";
 import Toolbar from "./panels/Toolbar.jsx";
 import ReviewPanel from "./panels/ReviewPanel.jsx";
@@ -12,19 +9,15 @@ import LibraryPanel from "./panels/LibraryPanel.jsx";
 import AddCardPanel from "./panels/AddCardPanel.jsx";
 import ImportExportPanel from "./panels/ImportExportPanel.jsx";
 
-// modal
 import EditCardModal from "./modals/EditCardModal.jsx";
 
-// i18n
 import { getT } from "./i18n/dictionary.js";
 
-// utils
 import { DEFAULT_DECK_ID, LS_UI, LS_L1, LS_L2, LS_THEME } from "./utils/constants.js";
 import { getToken, clearAuth } from "./utils/auth.js";
 import { langLabel, formatTimeUntil } from "./utils/format.js";
 import ErrorBoundary from "./utils/ErrorBoundary.jsx";
 
-// hooks
 import { useReviewShortcuts } from "./hooks/useReviewShortcuts";
 import { useFlashcardsData } from "./hooks/useFlashcardsData";
 import { useFlashcardsActions } from "./hooks/useFlashcardsActions";
@@ -35,37 +28,29 @@ import TopBanner from "./ui/TopBanner.jsx";
 export default function Flashcards() {
   const navigate = useNavigate();
 
-  // -------- state --------
-  const [view, setView] = useState("review"); // review | library | add
+  const [view, setView] = useState("review"); 
 
-  // add form
   const [word, setWord] = useState("");
   const [translation, setTranslation] = useState("");
   const [example, setExample] = useState("");
 
-  // decks (UI selections only)
   const [deckFilter, setDeckFilter] = useState("ALL");
   const [deckForNewCard, setDeckForNewCard] = useState(DEFAULT_DECK_ID);
   const [newDeckName, setNewDeckName] = useState("");
 
-  // review queue UI
   const [reviewIndex, setReviewIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [isReviewing, setIsReviewing] = useState(false);
 
-  // stable session progress
   const [sessionTotal, setSessionTotal] = useState(0);
   const [sessionDone, setSessionDone] = useState(0);
 
-  // library
   const [librarySearch, setLibrarySearch] = useState("");
   const [librarySort, setLibrarySort] = useState("createdAt_desc");
 
-  // bulk selection
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
 
-  // edit modal
   const [editOpen, setEditOpen] = useState(false);
   const [editCard, setEditCard] = useState(null);
   const [editWord, setEditWord] = useState("");
@@ -73,30 +58,23 @@ export default function Flashcards() {
   const [editExample, setEditExample] = useState("");
   const [editDeck, setEditDeck] = useState(DEFAULT_DECK_ID);
 
-  // import/export
   const [showImportExport, setShowImportExport] = useState(false);
   const [importText, setImportText] = useState("");
   const [importFormat, setImportFormat] = useState("json");
 
-  // unified notice (TopBanner)
   const [notice, setNotice] = useState(null);
-  // { type: "error"|"success"|"info", text: string } | null
 
-  // theme
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem(LS_THEME);
     return saved === "dark" ? "dark" : "light";
   });
 
-  // langs (labels + UI)
   const [interfaceLang, setInterfaceLang] = useState(() => localStorage.getItem(LS_UI) || "en");
   const [nativeLang, setNativeLang] = useState(() => localStorage.getItem(LS_L1) || "uk");
   const [learningLang, setLearningLang] = useState(() => localStorage.getItem(LS_L2) || "en");
 
-  // ✅ i18n
   const t = useMemo(() => getT(interfaceLang), [interfaceLang]);
 
-  // -------- helpers --------
   const handle401 = useCallback(() => {
     clearAuth();
     navigate("/login", { replace: true });
@@ -111,7 +89,6 @@ export default function Flashcards() {
 
   const formatTimeUntilLocal = useCallback((dateStr) => formatTimeUntil(t, dateStr), [t]);
 
-  // -------- data hook (NOTICE) --------
   const {
     decks: serverDecks,
     cards,
@@ -138,7 +115,6 @@ export default function Flashcards() {
   handle401,
 });
 
-  // -------- extraDecks (UI-only drafts) --------
   const [extraDecks, setExtraDecks] = useState([]);
 
   const decks = useMemo(() => {
@@ -159,7 +135,6 @@ export default function Flashcards() {
 
   useEffect(() => {
   if (deckFilter !== "ALL") setDeckFilter("ALL");
-  // eslint-disable-next-line react-hooks/exhaustive-deps
 }, []);
 
   useEffect(() => {
@@ -176,7 +151,6 @@ export default function Flashcards() {
     setNewDeckName("");
   }
 
-  // -------- guards / persist --------
   useEffect(() => {
     const token = getToken();
     if (!token) navigate("/login", { replace: true });
@@ -194,15 +168,12 @@ export default function Flashcards() {
     localStorage.setItem(LS_UI, interfaceLang);
   }, [interfaceLang]);
 
-  // ✅ if decks change — validate selections
 useEffect(() => {
   if (!Array.isArray(decks) || decks.length === 0) return;
 
   if (deckForNewCard && !decks.includes(deckForNewCard)) setDeckForNewCard(DEFAULT_DECK_ID);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [decks]);
 
-  // ✅ load profile langs once (no fetch in UI)
   useProfileLangsOnce({
     handle401,
     setInterfaceLang,
@@ -210,14 +181,12 @@ useEffect(() => {
     setLearningLang,
   });
 
-  // reset progress when entering review / changing deck filter
   useEffect(() => {
     if (view !== "review") return;
     setSessionDone(0);
     setSessionTotal(0);
     setReviewIndex(0);
     setShowAnswer(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, deckFilter]);
 
   useEffect(() => {
@@ -228,17 +197,14 @@ useEffect(() => {
   setSessionTotal(cards.length);
 }, [view, cards, sessionTotal]);
 
-  // clear selection when leaving library or changing filter
   useEffect(() => {
     if (view !== "library") {
       setSelectedIds(new Set());
       return;
     }
     setSelectedIds(new Set());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, deckFilter]);
 
-  // -------- derived --------
 const filteredLibraryCards = useMemo(() => {
   const q = librarySearch.trim().toLowerCase();
   const list = Array.isArray(libraryCards) ? libraryCards : [];
@@ -284,7 +250,6 @@ const filteredLibraryCards = useMemo(() => {
   const currentReviewCard =
     cards.length > 0 ? cards[Math.min(reviewIndex, cards.length - 1)] : null;
 
-  // -------- actions hook (NOTICE) --------
   const actions = useFlashcardsActions({
     t,
     view,
@@ -333,7 +298,7 @@ const filteredLibraryCards = useMemo(() => {
     importFormat,
     setShowImportExport,
 
-    setNotice, // ✅ notice pipeline
+    setNotice,
     handle401,
     setFriendlyError,
 
@@ -344,7 +309,6 @@ const filteredLibraryCards = useMemo(() => {
     fetchLibraryCardsAll,
   });
 
-  // ✅ review shortcuts
   useReviewShortcuts({
     view,
     showAnswer,
@@ -359,12 +323,10 @@ const filteredLibraryCards = useMemo(() => {
     isReviewing,
   });
 
-  // -------- progress numbers --------
 const progressTotal = sessionTotal > 0 ? sessionTotal : cards.length;
 const progressIndex =
   progressTotal > 0 ? Math.min(sessionDone + 1, progressTotal) : 0;
 
-  // -------- render --------
   return (
     <div className="flashcards-container" data-theme={theme}>
       <h1 className="title">📚 Flashcards</h1>

@@ -1,8 +1,5 @@
 import Card from "../models/WordCard.js";
 
-// ===============================
-//     Отримати всі картки
-// ===============================
 export const getCards = async (req, res) => {
   try {
     const userId = req.user?.id || req.userId;
@@ -14,9 +11,6 @@ export const getCards = async (req, res) => {
   }
 };
 
-// ===============================
-//     Додати нову картку
-// ===============================
 export const addCard = async (req, res) => {
   try {
     const userId = req.user?.id || req.userId;
@@ -24,7 +18,7 @@ export const addCard = async (req, res) => {
     const { word, translation, example, deck } = req.body;
 
     const card = await Card.create({
-      userId: String(userId), // ✅ завжди string
+      userId: String(userId),
       word,
       translation,
       example: example || "",
@@ -37,10 +31,6 @@ export const addCard = async (req, res) => {
     res.status(500).json({ message: "Помилка при створенні картки" });
   }
 };
-
-// ===============================
-//     Видалити картку
-// ===============================
 export const deleteCard = async (req, res) => {
   try {
     const userId = req.user?.id || req.userId;
@@ -59,15 +49,11 @@ export const deleteCard = async (req, res) => {
   }
 };
 
-// ===============================
-//     Оновити статистику (review)
-// ===============================
 export const reviewCard = async (req, res) => {
   try {
     const userId = req.user?.id || req.userId;
     const { id } = req.params;
 
-    // ✅ фронт шле { known: true/false }, а не { correct }
     const known = !!req.body.known;
 
     const card = await Card.findOne({ _id: id, userId: String(userId) });
@@ -78,13 +64,11 @@ export const reviewCard = async (req, res) => {
 
     card.lastReviewed = new Date();
 
-    // ✅ мінімальна логіка nextReview (щоб “due” працювало)
-    // якщо знає → відкласти, якщо не знає → лишити на зараз
     if (known) {
-      const days = Math.min(30, 1 + (card.correctCount || 1)); // 2,3,4... днів (до 30)
+      const days = Math.min(30, 1 + (card.correctCount || 1)); 
       card.nextReview = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
     } else {
-      card.nextReview = new Date(); // відразу due
+      card.nextReview = new Date(); 
     }
 
     await card.save();

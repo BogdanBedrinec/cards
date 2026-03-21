@@ -1,19 +1,13 @@
-// src/components/flashcards/hooks/useFlashcardsActions.js
-
 import { useCallback } from "react";
 import { API, DEFAULT_DECK_ID } from "../utils/constants.js";
 import { apiFetch } from "../utils/apiFetch.js";
 
-/**
- * Actions hook: all mutations / commands for Flashcards.
- * Keeps Flashcards.jsx clean (UI only).
- */
+
 export function useFlashcardsActions({
   t,
   view,
   setView,
 
-  // form state
   word,
   setWord,
   translation,
@@ -21,12 +15,10 @@ export function useFlashcardsActions({
   example,
   setExample,
 
-  // deck selections
   deckFilter,
   setDeckFilter,
   deckForNewCard,
 
-  // review state
   currentReviewCard,
   showAnswer,
   setShowAnswer,
@@ -40,7 +32,6 @@ selectedIds,
 clearSelection,
 setBulkBusy,
 
-  // edit modal state
   setEditOpen,
   setEditCard,
   editCard,
@@ -53,18 +44,15 @@ setBulkBusy,
   editDeck,
   setEditDeck,
 
-  // import/export
   importText,
   setImportText,
   importFormat,
   setShowImportExport,
 
-  // UI notice + auth
-  setNotice, // ✅ NOTICE
+  setNotice, 
   handle401,
   setFriendlyError,
 
-  // data refresh functions
   refreshAll,
   fetchDecks,
   fetchStats,
@@ -75,7 +63,6 @@ setBulkBusy,
   const info = useCallback((text) => setNotice?.({ type: "info", text }), [setNotice]);
   const success = useCallback((text) => setNotice?.({ type: "success", text }), [setNotice]);
 
-  // --- add card ---
   const handleAddCard = useCallback(
     async (e) => {
       e.preventDefault();
@@ -140,7 +127,6 @@ setBulkBusy,
     ]
   );
 
-  // --- review ---
   const sendReview = useCallback(
     async (id, known) => {
       try {
@@ -204,7 +190,6 @@ setBulkBusy,
     ]
   );
 
-  // --- export ---
   const handleExport = useCallback(
     async (format) => {
       try {
@@ -238,7 +223,6 @@ setBulkBusy,
     [handle401, setFriendlyError]
   );
 
-  // --- import ---
   const handleImport = useCallback(async () => {
     if (!importText.trim()) {
       info("⚠️ Paste data for import");
@@ -294,7 +278,6 @@ setBulkBusy,
     setFriendlyError,
   ]);
 
-  // --- bulk delete ---
   const bulkDelete = useCallback(async () => {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
@@ -341,7 +324,6 @@ setBulkBusy,
     setFriendlyError,
   ]);
 
-  // --- delete card ---
   const handleDeleteCard = useCallback(
     async (id) => {
       const ok = window.confirm("Delete this card?");
@@ -379,7 +361,6 @@ setBulkBusy,
     ]
   );
 
-  // --- edit modal open ---
   const openEdit = useCallback(
     (c) => {
       setEditCard(c);
@@ -392,7 +373,6 @@ setBulkBusy,
     [setEditCard, setEditWord, setEditTranslation, setEditExample, setEditDeck, setEditOpen]
   );
 
-  // --- save edit ---
   const saveEdit = useCallback(async () => {
     if (!editCard?._id) return;
 

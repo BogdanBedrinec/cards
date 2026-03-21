@@ -11,7 +11,6 @@ export default class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    // видно в консолі, якщо щось впаде
     console.error("Flashcards UI crashed:", error, info);
   }
 

@@ -3,14 +3,13 @@ import React, { useEffect } from "react";
 export default function TopBanner({
   t,
   loading,
-  notice, // { type: "error"|"success"|"info", text: string } | null
+  notice, 
   onClose,
   onRetry,
 }) {
   const canClose = typeof onClose === "function";
   const canRetry = typeof onRetry === "function";
 
-  // auto-close success/info (error stays)
   useEffect(() => {
     if (!notice) return;
     if (notice.type === "error") return;

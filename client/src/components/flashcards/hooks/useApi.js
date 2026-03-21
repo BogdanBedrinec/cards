@@ -8,7 +8,6 @@ export async function wakeBackend() {
       timeoutMs: 12000,
     });
   } catch {
-    // ignore (cold start)
   }
 }
 

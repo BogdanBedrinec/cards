@@ -182,7 +182,6 @@
   color: var(--muted);
 }
 
-/* responsive */
 @media (max-width: 900px){
   .library-bulk-bar{
     grid-template-columns: 1fr;
@@ -276,11 +275,6 @@
     width: 100%;
   }
 }
-
-
-/* ============================
-   Library card alignment fix
-   ============================ */
 
 .library-cards-list{
   display: grid;

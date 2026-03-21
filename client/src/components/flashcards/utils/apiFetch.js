@@ -9,7 +9,7 @@ export async function apiFetch({
   timeoutMs = undefined,
   handle401,
   auth = true,
-  expect = undefined, // "json" | "text" | "blob"
+  expect = undefined,
 }) {
   const token = getToken();
 
@@ -31,7 +31,6 @@ export async function apiFetch({
     finalHeaders.Authorization = `Bearer ${token}`;
   }
 
-  // ставимо Content-Type тільки коли реально відправляємо JSON-об'єкт
   if (isJsonBody) {
     finalHeaders["Content-Type"] = "application/json";
   }
@@ -47,11 +46,9 @@ export async function apiFetch({
       signal,
     });
 
-    // пробуємо витягнути корисну помилку, навіть при 401/400
     const ct = res.headers.get("content-type") || "";
     const isJson = ct.includes("application/json");
 
-    // 401: якщо auth=true — викликаємо handle401, але все одно спробуємо розпарсити
     if (res.status === 401 && auth) {
       handle401?.();
     }
@@ -59,7 +56,6 @@ export async function apiFetch({
     let data = null;
 
     if (expect === "blob") {
-      // якщо сервер повернув json з помилкою — краще зчитати json
       if (!res.ok && isJson) data = await res.json().catch(() => null);
       else data = await res.blob().catch(() => null);
     } else if (expect === "text") {
@@ -67,9 +63,8 @@ export async function apiFetch({
     } else if (expect === "json") {
       data = await res.json().catch(() => null);
     } else {
-      // auto
       if (isJson) data = await res.json().catch(() => null);
-      else data = await res.text().catch(() => null); // корисно для plain-text помилок
+      else data = await res.text().catch(() => null);
     }
 
     const errorMessage =

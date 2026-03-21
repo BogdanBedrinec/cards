@@ -6,10 +6,9 @@ const UserSchema = new mongoose.Schema({
 
   username: { type: String, required: false, default: "Користувач" },
 
-  // ✅ language preferences
-  interfaceLang: { type: String, enum: ["de", "en", "uk"], default: "de" }, // UI
-  nativeLang: { type: String, enum: ["de", "en", "uk"], default: "uk" },   // L1
-  learningLang: { type: String, enum: ["de", "en", "uk"], default: "de" }, // L2
+  interfaceLang: { type: String, enum: ["de", "en", "uk"], default: "de" }, 
+  nativeLang: { type: String, enum: ["de", "en", "uk"], default: "uk" },  
+  learningLang: { type: String, enum: ["de", "en", "uk"], default: "de" },
 
   cards: [{ type: mongoose.Schema.Types.ObjectId, ref: "WordCard" }],
 });

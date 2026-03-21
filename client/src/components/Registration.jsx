@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Registration.css";
-import { register } from "../api.js"; // ✅ один імпорт
+import { register } from "../api.js";
 
 export default function Registration({ onBack, onGoLogin, theme, onToggleTheme }) {
   const navigate = useNavigate();

@@ -1,5 +1,3 @@
-/* ===== Auth pages (Start / Login / Registration) ===== */
-
 :root{
   --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans";
 
@@ -55,7 +53,6 @@ body{
   padding: 22px;
 }
 
-/* Header row */
 .auth-head{
   display: flex;
   justify-content: space-between;
@@ -93,7 +90,6 @@ body{
   line-height: 1.45;
 }
 
-/* Buttons (global for auth pages only) */
 .auth-wrap button{
   appearance: none;
   border: 1px solid var(--line);
@@ -129,7 +125,6 @@ body{
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
-/* Form */
 .auth-form{
   display: grid;
   gap: 12px;
@@ -182,7 +177,6 @@ input:focus, select:focus{
   align-items: center;
 }
 
-/* TEXT link button (for bottom links only) */
 .auth-linkbtn{
   background: transparent !important;
   border: none !important;
@@ -195,7 +189,6 @@ input:focus, select:focus{
   font-weight: 800;
 }
 
-/* Back button (separate class, NOT link) */
 .auth-backbtn{
   height: 42px;
   padding: 0 12px;
@@ -226,7 +219,6 @@ input:focus, select:focus{
   text-align: center;
 }
 
-/* Theme icon button */
 .auth-themebtn{
   width: 42px;
   height: 42px;
@@ -242,7 +234,6 @@ input:focus, select:focus{
   background: color-mix(in srgb, var(--accent) 10%, var(--panel));
 }
 
-/* Start screen: slightly wider on desktop */
 .start-card{
   width: min(640px, 92vw);
   padding: clamp(18px, 2.2vw, 28px);
@@ -260,7 +251,7 @@ input:focus, select:focus{
 @media (max-width: 420px){
   .auth-card{ padding: 16px; border-radius: 16px; }
   .auth-title{ font-size: 24px; }
-  .auth-badge{ display: none; } /* щоб не тиснуло в хедері */
+  .auth-badge{ display: none; } 
 }
 .auth-pill {
   text-decoration: none;
@@ -269,13 +260,11 @@ input:focus, select:focus{
   justify-content: center;
 }
 
-/* make links look like the same pills as buttons */
 .auth-links a.auth-pill {
   text-decoration: none;
   color: inherit;
 }
 
-/* kill visited purple/blue */
 .auth-links a.auth-pill:visited {
   color: inherit;
 }
@@ -309,7 +298,6 @@ input:focus, select:focus{
   cursor: default;
 }
 
-/* контейнер з 3 кнопками */
 .auth-links {
   display: flex;
   gap: 12px;
@@ -317,7 +305,6 @@ input:focus, select:focus{
   margin-top: 14px;
 }
 
-/* базовий стиль для кнопок-лінків */
 .auth-pill {
   display: inline-flex;
   align-items: center;
@@ -340,7 +327,6 @@ input:focus, select:focus{
   transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
 }
 
-/* прибрати стандартну “синю” поведінку лінків */
 .auth-pill,
 .auth-pill:visited {
   color: inherit;
@@ -357,13 +343,11 @@ input:focus, select:focus{
   transform: translateY(0px);
 }
 
-/* disabled для Video */
 .auth-pill--disabled {
   opacity: 0.5;
   pointer-events: none;
 }
 
-/* FORCE: auth links should NOT look disabled */
 .auth-links .auth-pill{
   opacity: 1 !important;
   filter: none !important;
@@ -371,7 +355,6 @@ input:focus, select:focus{
   cursor: pointer !important;
 }
 
-/* optional: keep color consistent (no visited weirdness) */
 .auth-links .auth-pill:visited{
   color: inherit;
 }
@@ -382,7 +365,6 @@ input:focus, select:focus{
   cursor: not-allowed;
 }
 
-/* HARD RESET for auth buttons (override parent too) */
 .auth-card,
 .auth-links,
 .auth-links .auth-pill{
@@ -391,7 +373,6 @@ input:focus, select:focus{
   pointer-events: auto !important;
 }
 
-/* force normal button look */
 .auth-links .auth-pill{
   background: rgba(255,255,255,.08) !important;
   border: 1px solid rgba(255,255,255,.14) !important;

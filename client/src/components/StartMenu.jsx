@@ -4,16 +4,12 @@ import Registration from "./Registration.jsx";
 import Login from "./Login.jsx";
 import "./StartMenu.css";
 
-import { healthCheck, login } from "../api.js"; // ✅ один імпорт
+import { healthCheck, login } from "../api.js";
 import { Link } from "react-router-dom";
 
 const DEMO_EMAIL = "demo@demo.com";
 const DEMO_PASSWORD = "demo12345";
 
-// Demo language policy:
-// - UI: English
-// - Learning label: EN
-// - Native label: DE
 const DEMO_UI_LANG = "en";
 const DEMO_L1_NATIVE = "de";
 const DEMO_L2_LEARNING = "en";
@@ -31,33 +27,28 @@ function applyTheme(theme) {
 export default function StartMenu({ initialMode = null }) {
   const navigate = useNavigate();
 
-  const [mode, setMode] = useState(initialMode); // null | "login" | "register"
+  const [mode, setMode] = useState(initialMode); 
   const [theme, setTheme] = useState(getSavedTheme);
 
   const [demoLoading, setDemoLoading] = useState(false);
   const [demoMsg, setDemoMsg] = useState("");
 
-  // default UI language for public pages + apply theme
   useEffect(() => {
     const has = localStorage.getItem("fc_ui_lang");
     if (!has) localStorage.setItem("fc_ui_lang", "en");
     applyTheme(theme);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // when route changes (/login or /register)
   useEffect(() => {
     setMode(initialMode);
   }, [initialMode]);
 
-  // keep theme synced
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
 
   const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
 
-  // ----- ROUTE helpers -----
   function goHome() {
     setDemoMsg("");
     setMode(null);
@@ -82,7 +73,6 @@ export default function StartMenu({ initialMode = null }) {
     setDemoLoading(true);
 
     try {
-      // warm-up (Render Free)
       await healthCheck().catch(() => {});
 
       const data = await login(DEMO_EMAIL, DEMO_PASSWORD);
@@ -90,12 +80,10 @@ export default function StartMenu({ initialMode = null }) {
       localStorage.setItem("token", data.token);
       localStorage.setItem("userId", data.userId);
 
-      // Force demo languages
       localStorage.setItem("fc_ui_lang", DEMO_UI_LANG);
       localStorage.setItem("fc_learning_lang", DEMO_L2_LEARNING);
       localStorage.setItem("fc_native_lang", DEMO_L1_NATIVE);
 
-      // Hard navigation to re-read localStorage
       window.location.href = "/flashcards";
     } catch (err) {
       setDemoMsg(String(err?.message || "Demo login failed"));
@@ -104,21 +92,18 @@ export default function StartMenu({ initialMode = null }) {
     }
   }
 
-  // ===== Login route UI =====
   if (mode === "login") {
     return (
       <Login onBack={goHome} onGoRegister={goRegister} theme={theme} onToggleTheme={toggleTheme} />
     );
   }
 
-  // ===== Register route UI =====
   if (mode === "register") {
     return (
       <Registration onBack={goHome} onGoLogin={goLogin} theme={theme} onToggleTheme={toggleTheme} />
     );
   }
 
-  // ===== Home UI =====
   return (
     <div className="auth-wrap">
       <div className="auth-card">

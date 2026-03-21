@@ -15,7 +15,7 @@ const WordCardSchema = new mongoose.Schema(
     deck: { type: String, default: DEFAULT_DECK },
 
   },
-  { timestamps: true } // ✅ ось це додає createdAt і updatedAt
+  { timestamps: true }
 );
 WordCardSchema.index(
   { userId: 1, word: 1, translation: 1, deck: 1 },

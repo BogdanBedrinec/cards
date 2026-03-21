@@ -18,24 +18,20 @@ export function useReviewShortcuts({
       const tag = (e.target?.tagName || "").toLowerCase();
       if (tag === "input" || tag === "textarea" || tag === "select") return;
 
-      // Close overlays
       if (e.key === "Escape") {
         if (showImportExport) setShowImportExport(false);
         if (editOpen) setEditOpen(false);
         return;
       }
 
-      // Only in review
       if (view !== "review") return;
 
-      // Show answer
       if (e.key === " " || e.key === "Enter") {
         e.preventDefault();
         if (!showAnswer) setShowAnswer(true);
         return;
       }
 
-      // Answer
       if (e.key === "1") {
         e.preventDefault();
         if (!isReviewing) reviewAnswer(true);
@@ -47,7 +43,6 @@ export function useReviewShortcuts({
         return;
       }
 
-      // Navigate
       if (e.key === "ArrowLeft") {
         e.preventDefault();
         setReviewIndex((i) => Math.max(0, i - 1));
