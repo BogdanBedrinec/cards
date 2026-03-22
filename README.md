@@ -51,4 +51,4 @@ Tech: React (Vite) • Node/Express • MongoDB • JWT
 
 Author
 
-Bohdan — https://github.com/BogdanBedrinec
+Bogdan — https://github.com/BogdanBedrinec
